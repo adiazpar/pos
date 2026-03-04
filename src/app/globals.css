@@ -1572,7 +1572,7 @@
     justify-content: center;
     text-align: center;
     padding: var(--space-6);
-    /* Fill remaining viewport: 100vh - header - tabs(48px + 16px margin) - padding (top: page-padding, bottom: space-6) - navbar */
+    /* Fill remaining viewport: 100vh - header - tabs(47px + 1px border + 16px margin = 64px) - padding (top: page-padding, bottom: space-6) - navbar */
     min-height: calc(100vh - var(--header-height) - 64px - var(--page-padding) - var(--space-6) - var(--mobile-nav-height) - env(safe-area-inset-bottom, 0px));
     min-height: calc(100dvh - var(--header-height) - 64px - var(--page-padding) - var(--space-6) - var(--mobile-nav-height) - env(safe-area-inset-bottom, 0px));
   }
@@ -3027,6 +3027,7 @@
     flex: 1;
     padding: var(--space-3) var(--space-4);
     font-size: var(--text-sm);
+    line-height: 1.5;
     font-weight: 600;
     color: var(--color-text-secondary);
     background: transparent;
