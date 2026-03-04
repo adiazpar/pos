@@ -66,14 +66,14 @@ export default function InicioPage() {
     : 0
 
   return (
-    <div className="min-h-screen">
+    <div className="page-wrapper">
       <PageHeader
         title={`${greeting}, ${user?.name.split(' ')[0] || ''}!`}
         subtitle={`${currentDate} - ${currentTime}`}
       />
 
       {/* Main content */}
-      <div className="main-content">
+      <main className="page-content">
         {/* Hero stat - big typography, no card wrapper */}
         <div className="mb-4 text-center">
           <p className="text-sm text-text-secondary uppercase tracking-wide">Ventas de Hoy</p>
@@ -309,7 +309,7 @@ export default function InicioPage() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

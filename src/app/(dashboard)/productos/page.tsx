@@ -524,23 +524,23 @@ export default function ProductosPage() {
 
   if (isLoading) {
     return (
-      <>
+      <div className="page-wrapper">
         <PageHeader title="Productos" subtitle={tabSubtitles[activeTab]} />
         <main className="page-loading">
           <Spinner className="spinner-lg" />
         </main>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
+    <div className="page-wrapper">
       <PageHeader
         title="Productos"
         subtitle={tabSubtitles[activeTab]}
       />
 
-      <div className="main-content space-y-4">
+      <main className="page-content space-y-4">
         {/* Section Tabs */}
         <div className="section-tabs">
           <button
@@ -560,7 +560,7 @@ export default function ProductosPage() {
         </div>
 
         {activeTab === 'productos' ? (
-          <>
+          <div className="page-body space-y-4">
             {error && !isModalOpen && (
               <div className="p-4 bg-error-subtle text-error rounded-lg">
                 {error}
@@ -662,7 +662,7 @@ export default function ProductosPage() {
 
             {/* Product List */}
             {products.length === 0 ? (
-              <div className="empty-state-centered">
+              <div className="empty-state-fill">
                 <IconProducts className="empty-state-icon" />
                 <h3 className="empty-state-title">No hay productos</h3>
                 <p className="empty-state-description">
@@ -792,14 +792,16 @@ export default function ProductosPage() {
                 Volver arriba
               </button>
             )}
-          </>
+          </div>
         ) : (
           /* Inventory placeholder */
-          <div className="flex flex-col items-center justify-center h-64 border border-dashed border-border rounded-xl">
-            <p className="text-text-secondary">Proximamente</p>
+          <div className="page-body">
+            <div className="flex flex-col items-center justify-center h-64 border border-dashed border-border rounded-xl">
+              <p className="text-text-secondary">Proximamente</p>
+            </div>
           </div>
         )}
-      </div>
+      </main>
 
       {/* Add/Edit Modal */}
       <Modal
@@ -1083,6 +1085,6 @@ export default function ProductosPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

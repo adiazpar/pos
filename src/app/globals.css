@@ -960,6 +960,54 @@
     }
   }
 
+  /* ===== Flexbox Layout System ===== */
+  /* Replaces calc()-based height calculations with flex inheritance */
+
+  /* Page wrapper - direct child of .with-sidebar content area */
+  .page-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Page content - scrollable area with padding */
+  .page-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: var(--page-padding);
+    padding-bottom: calc(var(--mobile-nav-height) + var(--space-6) + env(safe-area-inset-bottom, 0));
+  }
+
+  @media (min-width: 1024px) {
+    .page-content {
+      padding: var(--space-6);
+      padding-bottom: var(--space-8);
+    }
+  }
+
+  /* Page body - content area that fills remaining space (after tabs if present) */
+  .page-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Empty state that fills available space - NO calc() needed */
+  .empty-state-fill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 200px;
+    padding: var(--space-6);
+    text-align: center;
+  }
+
   /* ===== Floating Action Button ===== */
   .fab {
     position: fixed;
@@ -1564,6 +1612,7 @@
     max-width: 280px;
   }
 
+  /* DEPRECATED: Use .empty-state-fill instead - this uses fragile calc() */
   /* Centered empty state - fills available space between header/tabs and navbar */
   .empty-state-centered {
     display: flex;
@@ -2733,6 +2782,7 @@
 
   /* ===== Settings Page ===== */
   .settings-container {
+    flex: 1;
     width: 100%;
     padding: var(--space-4);
     padding-bottom: calc(var(--mobile-nav-height) + var(--space-6) + env(safe-area-inset-bottom, 0));

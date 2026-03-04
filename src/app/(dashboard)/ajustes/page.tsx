@@ -399,7 +399,7 @@ export default function SettingsPage() {
   const currentConfig = THEME_CONFIG[theme]
 
   return (
-    <>
+    <div className="page-wrapper">
       <PageHeader title="Configuracion" subtitle="Personaliza tu experiencia" />
 
       <main className="settings-container">
@@ -899,6 +899,6 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

@@ -115,7 +115,7 @@ export default function ChangePinPage() {
   const config = STEP_CONFIG[step]
 
   return (
-    <>
+    <div className="page-wrapper">
       <PageHeader title="Cambiar PIN" subtitle="Actualiza tu codigo de acceso" />
 
       <main className="change-pin-container">
@@ -192,6 +192,6 @@ export default function ChangePinPage() {
           )}
         </div>
       </main>
-    </>
+    </div>
   )
 }
