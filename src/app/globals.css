@@ -976,7 +976,6 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    min-height: 0;
     padding: var(--page-padding);
     padding-bottom: calc(var(--mobile-nav-height) + var(--space-6) + env(safe-area-inset-bottom, 0));
   }
