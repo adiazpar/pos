@@ -63,6 +63,8 @@ export interface Product {
   active: boolean
   category?: ProductCategory // Product category for grouping
   image?: string // Filename from PocketBase
+  stock?: number // Current stock quantity
+  lowStockThreshold?: number // Alert threshold (default: 10)
   created: string
   updated: string
 }
@@ -107,7 +109,7 @@ export interface SaleItem {
 }
 
 // ============================================
-// ORDER TYPES (purchases from DaSol)
+// ORDER TYPES (purchases from suppliers)
 // ============================================
 
 export type OrderStatus = 'pending' | 'received'
@@ -116,7 +118,7 @@ export interface Order {
   id: string
   date: string
   receivedDate?: string
-  total: number // Total paid to DaSol
+  total: number // Total paid to supplier
   status: OrderStatus
   notes?: string
   created: string
@@ -179,4 +181,35 @@ export interface CartItem {
 export interface Cart {
   items: CartItem[]
   total: number
+}
+
+// ============================================
+// INVENTORY TRANSACTION TYPES
+// ============================================
+
+export type InventoryTransactionType =
+  | 'purchase'   // Stock in from supplier order
+  | 'sale'       // Stock out from customer sale
+  | 'adjustment' // Manual stock adjustment
+  | 'waste'      // Stock lost to waste/damage
+  | 'correction' // Inventory count correction
+
+export interface InventoryTransaction {
+  id: string
+  date: string
+  product: string // Relation ID
+  quantity: number // Positive = in, Negative = out
+  type: InventoryTransactionType
+  order?: string // Relation ID (for purchase type)
+  sale?: string // Relation ID (for sale type)
+  notes?: string
+  createdBy: string // Relation ID to user
+  created: string
+  // Expanded relations
+  expand?: {
+    product?: Product
+    order?: Order
+    sale?: Sale
+    createdBy?: User
+  }
 }

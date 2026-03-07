@@ -98,6 +98,22 @@ migrate((app) => {
         required: false,
         values: ['chifles_grande', 'chifles_chico', 'miel', 'algarrobina', 'postres'],
         maxSelect: 1,
+      },
+      {
+        id: "prodstock001",
+        name: 'stock',
+        type: 'number',
+        required: false,
+        min: 0,
+        onlyInt: true,
+      },
+      {
+        id: "prodlowstk01",
+        name: 'lowStockThreshold',
+        type: 'number',
+        required: false,
+        min: 0,
+        onlyInt: true,
       }
     ],
     indexes: [],
@@ -325,9 +341,95 @@ migrate((app) => {
   })
   app.save(orderItems)
 
+  // ============================================
+  // INVENTORY_TRANSACTIONS
+  // ============================================
+  const INVENTORY_TRANSACTIONS_ID = "invtxns00001"
+
+  const inventoryTransactions = new Collection({
+    id: INVENTORY_TRANSACTIONS_ID,
+    name: 'inventory_transactions',
+    type: 'base',
+    system: false,
+    listRule: "@request.auth.id != ''",
+    viewRule: "@request.auth.id != ''",
+    createRule: "@request.auth.id != ''",
+    updateRule: "@request.auth.role = 'owner' || @request.auth.role = 'partner'",
+    deleteRule: "@request.auth.role = 'owner'",
+    fields: [
+      {
+        id: "invtxndate01",
+        name: 'date',
+        type: 'date',
+        required: true,
+        presentable: true,
+      },
+      {
+        id: "invtxnprod01",
+        name: 'product',
+        type: 'relation',
+        required: true,
+        collectionId: PRODUCTS_ID,
+        cascadeDelete: false,
+        maxSelect: 1,
+      },
+      {
+        id: "invtxnqty001",
+        name: 'quantity',
+        type: 'number',
+        required: true,
+        onlyInt: true,
+      },
+      {
+        id: "invtxntype01",
+        name: 'type',
+        type: 'select',
+        required: true,
+        values: ['purchase', 'sale', 'adjustment', 'waste', 'correction'],
+        maxSelect: 1,
+      },
+      {
+        id: "invtxnorder1",
+        name: 'order',
+        type: 'relation',
+        required: false,
+        collectionId: ORDERS_ID,
+        cascadeDelete: false,
+        maxSelect: 1,
+      },
+      {
+        id: "invtxnsale01",
+        name: 'sale',
+        type: 'relation',
+        required: false,
+        collectionId: SALES_ID,
+        cascadeDelete: false,
+        maxSelect: 1,
+      },
+      {
+        id: "invtxnnotes1",
+        name: 'notes',
+        type: 'text',
+        required: false,
+      },
+      {
+        id: "invtxnuser01",
+        name: 'createdBy',
+        type: 'relation',
+        required: true,
+        collectionId: "_pb_users_auth_",
+        cascadeDelete: false,
+        maxSelect: 1,
+      }
+    ],
+    indexes: [],
+  })
+  app.save(inventoryTransactions)
+
 }, (app) => {
   // Revert migration
   const collectionsToDelete = [
+    'inventory_transactions',
     'order_items',
     'orders',
     'sale_items',

@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import Image from 'next/image'
 import { Spinner } from '@/components/ui'
 import { PageHeader } from '@/components/layout'
-import { IconAdd, IconClose, IconTrash, IconImage, IconProducts, IconSearch, IconArrowUp, IconArrowDown, IconFilter, IconCheck, IconEdit, IconChevronRight, IconSelect } from '@/components/icons'
+import { IconAdd, IconClose, IconTrash, IconImage, IconProducts, IconSearch, IconArrowUp, IconArrowDown, IconFilter, IconCheck, IconEdit, IconChevronRight, IconSelect, IconWarning, IconInventory } from '@/components/icons'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { useAuth } from '@/contexts/auth-context'
 import { getProductImageUrl } from '@/lib/products'
-import type { Product, ProductCategory } from '@/types'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import type { Product, ProductCategory, Order, OrderItem } from '@/types'
 
 // Category configuration
 const CATEGORY_CONFIG: Record<ProductCategory, { label: string; size?: string; order: number }> = {
@@ -20,13 +21,24 @@ const CATEGORY_CONFIG: Record<ProductCategory, { label: string; size?: string; o
 }
 
 // Filter tab configuration (combines chifles into one)
-type FilterCategory = 'all' | 'chifles' | 'miel' | 'algarrobina' | 'postres'
+type FilterCategory = 'all' | 'low_stock' | 'chifles' | 'miel' | 'algarrobina' | 'postres'
 
-const FILTER_CONFIG: Record<Exclude<FilterCategory, 'all'>, { label: string; categories: ProductCategory[] }> = {
+const FILTER_CONFIG: Record<Exclude<FilterCategory, 'all' | 'low_stock'>, { label: string; categories: ProductCategory[] }> = {
   chifles: { label: 'Chifles', categories: ['chifles_grande', 'chifles_chico'] },
   miel: { label: 'Miel', categories: ['miel'] },
   algarrobina: { label: 'Algarrobina', categories: ['algarrobina'] },
   postres: { label: 'Postres', categories: ['postres'] },
+}
+
+// Expanded Order type for display
+interface ExpandedOrder extends Order {
+  expand?: {
+    'order_items(order)'?: (OrderItem & {
+      expand?: {
+        product?: Product
+      }
+    })[]
+  }
 }
 
 // Modal component
@@ -35,19 +47,21 @@ function Modal({
   onClose,
   title,
   children,
-  footer
+  footer,
+  size = 'default',
 }: {
   isOpen: boolean
   onClose: () => void
   title: string
   children: React.ReactNode
   footer?: React.ReactNode
+  size?: 'default' | 'large'
 }) {
   if (!isOpen) return null
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className={`modal ${size === 'large' ? 'modal-lg' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
           <button
@@ -133,16 +147,18 @@ function DeleteConfirmModal({
 }
 
 // Tab types
-type PageTab = 'productos' | 'inventario'
+type PageTab = 'productos' | 'pedidos'
 
 // Sort options
-type SortOption = 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc' | 'category'
+type SortOption = 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc' | 'category' | 'stock_asc' | 'stock_desc'
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'name_asc', label: 'Nombre (A-Z)' },
   { value: 'name_desc', label: 'Nombre (Z-A)' },
   { value: 'price_asc', label: 'Precio (menor a mayor)' },
   { value: 'price_desc', label: 'Precio (mayor a menor)' },
+  { value: 'stock_asc', label: 'Stock (menor a mayor)' },
+  { value: 'stock_desc', label: 'Stock (mayor a menor)' },
   { value: 'category', label: 'Categoria' },
 ]
 
@@ -207,6 +223,18 @@ export default function ProductosPage() {
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Orders state (for Pedidos tab)
+  const [orders, setOrders] = useState<ExpandedOrder[]>([])
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
+  const [orderItems, setOrderItems] = useState<{ product: Product; quantity: number }[]>([])
+  const [orderTotal, setOrderTotal] = useState('')
+  const [orderNotes, setOrderNotes] = useState('')
+  const [isSavingOrder, setIsSavingOrder] = useState(false)
+  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false)
+  const [receivingOrder, setReceivingOrder] = useState<ExpandedOrder | null>(null)
+  const [isReceiving, setIsReceiving] = useState(false)
+  const [orderProductSearchQuery, setOrderProductSearchQuery] = useState('')
+
   // Form state
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
@@ -220,22 +248,30 @@ export default function ProductosPage() {
   // Permission check
   const canDelete = user?.role === 'owner' || user?.role === 'partner'
 
-  // Load products
+  // Load products and orders
   useEffect(() => {
     let cancelled = false
 
-    async function loadProducts() {
+    async function loadData() {
       try {
-        const records = await pb.collection('products').getFullList<Product>({
-          sort: 'name',
-          requestKey: null,
-        })
+        const [productsRes, ordersRes] = await Promise.all([
+          pb.collection('products').getFullList<Product>({
+            sort: 'name',
+            requestKey: null,
+          }),
+          pb.collection('orders').getFullList<ExpandedOrder>({
+            sort: '-date',
+            expand: 'order_items(order).product',
+            requestKey: null,
+          }),
+        ])
         if (cancelled) return
-        setProducts(records)
+        setProducts(productsRes)
+        setOrders(ordersRes)
       } catch (err) {
         if (cancelled) return
-        console.error('Error loading products:', err)
-        setError('Error al cargar los productos')
+        console.error('Error loading data:', err)
+        setError('Error al cargar los datos')
       } finally {
         if (!cancelled) {
           setIsLoading(false)
@@ -243,7 +279,7 @@ export default function ProductosPage() {
       }
     }
 
-    loadProducts()
+    loadData()
 
     return () => {
       cancelled = true
@@ -259,8 +295,15 @@ export default function ProductosPage() {
   const filteredProducts = useMemo(() => {
     let result = products
 
-    // Filter by category
-    if (selectedFilter !== 'all') {
+    // Filter by low stock (includes empty stock)
+    if (selectedFilter === 'low_stock') {
+      result = result.filter(p => {
+        const stock = p.stock ?? 0
+        const threshold = p.lowStockThreshold ?? 10
+        return stock <= threshold
+      })
+    } else if (selectedFilter !== 'all') {
+      // Filter by category
       const allowedCategories = FILTER_CONFIG[selectedFilter].categories
       result = result.filter(p => p.category && allowedCategories.includes(p.category))
     }
@@ -284,6 +327,18 @@ export default function ProductosPage() {
           return a.price - b.price
         case 'price_desc':
           return b.price - a.price
+        case 'stock_asc': {
+          const stockA = a.stock ?? 0
+          const stockB = b.stock ?? 0
+          if (stockA !== stockB) return stockA - stockB
+          return a.name.localeCompare(b.name)
+        }
+        case 'stock_desc': {
+          const stockA = a.stock ?? 0
+          const stockB = b.stock ?? 0
+          if (stockA !== stockB) return stockB - stockA
+          return a.name.localeCompare(b.name)
+        }
         case 'category': {
           const catA = a.category ? CATEGORY_CONFIG[a.category]?.order ?? 99 : 99
           const catB = b.category ? CATEGORY_CONFIG[b.category]?.order ?? 99 : 99
@@ -299,19 +354,29 @@ export default function ProductosPage() {
   // Get available filters based on products
   const availableFilters = useMemo(() => {
     const productCategories = new Set<ProductCategory>()
+
     products.forEach(p => {
       if (p.category) productCategories.add(p.category)
     })
 
-    // Check which filters have at least one product
-    const filters: Exclude<FilterCategory, 'all'>[] = []
-    for (const [filter, config] of Object.entries(FILTER_CONFIG) as [Exclude<FilterCategory, 'all'>, typeof FILTER_CONFIG[keyof typeof FILTER_CONFIG]][]) {
+    // Build filters array - always include low_stock first
+    const filters: Exclude<FilterCategory, 'all'>[] = ['low_stock']
+
+    // Add category filters
+    for (const [filter, config] of Object.entries(FILTER_CONFIG) as [Exclude<FilterCategory, 'all' | 'low_stock'>, typeof FILTER_CONFIG[keyof typeof FILTER_CONFIG]][]) {
       if (config.categories.some(cat => productCategories.has(cat))) {
         filters.push(filter)
       }
     }
     return filters
   }, [products])
+
+  // Filtered products for order selection
+  const orderFilteredProducts = useMemo(() => {
+    if (!orderProductSearchQuery.trim()) return products.filter(p => p.active)
+    const query = orderProductSearchQuery.toLowerCase()
+    return products.filter(p => p.active && p.name.toLowerCase().includes(query))
+  }, [products, orderProductSearchQuery])
 
   const resetForm = useCallback(() => {
     setName('')
@@ -516,10 +581,170 @@ export default function ProductosPage() {
     }
   }, [])
 
+  // Order handlers
+  const resetOrderForm = useCallback(() => {
+    setOrderItems([])
+    setOrderTotal('')
+    setOrderNotes('')
+    setOrderProductSearchQuery('')
+    setError('')
+  }, [])
+
+  const handleOpenNewOrder = useCallback(() => {
+    resetOrderForm()
+    setIsOrderModalOpen(true)
+  }, [resetOrderForm])
+
+  const handleAddProductToOrder = useCallback((product: Product) => {
+    setOrderItems(prev => {
+      const existing = prev.find(item => item.product.id === product.id)
+      if (existing) {
+        return prev.map(item =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      }
+      return [...prev, { product, quantity: 1 }]
+    })
+  }, [])
+
+  const handleUpdateOrderItemQuantity = useCallback((productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      setOrderItems(prev => prev.filter(item => item.product.id !== productId))
+    } else {
+      setOrderItems(prev => prev.map(item =>
+        item.product.id === productId
+          ? { ...item, quantity }
+          : item
+      ))
+    }
+  }, [])
+
+  const handleSaveOrder = useCallback(async () => {
+    if (orderItems.length === 0) {
+      setError('Agrega al menos un producto')
+      return
+    }
+
+    const totalNum = parseFloat(orderTotal)
+    if (isNaN(totalNum) || totalNum <= 0) {
+      setError('Ingresa el total pagado')
+      return
+    }
+
+    setIsSavingOrder(true)
+    setError('')
+
+    try {
+      // Create the order
+      const order = await pb.collection('orders').create<Order>({
+        date: new Date().toISOString(),
+        total: totalNum,
+        status: 'pending',
+        notes: orderNotes.trim() || undefined,
+      })
+
+      // Create order items
+      for (const item of orderItems) {
+        await pb.collection('order_items').create({
+          order: order.id,
+          product: item.product.id,
+          quantity: item.quantity,
+        })
+      }
+
+      // Reload orders with expanded data
+      const updatedOrders = await pb.collection('orders').getFullList<ExpandedOrder>({
+        sort: '-date',
+        expand: 'order_items(order).product',
+        requestKey: null,
+      })
+      setOrders(updatedOrders)
+
+      setIsOrderModalOpen(false)
+      resetOrderForm()
+    } catch (err) {
+      console.error('Error saving order:', err)
+      setError('Error al guardar el pedido')
+    } finally {
+      setIsSavingOrder(false)
+    }
+  }, [orderItems, orderTotal, orderNotes, pb, resetOrderForm])
+
+  const handleOpenReceiveOrder = useCallback((order: ExpandedOrder) => {
+    setReceivingOrder(order)
+    setIsReceiveModalOpen(true)
+  }, [])
+
+  const handleReceiveOrder = useCallback(async () => {
+    if (!receivingOrder || !user) return
+
+    setIsReceiving(true)
+    setError('')
+
+    try {
+      const now = new Date().toISOString()
+      const orderItemsList = receivingOrder.expand?.['order_items(order)'] || []
+
+      // Create inventory transactions and update stock for each item
+      for (const item of orderItemsList) {
+        const product = item.expand?.product
+        if (!product) continue
+
+        // Create inventory transaction
+        await pb.collection('inventory_transactions').create({
+          date: now,
+          product: product.id,
+          quantity: item.quantity,
+          type: 'purchase',
+          order: receivingOrder.id,
+          createdBy: user.id,
+          notes: `Pedido recibido`,
+        })
+
+        // Update product stock
+        const currentStock = product.stock || 0
+        await pb.collection('products').update(product.id, {
+          stock: currentStock + item.quantity,
+        })
+      }
+
+      // Update order status
+      await pb.collection('orders').update(receivingOrder.id, {
+        status: 'received',
+        receivedDate: now,
+      })
+
+      // Reload data
+      const [productsRes, ordersRes] = await Promise.all([
+        pb.collection('products').getFullList<Product>({
+          sort: 'name',
+          requestKey: null,
+        }),
+        pb.collection('orders').getFullList<ExpandedOrder>({
+          sort: '-date',
+          expand: 'order_items(order).product',
+          requestKey: null,
+        }),
+      ])
+
+      setProducts(productsRes)
+      setOrders(ordersRes)
+      setIsReceiveModalOpen(false)
+      setReceivingOrder(null)
+    } catch (err) {
+      console.error('Error receiving order:', err)
+      setError('Error al recibir el pedido')
+    } finally {
+      setIsReceiving(false)
+    }
+  }, [receivingOrder, user, pb])
+
   // Tab subtitle config
   const tabSubtitles: Record<PageTab, string> = {
     productos: 'Gestiona tu catalogo',
-    inventario: 'Control de stock',
+    pedidos: 'Pedidos a proveedores',
   }
 
   if (isLoading) {
@@ -552,10 +777,10 @@ export default function ProductosPage() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('inventario')}
-            className={`section-tab ${activeTab === 'inventario' ? 'section-tab-active' : ''}`}
+            onClick={() => setActiveTab('pedidos')}
+            className={`section-tab ${activeTab === 'pedidos' ? 'section-tab-active' : ''}`}
           >
-            Inventario
+            Pedidos
           </button>
         </div>
 
@@ -619,7 +844,7 @@ export default function ProductosPage() {
                         onClick={() => setSelectedFilter(filter)}
                         className={`filter-tab ${selectedFilter === filter ? 'filter-tab-active' : ''}`}
                       >
-                        {FILTER_CONFIG[filter].label}
+                        {filter === 'low_stock' ? 'Stock Bajo' : FILTER_CONFIG[filter].label}
                       </button>
                     ))}
                   </div>
@@ -690,6 +915,9 @@ export default function ProductosPage() {
                 const imageUrl = getProductImageUrl(product, '100x100')
                 const categoryConfig = product.category ? CATEGORY_CONFIG[product.category] : null
                 const isSelected = selectedProducts.has(product.id)
+                const stockValue = product.stock ?? 0
+                const threshold = product.lowStockThreshold ?? 10
+                const isLowStock = stockValue <= threshold
 
                 return (
                   <div
@@ -721,7 +949,7 @@ export default function ProductosPage() {
                         {isSelected && <IconCheck className="w-4 h-4" />}
                       </div>
                     ) : (
-                      <div className="product-list-image">
+                      <div className={`product-list-image ${isLowStock && product.active ? 'ring-2 ring-error' : ''}`}>
                         {imageUrl ? (
                           <Image
                             src={imageUrl}
@@ -739,40 +967,30 @@ export default function ProductosPage() {
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium truncate ${!product.active ? 'text-text-tertiary' : ''}`}>
-                          {product.name}
+                      <span className={`font-medium truncate block ${!product.active ? 'text-text-tertiary' : ''}`}>
+                        {product.name}
+                      </span>
+                      {categoryConfig && (
+                        <span className="text-xs text-text-tertiary mt-0.5 block">
+                          {categoryConfig.label}
                         </span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {categoryConfig && (
-                          <>
-                            <span className="text-xs text-text-tertiary">
-                              {categoryConfig.label}
-                              {categoryConfig.size && ` (${categoryConfig.size})`}
-                            </span>
-                            <span className="text-text-muted">·</span>
-                          </>
-                        )}
-                        <span className={`text-xs ${product.active ? 'text-success' : 'text-text-tertiary'}`}>
-                          {product.active ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Price */}
+                    {/* Price and Stock */}
                     <div className="text-right">
-                      <span className={`font-display font-bold ${!product.active ? 'text-text-tertiary' : 'text-text-primary'}`}>
+                      <span className={`font-medium block ${!product.active ? 'text-text-tertiary' : 'text-text-primary'}`}>
                         S/ {product.price.toFixed(2)}
+                      </span>
+                      <span className={`text-xs mt-0.5 block ${isLowStock && product.active ? 'text-error' : 'text-text-tertiary'}`}>
+                        {stockValue} uds
                       </span>
                     </div>
 
                     {/* Chevron (only in normal mode) */}
                     {!isSelectionMode && (
                       <div className="text-text-tertiary ml-2">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                        <IconChevronRight className="w-5 h-5" />
                       </div>
                     )}
                   </div>
@@ -794,11 +1012,128 @@ export default function ProductosPage() {
             )}
           </div>
         ) : (
-          /* Inventory placeholder */
-          <div className="page-body">
-            <div className="flex flex-col items-center justify-center h-64 border border-dashed border-border rounded-xl">
-              <p className="text-text-secondary">Proximamente</p>
-            </div>
+          /* Pedidos tab */
+          <div className="page-body space-y-4">
+            {error && !isOrderModalOpen && (
+              <div className="p-4 bg-error-subtle text-error rounded-lg">
+                {error}
+              </div>
+            )}
+
+            {/* No products yet - can't create orders */}
+            {products.length === 0 ? (
+              <div className="empty-state-fill">
+                <IconProducts className="empty-state-icon" />
+                <h3 className="empty-state-title">No hay productos</h3>
+                <p className="empty-state-description">
+                  Agrega productos primero para poder crear pedidos
+                </p>
+              </div>
+            ) : orders.length === 0 ? (
+              /* Products exist but no orders yet */
+              <div className="empty-state-fill">
+                <IconInventory className="empty-state-icon" />
+                <h3 className="empty-state-title">No hay pedidos</h3>
+                <p className="empty-state-description">
+                  Registra tu primer pedido
+                </p>
+                <button
+                  type="button"
+                  onClick={handleOpenNewOrder}
+                  className="btn btn-primary mt-4"
+                >
+                  Crear pedido
+                </button>
+              </div>
+            ) : (
+              /* Orders exist - show header and list */
+              <>
+                {/* Header with add button */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-text-secondary">
+                    {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleOpenNewOrder}
+                    className="btn btn-primary btn-sm"
+                  >
+                    <IconAdd className="w-4 h-4" />
+                    Nuevo Pedido
+                  </button>
+                </div>
+
+              <div className="space-y-2">
+                {orders.map(order => {
+                  const items = order.expand?.['order_items(order)'] || []
+                  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+                  const isPending = order.status === 'pending'
+
+                  return (
+                    <div
+                      key={order.id}
+                      className="list-item-clickable"
+                      onClick={() => isPending ? handleOpenReceiveOrder(order) : undefined}
+                      role={isPending ? 'button' : undefined}
+                      tabIndex={isPending ? 0 : undefined}
+                    >
+                      {/* Status indicator */}
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        isPending
+                          ? 'bg-warning-subtle text-warning'
+                          : 'bg-success-subtle text-success'
+                      }`}>
+                        <IconInventory className="w-5 h-5" />
+                      </div>
+
+                      {/* Order info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">
+                            {formatDate(new Date(order.date))}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            isPending
+                              ? 'bg-warning-subtle text-warning'
+                              : 'bg-success-subtle text-success'
+                          }`}>
+                            {isPending ? 'Pendiente' : 'Recibido'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-text-tertiary">
+                            {itemCount} {itemCount === 1 ? 'unidad' : 'unidades'}
+                          </span>
+                          {order.notes && (
+                            <>
+                              <span className="text-text-muted">·</span>
+                              <span className="text-xs text-text-tertiary truncate">
+                                {order.notes}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Total */}
+                      <div className="text-right">
+                        <span className="font-display font-bold">
+                          {formatCurrency(order.total)}
+                        </span>
+                      </div>
+
+                      {/* Action indicator */}
+                      {isPending && (
+                        <div className="text-text-tertiary ml-2">
+                          <IconChevronRight className="w-5 h-5" />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                </div>
+              </>
+            )}
           </div>
         )}
       </main>
@@ -1001,6 +1336,216 @@ export default function ProductosPage() {
         productName={deleteProduct?.name || ''}
         isDeleting={isDeleting}
       />
+
+      {/* New Order Modal */}
+      <Modal
+        isOpen={isOrderModalOpen}
+        onClose={() => {
+          setIsOrderModalOpen(false)
+          resetOrderForm()
+        }}
+        title="Nuevo Pedido"
+        size="large"
+        footer={
+          <div className="modal-actions">
+            <button
+              type="button"
+              onClick={() => {
+                setIsOrderModalOpen(false)
+                resetOrderForm()
+              }}
+              className="btn btn-secondary"
+              disabled={isSavingOrder}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveOrder}
+              className="btn btn-primary"
+              disabled={isSavingOrder || orderItems.length === 0}
+            >
+              {isSavingOrder ? <Spinner /> : 'Guardar'}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          {error && (
+            <div className="p-3 bg-error-subtle text-error text-sm rounded-lg">
+              {error}
+            </div>
+          )}
+
+          {/* Product search */}
+          <div>
+            <label className="label">Agregar productos</label>
+            <div className="search-bar">
+              <IconSearch className="search-bar-icon" />
+              <input
+                type="text"
+                placeholder="Buscar producto..."
+                value={orderProductSearchQuery}
+                onChange={e => setOrderProductSearchQuery(e.target.value)}
+                className="search-bar-input"
+              />
+            </div>
+          </div>
+
+          {/* Products grid */}
+          <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+            {orderFilteredProducts.slice(0, 10).map(product => (
+              <button
+                key={product.id}
+                type="button"
+                onClick={() => handleAddProductToOrder(product)}
+                className="flex items-center gap-2 p-2 rounded-lg border border-border hover:border-brand hover:bg-brand-subtle transition-colors text-left"
+              >
+                <div className="w-8 h-8 rounded bg-bg-muted flex items-center justify-center flex-shrink-0">
+                  {getProductImageUrl(product, '100x100') ? (
+                    <Image
+                      src={getProductImageUrl(product, '100x100')!}
+                      alt={product.name}
+                      width={32}
+                      height={32}
+                      className="rounded"
+                      unoptimized
+                    />
+                  ) : (
+                    <IconImage className="w-4 h-4 text-text-tertiary" />
+                  )}
+                </div>
+                <span className="text-sm truncate">{product.name}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Order items */}
+          {orderItems.length > 0 && (
+            <div>
+              <label className="label">Productos en pedido</label>
+              <div className="space-y-2">
+                {orderItems.map(item => (
+                  <div key={item.product.id} className="flex items-center gap-3 p-2 rounded-lg bg-bg-muted">
+                    <span className="flex-1 text-sm">{item.product.name}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateOrderItemQuantity(item.product.id, item.quantity - 1)}
+                        className="w-8 h-8 rounded-lg border border-border hover:border-brand flex items-center justify-center"
+                      >
+                        <IconArrowDown className="w-4 h-4" />
+                      </button>
+                      <span className="w-8 text-center font-medium">{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateOrderItemQuantity(item.product.id, item.quantity + 1)}
+                        className="w-8 h-8 rounded-lg border border-border hover:border-brand flex items-center justify-center"
+                      >
+                        <IconArrowUp className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Total */}
+          <div>
+            <label htmlFor="orderTotal" className="label">Total pagado (S/)</label>
+            <input
+              id="orderTotal"
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              value={orderTotal}
+              onChange={e => setOrderTotal(e.target.value)}
+              className="input"
+              placeholder="0.00"
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label htmlFor="orderNotes" className="label">Notas (opcional)</label>
+            <textarea
+              id="orderNotes"
+              value={orderNotes}
+              onChange={e => setOrderNotes(e.target.value)}
+              className="input"
+              rows={2}
+              placeholder="Notas del pedido..."
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Receive Order Modal */}
+      <Modal
+        isOpen={isReceiveModalOpen}
+        onClose={() => {
+          setIsReceiveModalOpen(false)
+          setReceivingOrder(null)
+        }}
+        title="Recibir Pedido"
+        footer={
+          <div className="modal-actions">
+            <button
+              type="button"
+              onClick={() => {
+                setIsReceiveModalOpen(false)
+                setReceivingOrder(null)
+              }}
+              className="btn btn-secondary"
+              disabled={isReceiving}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleReceiveOrder}
+              className="btn btn-primary"
+              disabled={isReceiving}
+            >
+              {isReceiving ? <Spinner /> : 'Confirmar Recepcion'}
+            </button>
+          </div>
+        }
+      >
+        {receivingOrder && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg bg-bg-muted">
+              <div className="flex justify-between mb-2">
+                <span className="text-text-secondary">Fecha:</span>
+                <span className="font-medium">{formatDate(new Date(receivingOrder.date))}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Total pagado:</span>
+                <span className="font-bold">{formatCurrency(receivingOrder.total)}</span>
+              </div>
+            </div>
+
+            <div>
+              <p className="label">Productos a recibir:</p>
+              <div className="space-y-2">
+                {receivingOrder.expand?.['order_items(order)']?.map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-2 rounded-lg border border-border">
+                    <span>{item.expand?.product?.name || 'Producto'}</span>
+                    <span className="font-medium text-success">+{item.quantity} unidades</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-warning-subtle text-warning text-sm">
+              <IconWarning className="w-4 h-4 inline mr-2" />
+              Al confirmar, el stock de estos productos aumentara automaticamente.
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Sort bottom sheet */}
       <BottomSheet

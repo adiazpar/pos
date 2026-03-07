@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout'
 import { Card } from '@/components/ui'
@@ -13,7 +13,7 @@ import {
   IconSales,
   IconProducts,
   IconCashDrawer,
-  IconInventory,
+  IconPackage,
   IconArrowUp,
   IconArrowDown,
   IconCircleCheck,
@@ -22,19 +22,64 @@ import {
 import { formatCurrency, formatDate, formatTime, getGreeting } from '@/lib/utils'
 import {
   INITIAL_STATS,
-  MOCK_INVENTORY,
   WEEKLY_SALES,
   PAYMENT_BREAKDOWN,
   TOP_PRODUCTS,
 } from '@/lib/mock-data'
 import { useAuth } from '@/contexts/auth-context'
+import type { Product } from '@/types'
 
 export default function InicioPage() {
-  const { user } = useAuth()
+  const { user, pb } = useAuth()
   const [greeting, setGreeting] = useState(getGreeting())
   const [currentDate, setCurrentDate] = useState('')
   const [currentTime, setCurrentTime] = useState('')
   const [cashDrawerStatus, setCashDrawerStatus] = useState<'open' | 'closed'>('open')
+  const [products, setProducts] = useState<Product[]>([])
+
+  // Load products for inventory stats
+  useEffect(() => {
+    if (!pb) return
+    let cancelled = false
+
+    async function loadProducts() {
+      try {
+        const records = await pb.collection('products').getFullList<Product>({
+          sort: 'name',
+          requestKey: null,
+        })
+        if (!cancelled) {
+          setProducts(records)
+        }
+      } catch (err) {
+        console.error('Error loading products:', err)
+      }
+    }
+
+    loadProducts()
+    return () => { cancelled = true }
+  }, [pb])
+
+  // Calculate inventory stats from real products
+  const inventoryStats = useMemo(() => {
+    const activeProducts = products.filter(p => p.active)
+    const totalUnits = activeProducts.reduce((sum, p) => sum + (p.stock ?? 0), 0)
+    const lowStockProducts = activeProducts.filter(p => {
+      const stock = p.stock ?? 0
+      const threshold = p.lowStockThreshold ?? 10
+      return stock <= threshold
+    }).map(p => ({
+      name: p.name,
+      stock: p.stock ?? 0,
+      threshold: p.lowStockThreshold ?? 10,
+    }))
+
+    return {
+      totalUnits,
+      lowStockCount: lowStockProducts.length,
+      lowStockProducts,
+    }
+  }, [products])
 
   useEffect(() => {
     const update = () => {
@@ -116,9 +161,9 @@ export default function InicioPage() {
 
           <Link href="/productos" className="quick-action">
             <div className="quick-action-icon">
-              <IconInventory className="w-5 h-5" />
+              <IconPackage className="w-5 h-5" />
             </div>
-            <span className="quick-action-label">Inventario</span>
+            <span className="quick-action-label">Pedidos</span>
           </Link>
         </div>
 
@@ -194,14 +239,14 @@ export default function InicioPage() {
             <div className="flex items-center justify-between">
               <div className="text-center flex-1">
                 <p className="text-2xl font-display font-bold text-text-primary">
-                  {MOCK_INVENTORY.totalUnits}
+                  {inventoryStats.totalUnits}
                 </p>
                 <p className="text-xs text-text-secondary">Unidades</p>
               </div>
               <div className="w-px h-10 bg-border" />
               <div className="text-center flex-1">
-                <p className={`text-2xl font-display font-bold ${MOCK_INVENTORY.lowStockCount > 0 ? 'text-error' : 'text-text-primary'}`}>
-                  {MOCK_INVENTORY.lowStockCount}
+                <p className={`text-2xl font-display font-bold ${inventoryStats.lowStockCount > 0 ? 'text-error' : 'text-text-primary'}`}>
+                  {inventoryStats.lowStockCount}
                 </p>
                 <p className="text-xs text-text-secondary">Stock Bajo</p>
               </div>
@@ -210,18 +255,23 @@ export default function InicioPage() {
         </div>
 
         {/* Low stock alerts (if any) */}
-        {MOCK_INVENTORY.lowStockCount > 0 && (
+        {inventoryStats.lowStockCount > 0 && (
           <div className="p-4 mb-6 rounded-xl border border-error bg-error-subtle">
             <p className="font-medium text-error mb-1">Alerta de Stock Bajo</p>
             <ul className="text-sm text-text-secondary space-y-1">
-              {MOCK_INVENTORY.lowStockProducts.map((product, index) => (
+              {inventoryStats.lowStockProducts.slice(0, 3).map((product, index) => (
                 <li key={index}>
                   {product.name}: {product.stock} unidades (minimo: {product.threshold})
                 </li>
               ))}
+              {inventoryStats.lowStockProducts.length > 3 && (
+                <li className="text-text-tertiary">
+                  +{inventoryStats.lowStockProducts.length - 3} productos mas
+                </li>
+              )}
             </ul>
             <Link href="/productos" className="inline-block mt-2 text-sm font-medium text-brand hover:underline">
-              Ver inventario
+              Ver productos
             </Link>
           </div>
         )}
