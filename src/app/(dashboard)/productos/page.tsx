@@ -1104,18 +1104,9 @@ export default function ProductosPage() {
 
                       {/* Order info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {formatDate(new Date(order.date))}
-                          </span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            isPending
-                              ? 'bg-warning-subtle text-warning'
-                              : 'bg-success-subtle text-success'
-                          }`}>
-                            {isPending ? 'Pendiente' : 'Recibido'}
-                          </span>
-                        </div>
+                        <span className="font-medium block">
+                          {formatDate(new Date(order.date))}
+                        </span>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs text-text-tertiary">
                             {itemCount} {itemCount === 1 ? 'unidad' : 'unidades'}
@@ -1131,10 +1122,13 @@ export default function ProductosPage() {
                         </div>
                       </div>
 
-                      {/* Total */}
+                      {/* Total and Status */}
                       <div className="text-right">
-                        <span className="font-display font-bold">
-                          {formatCurrency(order.total)}
+                        <span className="font-medium block text-error">
+                          -{formatCurrency(order.total)}
+                        </span>
+                        <span className={`text-xs mt-0.5 block ${isPending ? 'text-warning' : 'text-success'}`}>
+                          {isPending ? 'Pendiente' : 'Recibido'}
                         </span>
                       </div>
 
@@ -1635,7 +1629,7 @@ export default function ProductosPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Total pagado:</span>
-                <span className="font-bold">{formatCurrency(receivingOrder.total)}</span>
+                <span className="font-bold text-error">-{formatCurrency(receivingOrder.total)}</span>
               </div>
             </div>
 
