@@ -116,10 +116,14 @@ export type OrderStatus = 'pending' | 'received'
 
 export interface Order {
   id: string
+  collectionId: string // Needed for file URL
+  collectionName: string // Needed for file URL
   date: string
   receivedDate?: string
   total: number // Total paid to supplier
   status: OrderStatus
+  estimatedArrival?: string // Estimated delivery date
+  receipt?: string // Proof of purchase file (receipt, Yape screenshot)
   notes?: string
   created: string
   updated: string

@@ -290,6 +290,21 @@ migrate((app) => {
         name: 'notes',
         type: 'text',
         required: false,
+      },
+      {
+        id: "orderestim1",
+        name: 'estimatedArrival',
+        type: 'date',
+        required: false,
+      },
+      {
+        id: "orderrecpt1",
+        name: 'receipt',
+        type: 'file',
+        required: false,
+        maxSelect: 1,
+        maxSize: 5242880, // 5MB
+        mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
       }
     ],
     indexes: [],

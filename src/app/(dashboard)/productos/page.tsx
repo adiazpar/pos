@@ -229,6 +229,9 @@ export default function ProductosPage() {
   const [orderItems, setOrderItems] = useState<{ product: Product; quantity: number }[]>([])
   const [orderTotal, setOrderTotal] = useState('')
   const [orderNotes, setOrderNotes] = useState('')
+  const [orderEstimatedArrival, setOrderEstimatedArrival] = useState('')
+  const [orderReceiptFile, setOrderReceiptFile] = useState<File | null>(null)
+  const [orderReceiptPreview, setOrderReceiptPreview] = useState<string | null>(null)
   const [isSavingOrder, setIsSavingOrder] = useState(false)
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false)
   const [receivingOrder, setReceivingOrder] = useState<ExpandedOrder | null>(null)
@@ -244,6 +247,7 @@ export default function ProductosPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [removeImage, setRemoveImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const receiptInputRef = useRef<HTMLInputElement>(null)
 
   // Permission check
   const canDelete = user?.role === 'owner' || user?.role === 'partner'
@@ -586,6 +590,9 @@ export default function ProductosPage() {
     setOrderItems([])
     setOrderTotal('')
     setOrderNotes('')
+    setOrderEstimatedArrival('')
+    setOrderReceiptFile(null)
+    setOrderReceiptPreview(null)
     setOrderProductSearchQuery('')
     setError('')
   }, [])
@@ -637,13 +644,22 @@ export default function ProductosPage() {
     setError('')
 
     try {
-      // Create the order
-      const order = await pb.collection('orders').create<Order>({
-        date: new Date().toISOString(),
-        total: totalNum,
-        status: 'pending',
-        notes: orderNotes.trim() || undefined,
-      })
+      // Create the order using FormData for file upload
+      const formData = new FormData()
+      formData.append('date', new Date().toISOString())
+      formData.append('total', totalNum.toString())
+      formData.append('status', 'pending')
+      if (orderNotes.trim()) {
+        formData.append('notes', orderNotes.trim())
+      }
+      if (orderEstimatedArrival) {
+        formData.append('estimatedArrival', new Date(orderEstimatedArrival).toISOString())
+      }
+      if (orderReceiptFile) {
+        formData.append('receipt', orderReceiptFile)
+      }
+
+      const order = await pb.collection('orders').create<Order>(formData)
 
       // Create order items
       for (const item of orderItems) {
@@ -670,7 +686,7 @@ export default function ProductosPage() {
     } finally {
       setIsSavingOrder(false)
     }
-  }, [orderItems, orderTotal, orderNotes, pb, resetOrderForm])
+  }, [orderItems, orderTotal, orderNotes, orderEstimatedArrival, orderReceiptFile, pb, resetOrderForm])
 
   const handleOpenReceiveOrder = useCallback((order: ExpandedOrder) => {
     setReceivingOrder(order)
@@ -823,7 +839,7 @@ export default function ProductosPage() {
                     className="btn btn-secondary btn-icon flex-shrink-0"
                     aria-label="Ordenar productos"
                   >
-                    <IconFilter className="w-5 h-5" />
+                    <IconFilter className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -1399,7 +1415,7 @@ export default function ProductosPage() {
                 key={product.id}
                 type="button"
                 onClick={() => handleAddProductToOrder(product)}
-                className="flex items-center gap-2 p-2 rounded-lg border border-border hover:border-brand hover:bg-brand-subtle transition-colors text-left"
+                className="flex items-center gap-2 p-2 rounded-lg border border-border hover:border-brand hover:bg-brand-subtle transition-colors text-left min-w-0"
               >
                 <div className="w-8 h-8 rounded bg-bg-muted flex items-center justify-center flex-shrink-0">
                   {getProductImageUrl(product, '100x100') ? (
@@ -1415,7 +1431,7 @@ export default function ProductosPage() {
                     <IconImage className="w-4 h-4 text-text-tertiary" />
                   )}
                 </div>
-                <span className="text-sm truncate">{product.name}</span>
+                <span className="text-sm truncate flex-1 min-w-0">{product.name}</span>
               </button>
             ))}
           </div>
@@ -1426,24 +1442,40 @@ export default function ProductosPage() {
               <label className="label">Productos en pedido</label>
               <div className="space-y-2">
                 {orderItems.map(item => (
-                  <div key={item.product.id} className="flex items-center gap-3 p-2 rounded-lg bg-bg-muted">
-                    <span className="flex-1 text-sm">{item.product.name}</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateOrderItemQuantity(item.product.id, item.quantity - 1)}
-                        className="w-8 h-8 rounded-lg border border-border hover:border-brand flex items-center justify-center"
-                      >
-                        <IconArrowDown className="w-4 h-4" />
-                      </button>
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateOrderItemQuantity(item.product.id, item.quantity + 1)}
-                        className="w-8 h-8 rounded-lg border border-border hover:border-brand flex items-center justify-center"
-                      >
-                        <IconArrowUp className="w-4 h-4" />
-                      </button>
+                  <div key={item.product.id} className="flex items-center gap-3">
+                    <span className="flex-1 text-sm truncate min-w-0">{item.product.name}</span>
+                    <div className="input-number-wrapper w-24 flex-shrink-0">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="1"
+                        value={item.quantity}
+                        onChange={e => {
+                          const val = parseInt(e.target.value)
+                          if (!isNaN(val) && val > 0) {
+                            handleUpdateOrderItemQuantity(item.product.id, val)
+                          }
+                        }}
+                        className="input"
+                      />
+                      <div className="input-number-spinners">
+                        <button
+                          type="button"
+                          className="input-number-spinner"
+                          onClick={() => handleUpdateOrderItemQuantity(item.product.id, item.quantity + 1)}
+                          tabIndex={-1}
+                        >
+                          <IconArrowUp />
+                        </button>
+                        <button
+                          type="button"
+                          className="input-number-spinner"
+                          onClick={() => handleUpdateOrderItemQuantity(item.product.id, item.quantity - 1)}
+                          tabIndex={-1}
+                        >
+                          <IconArrowDown />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1465,6 +1497,86 @@ export default function ProductosPage() {
               className="input"
               placeholder="0.00"
             />
+          </div>
+
+          {/* Estimated Arrival */}
+          <div>
+            <label htmlFor="orderEstimatedArrival" className="label">Fecha estimada de llegada (opcional)</label>
+            <input
+              id="orderEstimatedArrival"
+              type="date"
+              value={orderEstimatedArrival}
+              onChange={e => setOrderEstimatedArrival(e.target.value)}
+              className="input"
+            />
+          </div>
+
+          {/* Receipt/Proof of Purchase */}
+          <div>
+            <label className="label">Comprobante (opcional)</label>
+            <input
+              ref={receiptInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={e => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  setOrderReceiptFile(file)
+                  if (file.type.startsWith('image/')) {
+                    const reader = new FileReader()
+                    reader.onload = () => setOrderReceiptPreview(reader.result as string)
+                    reader.readAsDataURL(file)
+                  } else {
+                    setOrderReceiptPreview(null)
+                  }
+                }
+              }}
+              className="hidden"
+            />
+            {orderReceiptPreview ? (
+              <div className="relative">
+                <img
+                  src={orderReceiptPreview}
+                  alt="Comprobante"
+                  className="w-full h-40 object-cover rounded-lg border border-border"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOrderReceiptFile(null)
+                    setOrderReceiptPreview(null)
+                    if (receiptInputRef.current) receiptInputRef.current.value = ''
+                  }}
+                  className="absolute top-2 right-2 p-1 bg-bg-surface rounded-full border border-border"
+                >
+                  <IconClose className="w-4 h-4" />
+                </button>
+              </div>
+            ) : orderReceiptFile ? (
+              <div className="flex items-center gap-3 p-3 bg-bg-muted rounded-lg">
+                <span className="text-sm text-text-secondary truncate flex-1 min-w-0">{orderReceiptFile.name}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOrderReceiptFile(null)
+                    if (receiptInputRef.current) receiptInputRef.current.value = ''
+                  }}
+                  className="p-1"
+                >
+                  <IconClose className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => receiptInputRef.current?.click()}
+                className="btn btn-secondary w-full"
+              >
+                <IconImage className="w-4 h-4" />
+                Adjuntar comprobante
+              </button>
+            )}
+            <p className="text-xs text-text-tertiary mt-1">Recibo, captura de Yape, etc.</p>
           </div>
 
           {/* Notes */}
