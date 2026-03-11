@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Spinner, Modal } from '@/components/ui'
-import { IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight, IconCloseDrawer, IconMovement, IconTransfer, IconHistory } from '@/components/icons'
+import { IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight, IconCloseDrawer, IconMovement, IconTransfer, IconHistory, IconArrowUp } from '@/components/icons'
 import { BalanceHero } from '@/components/caja/BalanceHero'
 import { CelebrationOverlay, LottiePlayer } from '@/components/animations'
 import { useAuth } from '@/contexts/auth-context'
@@ -436,6 +436,13 @@ export default function CajaPage() {
     }).replace(/a\.\s*m\./gi, 'a.m.').replace(/p\.\s*m\./gi, 'p.m.')
   }
 
+  const scrollToTop = useCallback(() => {
+    const scrollContainer = document.querySelector('.with-sidebar')
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [])
+
   // ============================================
   // RENDER
   // ============================================
@@ -618,6 +625,18 @@ export default function CajaPage() {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/* Back to top button */}
+              {movements.length > 5 && (
+                <button
+                  type="button"
+                  onClick={scrollToTop}
+                  className="w-full py-3 mt-4 flex items-center justify-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  <IconArrowUp className="w-4 h-4" />
+                  Volver arriba
+                </button>
               )}
             </>
           )}
