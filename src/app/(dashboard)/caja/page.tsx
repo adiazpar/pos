@@ -85,6 +85,7 @@ export default function CajaPage() {
   const [showCelebration, setShowCelebration] = useState(false)
   const [celebrationStats, setCelebrationStats] = useState<{ label: string; value: string }[]>([])
   const [newMovementId, setNewMovementId] = useState<string | null>(null)
+  const [showOpenAnimation, setShowOpenAnimation] = useState(false)
 
   // Modal states (continued)
   const [isLoansModalOpen, setIsLoansModalOpen] = useState(false)
@@ -272,6 +273,9 @@ export default function CajaPage() {
       // Close modal and reset form
       setIsOpenDrawerModalOpen(false)
       setOpeningBalance('')
+
+      // Show opening animation after modal closes
+      setTimeout(() => setShowOpenAnimation(true), 200)
     } catch (err) {
       console.error('Error opening drawer:', err)
       setError('Error al abrir la caja')
@@ -1157,12 +1161,25 @@ export default function CajaPage() {
         )}
       </Modal>
 
+      {/* Opening animation overlay */}
+      {showOpenAnimation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <LottiePlayer
+            src="/animations/tap-burst.lottie"
+            loop={false}
+            autoplay={true}
+            style={{ width: 280, height: 280 }}
+            onComplete={() => setShowOpenAnimation(false)}
+          />
+        </div>
+      )}
+
       {/* Celebration overlay for drawer close */}
       <CelebrationOverlay
         isVisible={showCelebration}
         onClose={() => setShowCelebration(false)}
         title="Caja cerrada"
-        subtitle="Buen trabajo hoy"
+        subtitle="Buen trabajo hoy!"
         stats={celebrationStats}
       />
     </>

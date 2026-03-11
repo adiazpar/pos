@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { IconClose } from '@/components/icons'
 import { LottiePlayer } from './LottiePlayer'
 
 interface CelebrationOverlayProps {
@@ -18,115 +19,101 @@ export function CelebrationOverlay({
   subtitle,
   stats
 }: CelebrationOverlayProps) {
-  const [showContent, setShowContent] = useState(false)
+  const [render, setRender] = useState(false)
+  const [closing, setClosing] = useState(false)
 
   useEffect(() => {
     if (isVisible) {
-      // Slight delay before showing content for better animation
-      const timer = setTimeout(() => setShowContent(true), 300)
+      setRender(true)
+      setClosing(false)
+    } else if (render) {
+      setClosing(true)
+      const timer = setTimeout(() => {
+        setRender(false)
+        setClosing(false)
+      }, 150)
       return () => clearTimeout(timer)
-    } else {
-      setShowContent(false)
     }
-  }, [isVisible])
+  }, [isVisible, render])
 
-  if (!isVisible) return null
+  useEffect(() => {
+    if (!render) return
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [render, onClose])
+
+  if (!render) return null
 
   return (
     <div
-      className="celebration-overlay"
+      className={`modal-backdrop ${closing ? 'modal-backdrop-exit' : 'modal-backdrop-animated'}`}
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="celebration-title"
     >
-      {/* Confetti animation in background - plays once */}
       <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-        aria-hidden="true"
+        className={`modal ${closing ? 'modal-exit' : 'modal-animated'}`}
+        onClick={e => e.stopPropagation()}
       >
-        <LottiePlayer
-          src="/animations/confetti-celebration.json"
-          loop={false}
-          autoplay={true}
-          speed={1}
-          style={{ width: '100%', height: '100%', maxWidth: '600px' }}
-        />
-      </div>
-
-      {/* Content card */}
-      {showContent && (
-        <div className="celebration-content" onClick={(e) => e.stopPropagation()}>
-          <div style={{ fontSize: '4rem', marginBottom: 'var(--space-2)' }} aria-hidden="true">
-            &#127881;
-          </div>
-          <h2
-            id="celebration-title"
-            style={{
-              fontSize: 'var(--text-2xl)',
-              fontWeight: 700,
-              color: 'var(--color-text-primary)',
-              margin: 0
-            }}
-          >
-            {title}
-          </h2>
-          {subtitle && (
-            <p style={{
-              fontSize: 'var(--text-base)',
-              color: 'var(--color-text-secondary)',
-              margin: 'var(--space-2) 0 0 0'
-            }}>
-              {subtitle}
-            </p>
-          )}
-          {stats && stats.length > 0 && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${Math.min(stats.length, 3)}, 1fr)`,
-              gap: 'var(--space-4)',
-              marginTop: 'var(--space-6)',
-              padding: 'var(--space-4)',
-              background: 'var(--color-bg-muted)',
-              borderRadius: 'var(--radius-lg)',
-              width: '100%'
-            }}>
-              {stats.map((stat, idx) => (
-                <div key={idx} style={{ textAlign: 'center' }}>
-                  <div style={{
-                    fontSize: 'var(--text-xl)',
-                    fontWeight: 700,
-                    fontFamily: 'var(--font-display)',
-                    color: 'var(--color-text-primary)'
-                  }}>
-                    {stat.value}
-                  </div>
-                  <div style={{
-                    fontSize: 'var(--text-sm)',
-                    color: 'var(--color-text-secondary)',
-                    marginTop: 'var(--space-1)'
-                  }}>
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
+        <div className="modal-header">
+          <h2 className="modal-title" id="celebration-title">{title}</h2>
+          <button type="button" onClick={onClose} className="modal-close" aria-label="Cerrar">
+            <IconClose className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="modal-body">
+          <div className="flex flex-col items-center text-center">
+            {/* Lottie animation */}
+            <div className="mb-6">
+              <LottiePlayer
+                src="/animations/trophy.lottie"
+                loop={false}
+                autoplay={true}
+                style={{ width: 200, height: 200 }}
+              />
             </div>
-          )}
+
+            {(subtitle || (stats && stats.length > 0)) && (
+              <div className="w-full p-4 bg-bg-muted rounded-lg">
+                {subtitle && (
+                  <p className="text-text-secondary text-center mb-4">
+                    {subtitle}
+                  </p>
+                )}
+                {stats && stats.length > 0 && (
+                  <div
+                    className="grid gap-4"
+                    style={{ gridTemplateColumns: `repeat(${Math.min(stats.length, 3)}, 1fr)` }}
+                  >
+                    {stats.map((stat, idx) => (
+                      <div key={idx} className="text-center">
+                        <div className="text-xl font-bold font-display text-text-primary">
+                          {stat.value}
+                        </div>
+                        <div className="text-sm text-text-secondary mt-1">
+                          {stat.label}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="modal-footer">
           <button
-            className="btn btn-primary btn-lg"
+            className="btn btn-primary flex-1"
             onClick={onClose}
-            style={{ marginTop: 'var(--space-6)', minWidth: '200px' }}
           >
             Continuar
           </button>
         </div>
-      )}
+      </div>
     </div>
   )
 }
