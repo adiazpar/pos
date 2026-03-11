@@ -13,6 +13,7 @@ interface BalanceHeroProps {
   lastMovementType?: 'ingreso' | 'retiro' | null
   status?: string
   timestamp?: string
+  isClosed?: boolean
 }
 
 export function BalanceHero({
@@ -21,7 +22,8 @@ export function BalanceHero({
   trend,
   lastMovementType,
   status,
-  timestamp
+  timestamp,
+  isClosed = false
 }: BalanceHeroProps) {
   // Start from 0 for initial count-up animation
   const [displayBalance, setDisplayBalance] = useState(0)
@@ -76,24 +78,21 @@ export function BalanceHero({
 
   const formattedBalance = formatCurrency(displayBalance)
   // Extract just the numeric amount (remove S/ prefix)
-  const amount = formattedBalance.replace('S/', '').trim()
+  const amount = isClosed ? '-.--' : formattedBalance.replace('S/', '').trim()
 
   return (
     <div className="balance-hero-container">
       {/* Status row - subtle text in corners */}
-      {(status || timestamp) && (
-        <div className="balance-hero__status-row">
-          {status && <span className="balance-hero__status">{status}</span>}
-          {timestamp && <span className="balance-hero__timestamp">{timestamp}</span>}
-        </div>
-      )}
-
-      {/* Animated background glow */}
-      <div className="balance-glow" />
+      <div className="balance-hero__status-row">
+        <span className={`balance-hero__status ${isClosed ? 'balance-hero__status--closed' : ''}`}>
+          {isClosed ? 'CERRADA' : status}
+        </span>
+        {!isClosed && timestamp && <span className="balance-hero__timestamp">{timestamp}</span>}
+      </div>
 
       {/* Main balance display */}
       <div className={`balance-pulse ${pulseClass}`}>
-        <div className={`balance-hero ${isUpdating ? 'updating' : ''}`}>
+        <div className={`balance-hero ${isUpdating && !isClosed ? 'updating' : ''}`}>
           <span style={{
             fontSize: 'var(--text-xl)',
             fontWeight: 600,

@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Spinner, Modal } from '@/components/ui'
-import { IconClose, IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight, IconCloseDrawer, IconMovement, IconTransfer } from '@/components/icons'
+import { IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight, IconCloseDrawer, IconMovement, IconTransfer, IconHistory } from '@/components/icons'
 import { BalanceHero } from '@/components/caja/BalanceHero'
-import { EmptyStateAnimation, CelebrationOverlay, SuccessOverlay } from '@/components/animations'
+import { CelebrationOverlay, LottiePlayer } from '@/components/animations'
 import { useAuth } from '@/contexts/auth-context'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { CashSession, CashMovement, CashMovementType, CashMovementCategory } from '@/types'
@@ -13,8 +13,6 @@ import type { CashSession, CashMovement, CashMovementType, CashMovementCategory 
 // ============================================
 // CONSTANTS
 // ============================================
-
-type PageTab = 'caja' | 'historial'
 
 const CATEGORY_LABELS: Record<CashMovementCategory, string> = {
   venta: 'Venta',
@@ -52,9 +50,6 @@ const EGRESO_CATEGORIES: CashMovementCategory[] = [
 export default function CajaPage() {
   const { user, pb } = useAuth()
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<PageTab>('caja')
-
   // Session state
   const [currentSession, setCurrentSession] = useState<CashSession | null>(null)
   const [movements, setMovements] = useState<CashMovement[]>([])
@@ -89,14 +84,11 @@ export default function CajaPage() {
   const [lastMovementType, setLastMovementType] = useState<'ingreso' | 'retiro' | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const [celebrationStats, setCelebrationStats] = useState<{ label: string; value: string }[]>([])
-  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false)
-  const [successOverlayData, setSuccessOverlayData] = useState<{
-    type: 'ingreso' | 'retiro'
-    amount: number
-  } | null>(null)
+  const [newMovementId, setNewMovementId] = useState<string | null>(null)
 
   // Modal states (continued)
   const [isLoansModalOpen, setIsLoansModalOpen] = useState(false)
+  const [isHistorialModalOpen, setIsHistorialModalOpen] = useState(false)
 
   // ============================================
   // CALCULATED VALUES
@@ -378,16 +370,15 @@ export default function CajaPage() {
       setLastMovementType(movementType)
       setTimeout(() => setLastMovementType(null), 500)
 
+      // Track new movement for inline animation
+      setNewMovementId(movementWithExpand.id)
+
       // Close modal and reset form
       setIsMovementModalOpen(false)
       setMovementType('ingreso')
       setMovementCategory('')
       setMovementAmount('')
       setMovementNote('')
-
-      // Show friendly success overlay with animation
-      setSuccessOverlayData({ type: movementType, amount })
-      setShowSuccessOverlay(true)
     } catch (err) {
       console.error('Error recording movement:', err)
       alert('Error al registrar el movimiento')
@@ -471,103 +462,120 @@ export default function CajaPage() {
           </div>
         )}
 
-        {/* Section Tabs */}
-        <div className="section-tabs">
-          <button
-            type="button"
-            onClick={() => setActiveTab('caja')}
-            className={`section-tab ${activeTab === 'caja' ? 'section-tab-active' : ''}`}
-          >
-            Caja
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('historial')}
-            className={`section-tab ${activeTab === 'historial' ? 'section-tab-active' : ''}`}
-          >
-            Historial
-          </button>
-        </div>
+        <div className="space-y-6 page-stagger">
+          {/* Balance Hero with status */}
+          <BalanceHero
+            balance={expectedBalance}
+            label={currentSession ? "Saldo esperado" : ""}
+            lastMovementType={lastMovementType}
+            status={currentSession ? "Abierta" : undefined}
+            timestamp={currentSession ? formatDateTime(currentSession.openedAt) : undefined}
+            isClosed={!currentSession}
+            trend={currentSession && movements.length > 0 ? {
+              direction: expectedBalance >= currentSession.openingBalance ? 'up' : 'down',
+              amount: Math.abs(expectedBalance - currentSession.openingBalance)
+            } : undefined}
+          />
 
-        {activeTab === 'caja' ? (
-          currentSession ? (
-            // Open drawer view
-            <div className="space-y-6 page-stagger">
-                {/* Balance Hero with status */}
-                <BalanceHero
-                  balance={expectedBalance}
-                  label="Saldo esperado"
-                  lastMovementType={lastMovementType}
-                  status="Abierta"
-                  timestamp={formatDateTime(currentSession.openedAt)}
-                  trend={movements.length > 0 ? {
-                    direction: expectedBalance >= currentSession.openingBalance ? 'up' : 'down',
-                    amount: Math.abs(expectedBalance - currentSession.openingBalance)
-                  } : undefined}
-                />
+          {/* Action Buttons - 2x2 grid */}
+          <div className="caja-actions">
+            {/* Row 1: Abrir/Cerrar, Historial */}
+            {currentSession ? (
+              <button
+                type="button"
+                onClick={() => setIsCloseDrawerModalOpen(true)}
+                className="caja-action-btn"
+              >
+                <IconCloseDrawer className="caja-action-btn__icon" />
+                Cerrar
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsOpenDrawerModalOpen(true)}
+                className="caja-action-btn"
+              >
+                <IconAdd className="caja-action-btn__icon" />
+                Abrir
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsHistorialModalOpen(true)}
+              className="caja-action-btn"
+            >
+              <IconHistory className="caja-action-btn__icon" />
+              Historial
+            </button>
+            {/* Row 2: Movimientos, Prestamos */}
+            <button
+              type="button"
+              onClick={() => setIsMovementModalOpen(true)}
+              className="caja-action-btn"
+              disabled={!currentSession}
+            >
+              <IconMovement className="caja-action-btn__icon" />
+              Movimientos ({movements.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsLoansModalOpen(true)}
+              className="caja-action-btn"
+              disabled={!currentSession}
+            >
+              <IconTransfer className="caja-action-btn__icon" />
+              Prestamos ({outstandingLoans.size})
+            </button>
+          </div>
 
-                {/* Action Buttons */}
-                <div className="caja-actions">
-                  <button
-                    type="button"
-                    onClick={() => setIsMovementModalOpen(true)}
-                    className="caja-action-btn caja-action-btn--primary"
-                  >
-                    <IconMovement className="caja-action-btn__icon" />
-                    Movimientos ({movements.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsCloseDrawerModalOpen(true)}
-                    className="caja-action-btn caja-action-btn--danger"
-                  >
-                    <IconCloseDrawer className="caja-action-btn__icon" />
-                    Cerrar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsLoansModalOpen(true)}
-                    className="caja-action-btn caja-action-btn--warning"
-                  >
-                    <IconTransfer className="caja-action-btn__icon" />
-                    Prestamos ({outstandingLoans.size})
-                  </button>
+          {/* Movements Section (only when session is open) */}
+          {currentSession && (
+            <>
+              {/* Movements Header */}
+              <div className="flex items-center">
+                <span className="text-sm text-text-secondary">
+                  {movements.length} {movements.length === 1 ? 'movimiento' : 'movimientos'}
+                </span>
+              </div>
+
+              {/* Movements List */}
+              {movements.length === 0 ? (
+                <div className="text-center py-8 text-text-tertiary">
+                  No hay movimientos registrados
                 </div>
-
-                {/* Movements Header */}
-                <div className="flex items-center">
-                  <span className="text-sm text-text-secondary">
-                    {movements.length} {movements.length === 1 ? 'movimiento' : 'movimientos'}
-                  </span>
-                </div>
-
-                {/* Movements List */}
-                {movements.length === 0 ? (
-                  <div className="text-center py-8 text-text-tertiary">
-                    No hay movimientos registrados
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {[...movements].sort((a, b) => {
-                      // Sort by created time descending (newest first)
-                      // Fallback to ID comparison since PocketBase IDs are time-sortable
-                      if (a.created && b.created) {
-                        const timeA = new Date(a.created).getTime()
-                        const timeB = new Date(b.created).getTime()
-                        if (!isNaN(timeA) && !isNaN(timeB)) {
-                          return timeB - timeA
-                        }
+              ) : (
+                <div className="space-y-2">
+                  {[...movements].sort((a, b) => {
+                    // Sort by created time descending (newest first)
+                    // Fallback to ID comparison since PocketBase IDs are time-sortable
+                    if (a.created && b.created) {
+                      const timeA = new Date(a.created).getTime()
+                      const timeB = new Date(b.created).getTime()
+                      if (!isNaN(timeA) && !isNaN(timeB)) {
+                        return timeB - timeA
                       }
-                      // Fallback: compare IDs (PocketBase IDs are lexicographically sortable)
-                      return b.id.localeCompare(a.id)
-                    }).map((mov, index) => (
-                      <div
-                        key={mov.id}
-                        className={`movement-item ${
-                          mov.type === 'ingreso' ? 'movement-item--ingreso' : 'movement-item--retiro'
-                        } entering`}
-                        style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
-                      >
+                    }
+                    // Fallback: compare IDs (PocketBase IDs are lexicographically sortable)
+                    return b.id.localeCompare(a.id)
+                  }).map((mov, index) => (
+                    <div
+                      key={mov.id}
+                      className={`movement-item ${
+                        mov.type === 'ingreso' ? 'movement-item--ingreso' : 'movement-item--retiro'
+                      } entering`}
+                      style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
+                    >
+                      {mov.id === newMovementId ? (
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <LottiePlayer
+                            src="/animations/success.lottie"
+                            loop={false}
+                            autoplay={true}
+                            style={{ width: 40, height: 40 }}
+                            onComplete={() => setNewMovementId(null)}
+                          />
+                        </div>
+                      ) : (
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                             mov.type === 'ingreso'
@@ -581,146 +589,41 @@ export default function CajaPage() {
                             <IconRetiro className="w-5 h-5" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="font-medium block">
-                            {CATEGORY_LABELS[mov.category]}
-                          </span>
-                          {(mov.category === 'prestamo_empleado' || mov.category === 'devolucion_prestamo') && mov.expand?.employee && (
-                            <span className="text-xs text-text-secondary truncate block mt-0.5">
-                              {mov.expand.employee.name}
-                            </span>
-                          )}
-                          {mov.note && (
-                            <span className="text-xs text-text-tertiary truncate block mt-0.5">
-                              {mov.note}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <span
-                            className={`font-medium block ${
-                              mov.type === 'ingreso' ? 'text-success' : 'text-error'
-                            }`}
-                          >
-                            {mov.type === 'ingreso' ? '+' : '-'}{formatCurrency(mov.amount)}
-                          </span>
-                          <span className="text-xs text-text-tertiary block mt-0.5">
-                            {formatTime(mov.created)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-            </div>
-          ) : (
-            // Closed drawer view with animated empty state
-            <EmptyStateAnimation
-              title="Caja cerrada"
-              description="Abre la caja para comenzar a registrar movimientos"
-              action={
-                <button
-                  type="button"
-                  onClick={() => setIsOpenDrawerModalOpen(true)}
-                  className="btn btn-primary btn-lg"
-                >
-                  Abrir caja
-                </button>
-              }
-            />
-          )
-        ) : (
-          // Historial tab
-          sessions.length === 0 ? (
-            <EmptyStateAnimation
-              title="No hay sesiones"
-              description="Las sesiones de caja apareceran aqui"
-              className="empty-state-fill"
-            />
-          ) : (
-            <div className="space-y-4">
-              {/* Summary Stats */}
-              <div className="session-stats" role="region" aria-label="Resumen de sesiones">
-                <div className="session-stat">
-                  <div className="session-stat__value">{sessions.length}</div>
-                  <div className="session-stat__label">{sessions.length === 1 ? 'Sesion' : 'Sesiones'}</div>
-                </div>
-                <div className="session-stat">
-                  <div className="session-stat__value">
-                    {sessions.filter(s => s.closedAt).length}
-                  </div>
-                  <div className="session-stat__label">Cerradas</div>
-                </div>
-                <div className="session-stat">
-                  <div className="session-stat__value">
-                    {sessions.filter(s => !s.closedAt).length}
-                  </div>
-                  <div className="session-stat__label">Abiertas</div>
-                </div>
-              </div>
-
-              {/* Sessions List */}
-              <div className="space-y-2">
-                {sessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className={`session-item entering ${
-                      session.closedAt ? 'session-item--closed' : 'session-item--open'
-                    }`}
-                    onClick={() => handleViewSessionDetail(session)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        handleViewSessionDetail(session)
-                      }
-                    }}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`Sesion del ${formatDate(session.openedAt)}, ${session.closedAt ? 'cerrada' : 'abierta'}`}
-                  >
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      session.closedAt
-                        ? 'bg-success-subtle text-success'
-                        : 'bg-warning-subtle text-warning'
-                    }`}>
-                      {session.closedAt ? (
-                        <IconCheck className="w-5 h-5" />
-                      ) : (
-                        <IconClock className="w-5 h-5" />
                       )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium block">
-                        {formatDate(session.openedAt)}
-                      </span>
-                      <div className="text-xs text-text-tertiary mt-0.5">
-                        Apertura: {formatCurrency(session.openingBalance)}
-                        {session.closedAt && session.closingBalance !== undefined && (
-                          <>
-                            <span className="mx-1.5">·</span>
-                            Cierre: {formatCurrency(session.closingBalance)}
-                          </>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium block">
+                          {CATEGORY_LABELS[mov.category]}
+                        </span>
+                        {(mov.category === 'prestamo_empleado' || mov.category === 'devolucion_prestamo') && mov.expand?.employee && (
+                          <span className="text-xs text-text-secondary truncate block mt-0.5">
+                            {mov.expand.employee.name}
+                          </span>
+                        )}
+                        {mov.note && (
+                          <span className="text-xs text-text-tertiary truncate block mt-0.5">
+                            {mov.note}
+                          </span>
                         )}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {session.discrepancy !== undefined && session.discrepancy !== 0 && (
+                      <div className="text-right">
                         <span
-                          className={`text-sm font-medium ${
-                            session.discrepancy > 0 ? 'text-success' : 'text-error'
+                          className={`font-medium block ${
+                            mov.type === 'ingreso' ? 'text-success' : 'text-error'
                           }`}
                         >
-                          {session.discrepancy > 0 ? '+' : ''}{formatCurrency(session.discrepancy)}
+                          {mov.type === 'ingreso' ? '+' : '-'}{formatCurrency(mov.amount)}
                         </span>
-                      )}
-                      <IconChevronRight className="w-5 h-5 text-text-tertiary" />
+                        <span className="text-xs text-text-tertiary block mt-0.5">
+                          {formatTime(mov.created)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        )}
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </main>
 
 
@@ -1122,18 +1025,106 @@ export default function CajaPage() {
         )}
       </Modal>
 
-      {/* Success overlay for movement recording */}
-      {successOverlayData && (
-        <SuccessOverlay
-          isVisible={showSuccessOverlay}
-          onClose={() => {
-            setShowSuccessOverlay(false)
-            setSuccessOverlayData(null)
-          }}
-          type={successOverlayData.type}
-          amount={successOverlayData.amount}
-        />
-      )}
+      {/* Historial Modal */}
+      <Modal
+        isOpen={isHistorialModalOpen}
+        onClose={() => setIsHistorialModalOpen(false)}
+        title="Historial de sesiones"
+        size="large"
+      >
+        {sessions.length === 0 ? (
+          <div className="text-center py-8 text-text-tertiary">
+            No hay sesiones registradas
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Summary Stats */}
+            <div className="session-stats" role="region" aria-label="Resumen de sesiones">
+              <div className="session-stat">
+                <div className="session-stat__value">{sessions.length}</div>
+                <div className="session-stat__label">{sessions.length === 1 ? 'Sesion' : 'Sesiones'}</div>
+              </div>
+              <div className="session-stat">
+                <div className="session-stat__value">
+                  {sessions.filter(s => s.closedAt).length}
+                </div>
+                <div className="session-stat__label">Cerradas</div>
+              </div>
+              <div className="session-stat">
+                <div className="session-stat__value">
+                  {sessions.filter(s => !s.closedAt).length}
+                </div>
+                <div className="session-stat__label">Abiertas</div>
+              </div>
+            </div>
+
+            {/* Sessions List */}
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`session-item ${
+                    session.closedAt ? 'session-item--closed' : 'session-item--open'
+                  }`}
+                  onClick={() => {
+                    setIsHistorialModalOpen(false)
+                    // Wait for modal close animation before opening detail
+                    setTimeout(() => handleViewSessionDetail(session), 180)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setIsHistorialModalOpen(false)
+                      setTimeout(() => handleViewSessionDetail(session), 180)
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Sesion del ${formatDate(session.openedAt)}, ${session.closedAt ? 'cerrada' : 'abierta'}`}
+                >
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    session.closedAt
+                      ? 'bg-success-subtle text-success'
+                      : 'bg-warning-subtle text-warning'
+                  }`}>
+                    {session.closedAt ? (
+                      <IconCheck className="w-5 h-5" />
+                    ) : (
+                      <IconClock className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium block">
+                      {formatDate(session.openedAt)}
+                    </span>
+                    <div className="text-xs text-text-tertiary mt-0.5">
+                      Apertura: {formatCurrency(session.openingBalance)}
+                      {session.closedAt && session.closingBalance !== undefined && (
+                        <>
+                          <span className="mx-1.5">·</span>
+                          Cierre: {formatCurrency(session.closingBalance)}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {session.discrepancy !== undefined && session.discrepancy !== 0 && (
+                      <span
+                        className={`text-sm font-medium ${
+                          session.discrepancy > 0 ? 'text-success' : 'text-error'
+                        }`}
+                      >
+                        {session.discrepancy > 0 ? '+' : ''}{formatCurrency(session.discrepancy)}
+                      </span>
+                    )}
+                    <IconChevronRight className="w-5 h-5 text-text-tertiary" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Celebration overlay for drawer close */}
       <CelebrationOverlay

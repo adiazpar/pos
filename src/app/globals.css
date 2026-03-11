@@ -3464,20 +3464,10 @@
 }
 
 .movement-item--ingreso {
-  background: linear-gradient(
-    90deg,
-    hsla(145, 63%, 42%, 0.08) 0%,
-    transparent 40%
-  );
   border-left-color: var(--color-success);
 }
 
 .movement-item--retiro {
-  background: linear-gradient(
-    90deg,
-    hsla(0, 72%, 51%, 0.05) 0%,
-    transparent 40%
-  );
   border-left-color: var(--color-error);
 }
 
@@ -3728,35 +3718,19 @@
   color: var(--color-success);
 }
 
+.balance-hero__status--closed {
+  color: var(--color-error);
+}
+
 .balance-hero__timestamp {
   font-size: var(--text-xs);
   color: var(--color-text-tertiary);
 }
 
-.balance-glow {
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-    circle at 30% 30%,
-    hsla(199, 89%, 48%, 0.08) 0%,
-    transparent 50%
-  );
-  pointer-events: none;
-  animation: glow-pulse 4s ease-in-out infinite;
-}
-
-@keyframes glow-pulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.02); }
-}
-
 /* ===== Caja Action Buttons ===== */
 .caja-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-3);
 }
 
@@ -3777,6 +3751,11 @@
   transition: all var(--duration-fast) var(--ease-out);
 }
 
+.caja-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 @media (hover: hover) {
   .caja-action-btn:hover:not(:disabled) {
     filter: brightness(0.92);
@@ -3788,27 +3767,9 @@
   filter: brightness(0.88);
 }
 
-.caja-action-btn--primary {
-  background: var(--color-brand);
-  border-color: var(--color-brand);
-  color: white;
-}
-
-.caja-action-btn--danger {
-  background: var(--color-error);
-  border-color: var(--color-error);
-  color: white;
-}
-
 .caja-action-btn__icon {
   width: 22px;
   height: 22px;
-}
-
-.caja-action-btn--warning {
-  background: var(--color-warning);
-  border-color: var(--color-warning);
-  color: white;
 }
 
 /* ===== Empty State Animation Container ===== */
@@ -3982,11 +3943,6 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-
-  .balance-glow {
-    animation: none;
-    opacity: 0.6;
   }
 
   .celebration-overlay,
