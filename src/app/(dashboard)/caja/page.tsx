@@ -5,7 +5,8 @@ import { PageHeader } from '@/components/layout'
 import { Spinner, Modal } from '@/components/ui'
 import { IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight, IconCloseDrawer, IconMovement, IconCoins, IconHistory, IconArrowUp } from '@/components/icons'
 import { BalanceHero } from '@/components/caja/BalanceHero'
-import { CelebrationOverlay, LottiePlayer } from '@/components/animations'
+import { CloseDrawerModal } from '@/components/caja/CloseDrawerModal'
+import { LottiePlayer } from '@/components/animations'
 import { useAuth } from '@/contexts/auth-context'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { transitionModals } from '@/lib/modal-utils'
@@ -60,8 +61,6 @@ export default function CajaPage() {
 
   // Form states
   const [openingBalance, setOpeningBalance] = useState('')
-  const [closingBalance, setClosingBalance] = useState('')
-  const [discrepancyNote, setDiscrepancyNote] = useState('')
   const [movementType, setMovementType] = useState<CashMovementType>('ingreso')
   const [movementCategory, setMovementCategory] = useState<CashMovementCategory | ''>('')
   const [movementAmount, setMovementAmount] = useState('')
@@ -69,14 +68,11 @@ export default function CajaPage() {
 
   // Loading states
   const [isOpening, setIsOpening] = useState(false)
-  const [isClosing, setIsClosing] = useState(false)
   const [isSavingMovement, setIsSavingMovement] = useState(false)
   const [isLoadingSessionDetail, setIsLoadingSessionDetail] = useState(false)
 
   // Animation states
   const [lastMovementType, setLastMovementType] = useState<'ingreso' | 'retiro' | null>(null)
-  const [showCelebration, setShowCelebration] = useState(false)
-  const [celebrationStats, setCelebrationStats] = useState<{ label: string; value: string }[]>([])
   const [newMovementId, setNewMovementId] = useState<string | null>(null)
   const [showOpenAnimation, setShowOpenAnimation] = useState(false)
 
@@ -138,11 +134,6 @@ export default function CajaPage() {
 
     return loans
   }, [movements])
-
-  const closingDiscrepancy = useMemo(() => {
-    const actualBalance = parseFloat(closingBalance) || 0
-    return actualBalance - expectedBalance
-  }, [closingBalance, expectedBalance])
 
   // Get the most recent closed session (for reference when opening new drawer)
   const lastClosedSession = useMemo(() => {
@@ -280,59 +271,11 @@ export default function CajaPage() {
     }
   }
 
-  const handleCloseDrawer = async () => {
-    if (!user || !currentSession) return
-
-    const actualBalance = parseFloat(closingBalance)
-    if (isNaN(actualBalance) || actualBalance < 0) {
-      return
-    }
-
-    setIsClosing(true)
-    try {
-      const now = new Date().toISOString()
-
-      // Calculate stats for celebration
-      const totalIngresos = movements.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0)
-      const totalRetiros = movements.filter(m => m.type === 'retiro').reduce((sum, m) => sum + m.amount, 0)
-
-      // Update session with closing info
-      await pb.collection('cash_sessions').update(currentSession.id, {
-        closedAt: now,
-        closedBy: user.id,
-        closingBalance: actualBalance,
-        expectedBalance: expectedBalance,
-        discrepancy: closingDiscrepancy,
-        discrepancyNote: discrepancyNote.trim() || null,
-      })
-
-      // Set up celebration stats
-      setCelebrationStats([
-        { label: 'Movimientos', value: String(movements.length) },
-        { label: 'Ingresos', value: formatCurrency(totalIngresos) },
-        { label: 'Retiros', value: formatCurrency(totalRetiros) },
-      ])
-
-      // Transition from close drawer modal to celebration overlay
-      transitionModals(
-        () => setIsCloseDrawerModalOpen(false),
-        () => setShowCelebration(true)
-      )
-
-      // Refresh data
-      setCurrentSession(null)
-      setMovements([])
-      await loadSessions()
-
-      // Reset form
-      setClosingBalance('')
-      setDiscrepancyNote('')
-    } catch (err) {
-      console.error('Error closing drawer:', err)
-      alert('Error al cerrar la caja')
-    } finally {
-      setIsClosing(false)
-    }
+  const handleCloseDrawerSuccess = async () => {
+    // Refresh data after drawer is closed
+    setCurrentSession(null)
+    setMovements([])
+    await loadSessions()
   }
 
   const handleRecordMovement = async () => {
@@ -720,95 +663,13 @@ export default function CajaPage() {
       </Modal>
 
       {/* Close Drawer Modal */}
-      <Modal
+      <CloseDrawerModal
         isOpen={isCloseDrawerModalOpen}
-        onClose={() => !isClosing && setIsCloseDrawerModalOpen(false)}
-        title="Cerrar caja"
-        footer={
-          <div className="flex gap-3 w-full">
-            <button
-              type="button"
-              onClick={() => setIsCloseDrawerModalOpen(false)}
-              className="btn btn-secondary flex-1"
-              disabled={isClosing}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleCloseDrawer}
-              className="btn btn-primary flex-1"
-              disabled={isClosing || !closingBalance || parseFloat(closingBalance) < 0}
-            >
-              {isClosing ? <Spinner /> : 'Cerrar'}
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <div className="p-3 rounded-lg bg-bg-muted">
-            <div className="text-sm text-text-secondary">Saldo esperado</div>
-            <div className="text-xl font-display font-bold text-text-primary mt-1">
-              {formatCurrency(expectedBalance)}
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="closing-balance" className="label">Saldo real (S/)</label>
-            <input
-              id="closing-balance"
-              type="number"
-              inputMode="decimal"
-              value={closingBalance}
-              onChange={(e) => setClosingBalance(e.target.value)}
-              className="input"
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-              autoFocus
-            />
-          </div>
-
-          {closingBalance && (
-            <div
-              className={`p-3 rounded-lg ${
-                closingDiscrepancy === 0
-                  ? 'bg-success-subtle'
-                  : closingDiscrepancy > 0
-                    ? 'bg-warning-subtle'
-                    : 'bg-error-subtle'
-              }`}
-            >
-              <div className="text-sm text-text-secondary">Diferencia</div>
-              <div
-                className={`text-xl font-display font-bold mt-1 ${
-                  closingDiscrepancy === 0
-                    ? 'text-success'
-                    : closingDiscrepancy > 0
-                      ? 'text-warning'
-                      : 'text-error'
-                }`}
-              >
-                {closingDiscrepancy > 0 ? '+' : ''}{formatCurrency(closingDiscrepancy)}
-              </div>
-            </div>
-          )}
-
-          {closingBalance && closingDiscrepancy !== 0 && (
-            <div>
-              <label htmlFor="discrepancy-note" className="label">Nota (opcional)</label>
-              <textarea
-                id="discrepancy-note"
-                value={discrepancyNote}
-                onChange={(e) => setDiscrepancyNote(e.target.value)}
-                className="input"
-                placeholder="Explica la diferencia..."
-                rows={2}
-              />
-            </div>
-          )}
-        </div>
-      </Modal>
+        onClose={() => setIsCloseDrawerModalOpen(false)}
+        onSuccess={handleCloseDrawerSuccess}
+        currentSession={currentSession}
+        movements={movements}
+      />
 
       {/* Movement Modal */}
       <Modal
@@ -1173,14 +1034,6 @@ export default function CajaPage() {
         </div>
       )}
 
-      {/* Celebration overlay for drawer close */}
-      <CelebrationOverlay
-        isVisible={showCelebration}
-        onClose={() => setShowCelebration(false)}
-        title="Caja cerrada"
-        subtitle="Buen trabajo hoy!"
-        stats={celebrationStats}
-      />
     </>
   )
 }

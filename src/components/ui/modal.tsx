@@ -6,6 +6,7 @@ import { IconClose } from '@/components/icons'
 export interface ModalProps {
   isOpen: boolean
   onClose: () => void
+  onExitComplete?: () => void
   title: string
   children: React.ReactNode
   footer?: React.ReactNode
@@ -15,6 +16,7 @@ export interface ModalProps {
 export function Modal({
   isOpen,
   onClose,
+  onExitComplete,
   title,
   children,
   footer,
@@ -32,10 +34,11 @@ export function Modal({
       const timer = setTimeout(() => {
         setRender(false)
         setClosing(false)
+        onExitComplete?.()
       }, 150)
       return () => clearTimeout(timer)
     }
-  }, [isOpen])
+  }, [isOpen, onExitComplete])
 
   useEffect(() => {
     if (!render) return

@@ -3659,6 +3659,64 @@
   to { opacity: 0; }
 }
 
+/* ===== Modal Content Morph ===== */
+.morph-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.morph-footer {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+/* Content exit animation - staggered fade up */
+.morph-content-exit > .morph-item {
+  animation: morph-item-exit var(--duration-fast) ease-in forwards;
+}
+
+.morph-content-exit > .morph-item:nth-child(1) { animation-delay: 0ms; }
+.morph-content-exit > .morph-item:nth-child(2) { animation-delay: 40ms; }
+.morph-content-exit > .morph-item:nth-child(3) { animation-delay: 80ms; }
+.morph-content-exit > .morph-item:nth-child(4) { animation-delay: 120ms; }
+.morph-content-exit > .morph-item:nth-child(5) { animation-delay: 160ms; }
+
+/* Content enter animation - staggered fade in from below */
+.morph-content-enter > .morph-item {
+  animation: morph-item-enter var(--duration-fast) ease-out forwards;
+  opacity: 0;
+}
+
+.morph-content-enter > .morph-item:nth-child(1) { animation-delay: 0ms; }
+.morph-content-enter > .morph-item:nth-child(2) { animation-delay: 40ms; }
+.morph-content-enter > .morph-item:nth-child(3) { animation-delay: 80ms; }
+.morph-content-enter > .morph-item:nth-child(4) { animation-delay: 120ms; }
+.morph-content-enter > .morph-item:nth-child(5) { animation-delay: 160ms; }
+
+@keyframes morph-item-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes morph-item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ===== Page Content Stagger ===== */
 .page-stagger > * {
   animation: content-enter var(--duration-slow) var(--ease-out-expo) backwards;
