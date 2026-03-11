@@ -183,8 +183,8 @@
 
   /* ===== Layout ===== */
   --sidebar-width: 260px;
-  --mobile-nav-height: 64px;
-  --header-height: 81px; /* 40px logo + 40px padding + 1px border */
+  --mobile-nav-height: 80px;
+  --header-height: 80px;
   --page-padding: 16px;
   --touch-target-min: 40px;
 }
@@ -974,8 +974,8 @@
   }
 
   .mobile-nav-icon {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
   }
 
   /* Content offset for sidebar */
