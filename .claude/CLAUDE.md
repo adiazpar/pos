@@ -1,16 +1,50 @@
-# Chifles Business Management System
+# Irvin POS
 
 ## Project Overview
 
-A web-based business management system for a small Chifles (traditional Peruvian plantain chip snack) business based in Piura, selling in Lima, Peru. The system helps transition from paper-based record keeping to a digital platform accessible on both desktop and mobile devices.
+A **multi-tenant point-of-sale platform** designed to bring life and creativity to business management. Originally built for a Chifles (traditional Peruvian plantain chip snack) business in Peru, now architected to serve any business at any scale.
 
-### Business Context
+### Vision: A POS With Soul
 
-- **Product**: Chifles - thin fried plantain slices, a traditional snack from Piura, Peru
-- **Location**: Single fixed location (fair stand) in Lima
-- **Team**: Business owner, 1 business partner, 1 employee
-- **Current Payment Methods**: Cash and Yape (digital wallet)
-- **Product Line**: Multiple products/flavors with fixed prices
+Most POS systems are gray, utilitarian, forgettable. Irvin is different:
+
+- **Speed AND delight** - Efficient workflows that still feel good to use
+- **Non-blocking joy** - Animations that celebrate without interrupting
+- **Personality** - Design choices that make cashiers smile, not sigh
+- **Crafted details** - Micro-interactions that reward attention
+
+We reject the false choice between "fast and boring" or "pretty and slow."
+
+### Design Philosophy
+
+| Principle | Implementation |
+|-----------|----------------|
+| **Non-blocking delight** | Success feedback happens *alongside* the next action, not *before* it |
+| **Earned celebration** | Big moments (drawer close, shift end) get richer feedback than routine actions |
+| **Motion with purpose** | Every animation guides attention or confirms state - no decoration |
+| **Instant + beautiful** | 100-300ms transitions that feel both snappy and polished |
+| **Sound as option** | Haptic/audio feedback for those who want it, visual-only for others |
+
+### Animation Guidelines
+
+**Use CSS transitions** for routine feedback (fast, zero bundle cost):
+- Button press: scale(0.97) + color shift (100ms)
+- Success: green pulse + icon morph (200ms)
+- List item enter: translateY + fade (300ms staggered)
+
+**Consider Lottie sparingly** for high-impact, low-frequency moments:
+- Empty states (user is waiting anyway)
+- Onboarding flows
+- Shift-end summary / celebration
+- First-time achievements
+
+**Never block the workflow** - if an animation prevents the next tap, it's wrong.
+
+### Origin Story
+
+- **Original client**: Chifles vendor at Lima feria (market fair)
+- **Original scope**: Single location, 3 users, cash + Yape payments
+- **Current scope**: Multi-tenant platform for any retail business
 
 ---
 
@@ -484,24 +518,34 @@ PocketBase uses collections instead of traditional ORM models. The schema is int
 ## UI/UX Guidelines
 
 ### Design Principles
-1. **Simple & Clean**: Minimal UI, large touch targets for mobile
-2. **Spanish Language**: All UI text in Spanish
-3. **Accessible**: Large fonts, high contrast, simple navigation
+1. **Alive, Not Static**: Motion and feedback make the app feel responsive and crafted
+2. **Spanish Language**: All UI text in Spanish (Peru locale: es-PE)
+3. **Accessible**: Large fonts, high contrast, `prefers-reduced-motion` support
 4. **Mobile-First**: Works well on smartphones (primary use case during sales)
 5. **Offline-Capable**: PWA with service worker for unreliable connectivity
+6. **Premium Feel**: Typography hierarchy, dual-layer shadows, subtle gradients
 
-### Color Palette (Suggestion)
-- Primary: Warm yellow/gold (evokes fried plantains)
-- Secondary: Green (plantain leaves)
-- Accent: Earth tones (Piura desert)
-- Background: Light, clean whites/grays
+### Color Palette
+- **Brand**: Sky blue (#0EA5E9) - professional, trustworthy
+- **Success**: Forest green (#2E7D4A) - money in, positive actions
+- **Warning**: Amber (#C17F24) - attention needed
+- **Error**: Deep red (#B91C1C) - problems, money out
+- **Neutrals**: Cool slate scale for text hierarchy
+
+### Animation Hierarchy
+| Action Type | Animation Budget | Example |
+|-------------|------------------|---------|
+| **Routine** (button tap, input) | 100-150ms | Scale + color |
+| **Confirmation** (save, submit) | 200-300ms | Checkmark morph + pulse |
+| **Transition** (page, modal) | 300-400ms | Slide + fade |
+| **Celebration** (shift end, goal hit) | 500-800ms | Confetti, Lottie OK |
 
 ### Key UI Patterns
-- Large buttons for common actions
+- Large buttons for common actions (min 48px touch targets)
 - Numeric keypad for quick quantity entry
 - Swipe gestures for mobile navigation
-- Clear confirmation dialogs for destructive actions
-- Visual feedback for successful sales
+- Non-blocking toast notifications for success/error
+- Staggered list animations for visual rhythm
 - Bottom navigation for mobile (max 5 items)
 
 ---
