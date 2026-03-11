@@ -21,12 +21,17 @@ export function CelebrationOverlay({
 }: CelebrationOverlayProps) {
   const [render, setRender] = useState(false)
   const [closing, setClosing] = useState(false)
+  const [showAnimation, setShowAnimation] = useState(false)
 
   useEffect(() => {
     if (isVisible) {
       setRender(true)
       setClosing(false)
+      // Delay animation to let modal fully render first
+      const animTimer = setTimeout(() => setShowAnimation(true), 100)
+      return () => clearTimeout(animTimer)
     } else if (render) {
+      setShowAnimation(false)
       setClosing(true)
       const timer = setTimeout(() => {
         setRender(false)
@@ -68,13 +73,15 @@ export function CelebrationOverlay({
         <div className="modal-body">
           <div className="flex flex-col items-center text-center">
             {/* Lottie animation */}
-            <div className="mb-6">
-              <LottiePlayer
-                src="/animations/trophy.lottie"
-                loop={false}
-                autoplay={true}
-                style={{ width: 200, height: 200 }}
-              />
+            <div className="mb-6" style={{ width: 200, height: 200 }}>
+              {showAnimation && (
+                <LottiePlayer
+                  src="/animations/trophy.lottie"
+                  loop={false}
+                  autoplay={true}
+                  style={{ width: 200, height: 200 }}
+                />
+              )}
             </div>
 
             {(subtitle || (stats && stats.length > 0)) && (
