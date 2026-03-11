@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Spinner, Modal } from '@/components/ui'
-import { IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight, IconCloseDrawer, IconMovement, IconTransfer, IconHistory, IconArrowUp } from '@/components/icons'
+import { IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight, IconCloseDrawer, IconMovement, IconCoins, IconHistory, IconArrowUp } from '@/components/icons'
 import { BalanceHero } from '@/components/caja/BalanceHero'
 import { CelebrationOverlay, LottiePlayer } from '@/components/animations'
 import { useAuth } from '@/contexts/auth-context'
@@ -530,7 +530,7 @@ export default function CajaPage() {
               className="caja-action-btn"
               disabled={!currentSession}
             >
-              <IconTransfer className="caja-action-btn__icon" />
+              <IconCoins className="caja-action-btn__icon" />
               Prestamos ({outstandingLoans.size})
             </button>
           </div>
@@ -639,6 +639,16 @@ export default function CajaPage() {
                 </button>
               )}
             </>
+          )}
+
+          {/* Closed state - centered message */}
+          {!currentSession && (
+            <div className="empty-state-fill">
+              <IconCloseDrawer className="empty-state-icon" />
+              <p className="empty-state-description">
+                La caja esta cerrada
+              </p>
+            </div>
           )}
         </div>
       </main>
