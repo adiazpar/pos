@@ -10,7 +10,7 @@ interface BalanceHeroProps {
     direction: 'up' | 'down' | 'neutral'
     amount: number
   }
-  lastMovementType?: 'ingreso' | 'egreso' | null
+  lastMovementType?: 'ingreso' | 'retiro' | null
 }
 
 export function BalanceHero({

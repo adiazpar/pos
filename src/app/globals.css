@@ -3422,7 +3422,7 @@
   100% { transform: scale(1); }
 }
 
-/* Balance pulse effect for ingresos/egresos */
+/* Balance pulse effect for ingresos/retiros */
 .balance-pulse {
   position: relative;
 }
@@ -3441,7 +3441,7 @@
   animation: pulse-fade var(--duration-slow) var(--ease-out-expo) forwards;
 }
 
-.balance-pulse.egreso::after {
+.balance-pulse.retiro::after {
   background: hsla(0, 72%, 51%, 0.08);
   animation: pulse-fade var(--duration-slow) var(--ease-out-expo) forwards;
 }
@@ -3472,7 +3472,7 @@
   border-left-color: var(--color-success);
 }
 
-.movement-item--egreso {
+.movement-item--retiro {
   background: linear-gradient(
     90deg,
     hsla(0, 72%, 51%, 0.05) 0%,

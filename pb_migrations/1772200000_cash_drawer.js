@@ -135,7 +135,7 @@ migrate((app) => {
         name: 'type',
         type: 'select',
         required: true,
-        values: ['ingreso', 'egreso'],
+        values: ['ingreso', 'retiro'],
       },
       {
         id: "cmcategory1",

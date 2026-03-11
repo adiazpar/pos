@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { PageHeader } from '@/components/layout'
 import { Spinner } from '@/components/ui'
-import { IconClose, IconAdd, IconIngreso, IconEgreso, IconCheck, IconClock, IconChevronRight } from '@/components/icons'
+import { IconClose, IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight } from '@/components/icons'
 import { BalanceHero } from '@/components/caja/BalanceHero'
 import { EmptyStateAnimation, CelebrationOverlay, SuccessOverlay } from '@/components/animations'
 import { useAuth } from '@/contexts/auth-context'
@@ -132,12 +132,12 @@ export default function CajaPage() {
   const [isLoadingSessionDetail, setIsLoadingSessionDetail] = useState(false)
 
   // Animation states
-  const [lastMovementType, setLastMovementType] = useState<'ingreso' | 'egreso' | null>(null)
+  const [lastMovementType, setLastMovementType] = useState<'ingreso' | 'retiro' | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const [celebrationStats, setCelebrationStats] = useState<{ label: string; value: string }[]>([])
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false)
   const [successOverlayData, setSuccessOverlayData] = useState<{
-    type: 'ingreso' | 'egreso'
+    type: 'ingreso' | 'retiro'
     amount: number
   } | null>(null)
 
@@ -345,7 +345,7 @@ export default function CajaPage() {
 
       // Calculate stats for celebration
       const totalIngresos = movements.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0)
-      const totalEgresos = movements.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0)
+      const totalRetiros = movements.filter(m => m.type === 'retiro').reduce((sum, m) => sum + m.amount, 0)
 
       // Update session with closing info
       await pb.collection('cash_sessions').update(currentSession.id, {
@@ -364,7 +364,7 @@ export default function CajaPage() {
       setCelebrationStats([
         { label: 'Movimientos', value: String(movements.length) },
         { label: 'Ingresos', value: formatCurrency(totalIngresos) },
-        { label: 'Egresos', value: formatCurrency(totalEgresos) },
+        { label: 'Retiros', value: formatCurrency(totalRetiros) },
       ])
 
       // Show celebration overlay
@@ -614,7 +614,7 @@ export default function CajaPage() {
                       <div
                         key={mov.id}
                         className={`movement-item ${
-                          mov.type === 'ingreso' ? 'movement-item--ingreso' : 'movement-item--egreso'
+                          mov.type === 'ingreso' ? 'movement-item--ingreso' : 'movement-item--retiro'
                         } entering`}
                         style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
                       >
@@ -628,7 +628,7 @@ export default function CajaPage() {
                           {mov.type === 'ingreso' ? (
                             <IconIngreso className="w-5 h-5" />
                           ) : (
-                            <IconEgreso className="w-5 h-5" />
+                            <IconRetiro className="w-5 h-5" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -988,17 +988,17 @@ export default function CajaPage() {
             <button
               type="button"
               onClick={() => {
-                setMovementType('egreso')
+                setMovementType('retiro')
                 setMovementCategory('')
               }}
               className={`flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                movementType === 'egreso'
+                movementType === 'retiro'
                   ? 'bg-error text-white'
                   : 'bg-bg-muted text-text-secondary hover:text-text-primary'
               }`}
             >
-              <IconEgreso className="w-5 h-5" />
-              Egreso
+              <IconRetiro className="w-5 h-5" />
+              Retiro
             </button>
           </div>
 
@@ -1134,7 +1134,7 @@ export default function CajaPage() {
                         {mov.type === 'ingreso' ? (
                           <IconIngreso className="w-4 h-4" />
                         ) : (
-                          <IconEgreso className="w-4 h-4" />
+                          <IconRetiro className="w-4 h-4" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">

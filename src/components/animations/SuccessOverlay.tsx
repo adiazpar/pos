@@ -7,7 +7,7 @@ import { formatCurrency } from '@/lib/utils'
 interface SuccessOverlayProps {
   isVisible: boolean
   onClose: () => void
-  type: 'ingreso' | 'egreso'
+  type: 'ingreso' | 'retiro'
   amount: number
   message?: string
   autoDismissDelay?: number // ms to wait after animation before auto-dismiss
@@ -54,7 +54,7 @@ export function SuccessOverlay({
   const colorClass = isIngreso ? 'text-success' : 'text-error'
   const bgColorClass = isIngreso ? 'bg-success-subtle' : 'bg-error-subtle'
   const sign = isIngreso ? '+' : '-'
-  const defaultMessage = isIngreso ? 'Ingreso registrado' : 'Egreso registrado'
+  const defaultMessage = isIngreso ? 'Ingreso registrado' : 'Retiro registrado'
 
   return (
     <div

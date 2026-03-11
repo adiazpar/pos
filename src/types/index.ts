@@ -239,18 +239,18 @@ export interface InventoryTransaction {
 // CASH DRAWER TYPES
 // ============================================
 
-export type CashMovementType = 'ingreso' | 'egreso'
+export type CashMovementType = 'ingreso' | 'retiro'
 
 export type CashMovementCategory =
   | 'venta'              // Cash sale (ingreso) - auto from ventas
   | 'prestamo_empleado'  // Employee loan to drawer (ingreso)
   | 'retiro_banco'       // Bank withdrawal (ingreso)
   | 'cambio'             // Getting change (ingreso)
-  | 'devolucion_prestamo' // Repaying employee loan (egreso)
-  | 'deposito_banco'     // Bank deposit (egreso)
-  | 'gastos'             // Operating expenses (egreso)
-  | 'devolucion_cliente' // Customer refund (egreso)
-  | 'cambio_billetes'    // Breaking bills (egreso)
+  | 'devolucion_prestamo' // Repaying employee loan (retiro)
+  | 'deposito_banco'     // Bank deposit (retiro)
+  | 'gastos'             // Operating expenses (retiro)
+  | 'devolucion_cliente' // Customer refund (retiro)
+  | 'cambio_billetes'    // Breaking bills (retiro)
   | 'otro'               // Other
 
 export interface CashSession {
