@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/layout'
 import { Spinner, Modal } from '@/components/ui'
-import { IconCheck, IconClock, IconChevronRight, IconIngreso, IconRetiro, IconArrowUp } from '@/components/icons'
+import { IconCircleCheck, IconClock, IconChevronRight, IconIngreso, IconRetiro, IconArrowUp } from '@/components/icons'
 import { useNavbar } from '@/contexts/navbar-context'
 import { useAuth } from '@/contexts/auth-context'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -199,7 +199,7 @@ export default function HistorialPage() {
                       : 'bg-warning-subtle text-warning'
                   }`}>
                     {session.closedAt ? (
-                      <IconCheck className="w-5 h-5" />
+                      <IconCircleCheck className="w-5 h-5" />
                     ) : (
                       <IconClock className="w-5 h-5" />
                     )}

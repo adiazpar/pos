@@ -3611,13 +3611,6 @@
   outline-offset: 2px;
 }
 
-.session-item--closed {
-  border-left: 3px solid var(--color-success);
-}
-
-.session-item--open {
-  border-left: 3px solid var(--color-warning);
-}
 
 /* Staggered entrance for session items */
 .session-item.entering {
