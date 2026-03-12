@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/layout'
 import { Spinner, Modal } from '@/components/ui'
-import { IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight, IconCloseDrawer, IconMovement, IconCoins, IconHistory, IconArrowUp } from '@/components/icons'
+import { IconAdd, IconIngreso, IconRetiro, IconCheck, IconClock, IconChevronRight, IconCloseDrawer, IconMovement, IconCoins, IconHistory, IconArrowUp, IconTrash } from '@/components/icons'
 import { BalanceHero } from '@/components/caja/BalanceHero'
 import { CloseDrawerModal } from '@/components/caja/CloseDrawerModal'
 import { LottiePlayer } from '@/components/animations'
@@ -82,6 +82,16 @@ export default function CajaPage() {
 
   // Modal states (continued)
   const [isLoansModalOpen, setIsLoansModalOpen] = useState(false)
+
+  // Edit movement states
+  const [isEditMovementModalOpen, setIsEditMovementModalOpen] = useState(false)
+  const [editingMovement, setEditingMovement] = useState<CashMovement | null>(null)
+  const [editType, setEditType] = useState<CashMovementType>('ingreso')
+  const [editCategory, setEditCategory] = useState<CashMovementCategory | ''>('')
+  const [editAmount, setEditAmount] = useState('')
+  const [editNote, setEditNote] = useState('')
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // ============================================
   // CALCULATED VALUES
@@ -341,6 +351,68 @@ export default function CajaPage() {
     }
   }
 
+  const handleOpenEditModal = (mov: CashMovement) => {
+    setEditingMovement(mov)
+    setEditType(mov.type)
+    setEditCategory(mov.category)
+    setEditAmount(mov.amount.toString())
+    setEditNote(mov.note || '')
+    setIsEditMovementModalOpen(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!user || !editingMovement || !editCategory) return
+
+    const amount = parseFloat(editAmount)
+    if (isNaN(amount) || amount <= 0) return
+
+    setIsSavingEdit(true)
+    try {
+      const updatedMovement = await pb.collection('cash_movements').update<CashMovement>(editingMovement.id, {
+        type: editType,
+        category: editCategory,
+        amount: amount,
+        note: editNote.trim() || null,
+        employee: (editCategory === 'prestamo_empleado' || editCategory === 'devolucion_prestamo') ? user.id : null,
+        editedBy: user.id,
+      })
+
+      // Update local state with expanded employee data
+      const movementWithExpand: CashMovement = {
+        ...updatedMovement,
+        expand: (editCategory === 'prestamo_empleado' || editCategory === 'devolucion_prestamo')
+          ? { employee: user }
+          : editingMovement.expand
+      }
+
+      setMovements(prev => prev.map(m => m.id === editingMovement.id ? movementWithExpand : m))
+      setIsEditMovementModalOpen(false)
+      setEditingMovement(null)
+    } catch (err) {
+      console.error('Error updating movement:', err)
+      alert('Error al actualizar el movimiento')
+    } finally {
+      setIsSavingEdit(false)
+    }
+  }
+
+  const handleDeleteMovement = async () => {
+    if (!editingMovement) return
+
+    setIsDeleting(true)
+    try {
+      await pb.collection('cash_movements').delete(editingMovement.id)
+      setMovements(prev => prev.filter(m => m.id !== editingMovement.id))
+      setIsEditMovementModalOpen(false)
+      setEditingMovement(null)
+    } catch (err) {
+      console.error('Error deleting movement:', err)
+      alert('Error al eliminar el movimiento')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const handleViewSessionDetail = async (session: CashSession) => {
     setViewingSession(session)
     setIsSessionDetailModalOpen(true)
@@ -525,8 +597,17 @@ export default function CajaPage() {
                   }).map((mov, index) => (
                     <div
                       key={mov.id}
-                      className="movement-item entering"
+                      className="movement-item entering cursor-pointer"
                       style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
+                      onClick={() => handleOpenEditModal(mov)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleOpenEditModal(mov)
+                        }
+                      }}
                     >
                       {mov.id === newMovementId ? (
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -922,6 +1003,165 @@ export default function CajaPage() {
             No hay prestamos pendientes
           </div>
         )}
+      </Modal>
+
+      {/* Edit Movement Modal */}
+      <Modal
+        isOpen={isEditMovementModalOpen}
+        onClose={() => !isSavingEdit && !isDeleting && setIsEditMovementModalOpen(false)}
+      >
+        <Modal.Step title="Editar movimiento">
+          <div className="space-y-4">
+            {/* Type Toggle */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditType('ingreso')
+                  setEditCategory('')
+                }}
+                className={`flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                  editType === 'ingreso'
+                    ? 'bg-success text-white'
+                    : 'bg-bg-muted text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <IconIngreso className="w-5 h-5" />
+                Ingreso
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditType('retiro')
+                  setEditCategory('')
+                }}
+                className={`flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                  editType === 'retiro'
+                    ? 'bg-error text-white'
+                    : 'bg-bg-muted text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <IconRetiro className="w-5 h-5" />
+                Retiro
+              </button>
+            </div>
+
+            {/* Category Select */}
+            <div>
+              <label htmlFor="edit-category" className="label">Categoria</label>
+              <select
+                id="edit-category"
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value as CashMovementCategory)}
+                className="input"
+              >
+                <option value="">Seleccionar...</option>
+                {(editType === 'ingreso' ? INGRESO_CATEGORIES : EGRESO_CATEGORIES).map((cat) => (
+                  <option key={cat} value={cat}>
+                    {CATEGORY_LABELS[cat]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Amount */}
+            <div>
+              <label htmlFor="edit-amount" className="label">Monto (S/)</label>
+              <input
+                id="edit-amount"
+                type="number"
+                inputMode="decimal"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                className="input"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            {/* Note */}
+            <div>
+              <label htmlFor="edit-note" className="label">Nota (opcional)</label>
+              <textarea
+                id="edit-note"
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                className="input"
+                placeholder="Descripcion del movimiento..."
+                rows={2}
+              />
+            </div>
+          </div>
+          <Modal.Footer>
+            <Modal.NextButton className="!flex-none !p-2 !bg-transparent text-error hover:!bg-error-subtle">
+              <IconTrash className="w-5 h-5" />
+            </Modal.NextButton>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={() => setIsEditMovementModalOpen(false)}
+              className="btn btn-secondary"
+              disabled={isSavingEdit}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveEdit}
+              className="btn btn-primary"
+              disabled={isSavingEdit || !editCategory || !editAmount || parseFloat(editAmount) <= 0}
+            >
+              {isSavingEdit ? <Spinner /> : 'Guardar'}
+            </button>
+          </Modal.Footer>
+        </Modal.Step>
+
+        <Modal.Step title="Eliminar movimiento">
+          <div className="space-y-4">
+            <p className="text-text-secondary">
+              Estas seguro de que deseas eliminar este movimiento?
+            </p>
+            {editingMovement && (
+              <div className="p-4 bg-bg-muted rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-text-secondary">Tipo</span>
+                  <span className="text-sm font-medium">
+                    {editingMovement.type === 'ingreso' ? 'Ingreso' : 'Retiro'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-text-secondary">Categoria</span>
+                  <span className="text-sm font-medium">
+                    {CATEGORY_LABELS[editingMovement.category]}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-text-secondary">Monto</span>
+                  <span className={`text-sm font-medium ${editingMovement.type === 'ingreso' ? 'text-success' : 'text-error'}`}>
+                    {editingMovement.type === 'ingreso' ? '+' : '-'}{formatCurrency(editingMovement.amount)}
+                  </span>
+                </div>
+              </div>
+            )}
+            <p className="text-sm text-error">
+              Esta accion no se puede deshacer.
+            </p>
+          </div>
+          <Modal.Footer>
+            <Modal.BackButton className="btn btn-secondary flex-1">
+              Volver
+            </Modal.BackButton>
+            <button
+              type="button"
+              onClick={handleDeleteMovement}
+              className="btn bg-error text-white hover:bg-error/90 flex-1"
+              disabled={isDeleting}
+            >
+              {isDeleting ? <Spinner /> : 'Eliminar'}
+            </button>
+          </Modal.Footer>
+        </Modal.Step>
       </Modal>
 
       {/* Opening animation overlay */}

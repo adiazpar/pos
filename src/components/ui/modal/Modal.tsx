@@ -24,17 +24,18 @@ function ModalHeader({ title, singleStepTitle }: { title?: string; singleStepTit
 
   return (
     <div className="modal-header">
-      {showBackIcon && (
+      <div className={`modal-back-container ${showBackIcon ? 'modal-back-visible' : 'modal-back-hidden'}`}>
         <button
           type="button"
           onClick={goBack}
           className="modal-back"
           aria-label="Volver"
-          disabled={isLocked || isTransitioning}
+          disabled={isLocked || isTransitioning || !showBackIcon}
+          tabIndex={showBackIcon ? 0 : -1}
         >
           <IconArrowLeft className="w-5 h-5" />
         </button>
-      )}
+      </div>
       <h2 className="modal-title">{displayTitle}</h2>
       <button
         type="button"

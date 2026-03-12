@@ -1975,10 +1975,11 @@
     border-bottom: 1px solid var(--color-border);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: var(--space-2);
   }
 
   .modal-title {
+    flex: 1;
     font-family: var(--font-display);
     font-size: var(--text-lg);
     font-weight: 700;
@@ -3894,6 +3895,32 @@
 .modal-back:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Modal back button container - animates width to push title */
+.modal-back-container {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width 200ms ease-out;
+}
+
+.modal-back-visible {
+  width: 40px; /* 32px button + 8px spacing */
+}
+
+.modal-back-hidden {
+  width: 0;
+}
+
+.modal-back-hidden .modal-back {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-back-visible .modal-back {
+  opacity: 1;
 }
 
 /* Modal footer for morphing modal */

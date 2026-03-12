@@ -279,11 +279,14 @@ export interface CashMovement {
   sale?: string
   employee?: string
   createdBy: string
+  editedBy?: string
   created: string
+  updated: string
   expand?: {
     session?: CashSession
     sale?: Sale
     employee?: User
     createdBy?: User
+    editedBy?: User
   }
 }
