@@ -16,9 +16,9 @@ import type { CashSession, CashMovement, CashMovementCategory } from '@/types'
 
 const CATEGORY_LABELS: Record<CashMovementCategory, string> = {
   venta: 'Venta',
-  prestamo_empleado: 'Prestamo empleado',
+  prestamo_empleado: 'Prestamo',
   retiro_banco: 'Retiro de banco',
-  devolucion_prestamo: 'Devolucion prestamo',
+  devolucion_prestamo: 'Devolucion',
   deposito_banco: 'Deposito a banco',
   otro: 'Otro',
 }
