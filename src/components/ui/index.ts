@@ -13,5 +13,5 @@ export type { BadgeProps } from './badge'
 export { Spinner, LoadingPage } from './spinner'
 export type { SpinnerProps } from './spinner'
 
-export { Modal } from './modal'
+export { Modal, useMorphingModal } from './modal'
 export type { ModalProps } from './modal'
