@@ -553,30 +553,25 @@ export default function CajaPage() {
                           )}
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium block">
+                      <div className="flex-1 min-w-0 h-10 flex flex-col justify-between">
+                        <span className="font-medium truncate">
                           {CATEGORY_LABELS[mov.category]}
                         </span>
-                        {(mov.category === 'prestamo_empleado' || mov.category === 'devolucion_prestamo') && mov.expand?.employee && (
-                          <span className="text-xs text-text-secondary truncate block mt-0.5">
-                            {mov.expand.employee.name}
-                          </span>
-                        )}
-                        {mov.note && (
-                          <span className="text-xs text-text-tertiary truncate block mt-0.5">
-                            {mov.note}
-                          </span>
-                        )}
+                        <span className="text-xs text-text-tertiary truncate">
+                          {(mov.category === 'prestamo_empleado' || mov.category === 'devolucion_prestamo') && mov.expand?.employee
+                            ? mov.expand.employee.name
+                            : mov.note || '-'}
+                        </span>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right h-10 flex flex-col justify-between flex-shrink-0">
                         <span
-                          className={`font-medium block ${
+                          className={`font-medium ${
                             mov.type === 'ingreso' ? 'text-success' : 'text-error'
                           }`}
                         >
                           {mov.type === 'ingreso' ? '+' : '-'}{formatCurrency(mov.amount)}
                         </span>
-                        <span className="text-xs text-text-tertiary block mt-0.5">
+                        <span className="text-xs text-text-tertiary">
                           {formatTime(mov.created)}
                         </span>
                       </div>
@@ -590,7 +585,7 @@ export default function CajaPage() {
                 <button
                   type="button"
                   onClick={scrollToTop}
-                  className="w-full py-3 mt-4 flex items-center justify-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
+                  className="w-full py-3 flex items-center justify-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
                 >
                   <IconArrowUp className="w-4 h-4" />
                   Volver arriba
@@ -855,42 +850,47 @@ export default function CajaPage() {
                   Sin movimientos
                 </div>
               ) : (
-                <div className="space-y-1 max-h-64 overflow-y-auto">
+                <div className="space-y-4 max-h-64 overflow-y-auto scrollbar-hidden">
                   {viewingSessionMovements.map((mov) => (
                     <div
                       key={mov.id}
-                      className="list-item"
+                      className="flex items-start gap-3"
                     >
                       <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           mov.type === 'ingreso'
                             ? 'bg-success-subtle text-success'
                             : 'bg-error-subtle text-error'
                         }`}
                       >
                         {mov.type === 'ingreso' ? (
-                          <IconIngreso className="w-4 h-4" />
+                          <IconIngreso className="w-5 h-5" />
                         ) : (
-                          <IconRetiro className="w-4 h-4" />
+                          <IconRetiro className="w-5 h-5" />
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium block">
+                      <div className="flex-1 min-w-0 h-10 flex flex-col justify-between">
+                        <span className="font-medium truncate">
                           {CATEGORY_LABELS[mov.category]}
                         </span>
-                        {mov.note && (
-                          <span className="text-xs text-text-tertiary truncate block">
-                            {mov.note}
-                          </span>
-                        )}
+                        <span className="text-xs text-text-tertiary truncate">
+                          {(mov.category === 'prestamo_empleado' || mov.category === 'devolucion_prestamo') && mov.expand?.employee
+                            ? mov.expand.employee.name
+                            : mov.note || '-'}
+                        </span>
                       </div>
-                      <span
-                        className={`text-sm font-medium flex-shrink-0 ${
-                          mov.type === 'ingreso' ? 'text-success' : 'text-error'
-                        }`}
-                      >
-                        {mov.type === 'ingreso' ? '+' : '-'}{formatCurrency(mov.amount)}
-                      </span>
+                      <div className="text-right h-10 flex flex-col justify-between flex-shrink-0">
+                        <span
+                          className={`font-medium ${
+                            mov.type === 'ingreso' ? 'text-success' : 'text-error'
+                          }`}
+                        >
+                          {mov.type === 'ingreso' ? '+' : '-'}{formatCurrency(mov.amount)}
+                        </span>
+                        <span className="text-xs text-text-tertiary">
+                          {formatTime(mov.created)}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>

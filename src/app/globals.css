@@ -3558,7 +3558,7 @@
 .movement-item {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-lg);
@@ -3587,44 +3587,40 @@
   }
 }
 
-/* ===== Session History Items ===== */
-.session-item {
+/* ===== Session History Cards ===== */
+.session-card {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
+  padding: var(--space-4);
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border);
-  transition: all var(--duration-fast) var(--ease-out-expo);
+  border-radius: var(--radius-xl);
   cursor: pointer;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
 }
 
-.session-item:hover {
+.session-card:hover {
   border-color: var(--color-brand);
   background: var(--color-brand-subtle);
 }
 
-.session-item:focus-visible {
+.session-card:focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
-
-/* Staggered entrance for session items */
-.session-item.entering {
+/* Staggered entrance for session cards */
+.session-card.entering {
   animation: list-item-enter var(--duration-normal) var(--ease-out-expo) backwards;
 }
 
-.session-item:nth-child(1).entering { animation-delay: 0ms; }
-.session-item:nth-child(2).entering { animation-delay: 40ms; }
-.session-item:nth-child(3).entering { animation-delay: 80ms; }
-.session-item:nth-child(4).entering { animation-delay: 120ms; }
-.session-item:nth-child(5).entering { animation-delay: 160ms; }
-.session-item:nth-child(6).entering { animation-delay: 200ms; }
-.session-item:nth-child(7).entering { animation-delay: 240ms; }
-.session-item:nth-child(8).entering { animation-delay: 280ms; }
+.session-card:nth-child(1).entering { animation-delay: 0ms; }
+.session-card:nth-child(2).entering { animation-delay: 40ms; }
+.session-card:nth-child(3).entering { animation-delay: 80ms; }
+.session-card:nth-child(4).entering { animation-delay: 120ms; }
+.session-card:nth-child(5).entering { animation-delay: 160ms; }
+.session-card:nth-child(6).entering { animation-delay: 200ms; }
+.session-card:nth-child(7).entering { animation-delay: 240ms; }
+.session-card:nth-child(8).entering { animation-delay: 280ms; }
 
 /* Session stats summary */
 .session-stats {
