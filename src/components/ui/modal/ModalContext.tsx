@@ -1,7 +1,7 @@
 // src/components/ui/modal/ModalContext.tsx
 'use client'
 
-import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react'
 import type { ModalContextValue, Phase, Direction } from './types'
 import { TIMING } from './types'
 
@@ -35,22 +35,35 @@ export function ModalProvider({ children, initialStep, onClose, isOpen }: ModalP
 
   // Core state
   const [currentStep, setCurrentStep] = useState(initialStep)
-  const [targetStep, setTargetStep] = useState(initialStep)
+  const [_targetStep, setTargetStep] = useState(initialStep)
   const [phase, setPhase] = useState<Phase>('idle')
   const [direction, setDirection] = useState<Direction>('forward')
   const [isLocked, setIsLocked] = useState(false)
 
-  // Reset state when modal opens
+  // Track timeout IDs for cleanup
+  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([])
+
+  // Reset state when modal opens (Fix #3: moved from render to useEffect)
   const prevIsOpen = useRef(isOpen)
-  if (isOpen && !prevIsOpen.current) {
-    // Modal just opened - reset to initial state
-    setCurrentStep(initialStep)
-    setTargetStep(initialStep)
-    setPhase('idle')
-    setDirection('forward')
-    setIsLocked(false)
-  }
-  prevIsOpen.current = isOpen
+  useEffect(() => {
+    if (isOpen && !prevIsOpen.current) {
+      // Modal just opened - reset to initial state
+      setCurrentStep(initialStep)
+      setTargetStep(initialStep)
+      setPhase('idle')
+      setDirection('forward')
+      setIsLocked(false)
+    }
+    prevIsOpen.current = isOpen
+  }, [isOpen, initialStep])
+
+  // Cleanup timeouts on unmount (Fix #1: prevent memory leaks)
+  useEffect(() => {
+    const timeoutIds = timeoutIdsRef.current
+    return () => {
+      timeoutIds.forEach(id => clearTimeout(id))
+    }
+  }, [])
 
   // Step registration (called by Modal.Step)
   const _registerStep = useCallback((index: number) => {
@@ -63,19 +76,7 @@ export function ModalProvider({ children, initialStep, onClose, isOpen }: ModalP
     setStepCount(stepsRef.current.size)
   }, [])
 
-  // Calculate item count for timing (rough estimate, actual items animate via CSS)
-  const getExitDuration = useCallback(() => {
-    // Assume ~4 items average, can be refined if needed
-    const itemCount = 4
-    return TIMING.EXIT_DURATION + (itemCount - 1) * TIMING.STAGGER_DELAY
-  }, [])
-
-  const getEnterDuration = useCallback(() => {
-    const itemCount = 4
-    return TIMING.ENTER_DURATION + (itemCount - 1) * TIMING.STAGGER_DELAY
-  }, [])
-
-  // Navigation
+  // Navigation (Fix #2: inline timing calculations, remove getExitDuration/getEnterDuration from deps)
   const goToStep = useCallback((step: number) => {
     if (isLocked || phase !== 'idle') return
 
@@ -88,23 +89,28 @@ export function ModalProvider({ children, initialStep, onClose, isOpen }: ModalP
     setTargetStep(clampedStep)
     setPhase('exiting')
 
-    // Phase transitions
-    const exitDuration = getExitDuration()
+    // Calculate timing inline (assume ~4 items average)
+    const itemCount = 4
+    const exitDuration = TIMING.EXIT_DURATION + (itemCount - 1) * TIMING.STAGGER_DELAY
+    const enterDuration = TIMING.ENTER_DURATION + (itemCount - 1) * TIMING.STAGGER_DELAY
 
-    setTimeout(() => {
+    // Phase transitions with timeout tracking (Fix #1: store timeout IDs for cleanup)
+    const t1 = setTimeout(() => {
       setPhase('transitioning')
 
-      setTimeout(() => {
+      const t2 = setTimeout(() => {
         setCurrentStep(clampedStep)
         setPhase('entering')
 
-        const enterDuration = getEnterDuration()
-        setTimeout(() => {
+        const t3 = setTimeout(() => {
           setPhase('idle')
         }, enterDuration)
+        timeoutIdsRef.current.push(t3)
       }, TIMING.HEIGHT_TRANSITION)
+      timeoutIdsRef.current.push(t2)
     }, exitDuration)
-  }, [isLocked, phase, stepCount, currentStep, getExitDuration, getEnterDuration])
+    timeoutIdsRef.current.push(t1)
+  }, [isLocked, phase, stepCount, currentStep])
 
   const goNext = useCallback(() => {
     if (currentStep < stepCount - 1) {
