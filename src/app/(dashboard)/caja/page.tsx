@@ -709,7 +709,7 @@ export default function CajaPage() {
             </div>
           )}
           <div>
-            <label htmlFor="opening-balance" className="label">Saldo inicial (S/)</label>
+            <label htmlFor="opening-balance" className="label">Saldo inicial (S/) <span className="text-error">*</span></label>
             <input
               id="opening-balance"
               type="number"
@@ -799,7 +799,7 @@ export default function CajaPage() {
 
           {/* Category Select */}
           <div>
-            <label htmlFor="movement-category" className="label">Categoria</label>
+            <label htmlFor="movement-category" className="label">Categoria <span className="text-error">*</span></label>
             <select
               id="movement-category"
               value={movementCategory}
@@ -817,7 +817,7 @@ export default function CajaPage() {
 
           {/* Amount */}
           <div>
-            <label htmlFor="movement-amount" className="label">Monto (S/)</label>
+            <label htmlFor="movement-amount" className="label">Monto (S/) <span className="text-error">*</span></label>
             <input
               id="movement-amount"
               type="number"
@@ -1047,7 +1047,7 @@ export default function CajaPage() {
           </Modal.Item>
 
           <Modal.Item>
-            <label htmlFor="edit-category" className="label">Categoria</label>
+            <label htmlFor="edit-category" className="label">Categoria <span className="text-error">*</span></label>
             <select
               id="edit-category"
               value={editCategory}
@@ -1064,7 +1064,7 @@ export default function CajaPage() {
           </Modal.Item>
 
           <Modal.Item>
-            <label htmlFor="edit-amount" className="label">Monto (S/)</label>
+            <label htmlFor="edit-amount" className="label">Monto (S/) <span className="text-error">*</span></label>
             <input
               id="edit-amount"
               type="number"

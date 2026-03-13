@@ -1163,43 +1163,156 @@ export default function ProductosPage() {
                   </div>
                 )}
 
-                {/* Product List Header */}
-                <div className="flex items-center justify-between">
-                  {isSelectionMode ? (
-                    <>
-                      <span className="text-sm text-text-secondary">
-                        {selectedProducts.size} {selectedProducts.size === 1 ? 'seleccionado' : 'seleccionados'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleExitSelectionMode}
-                        className="btn btn-secondary btn-sm"
-                      >
-                        <IconClose className="w-4 h-4" />
-                        Cancelar
-                      </button>
-                    </>
+                {/* Product List Card */}
+                <div className="card p-4 space-y-4">
+                  {/* Product List Header */}
+                  <div className="flex items-center justify-between">
+                    {isSelectionMode ? (
+                      <>
+                        <span className="text-sm text-text-secondary">
+                          {selectedProducts.size} {selectedProducts.size === 1 ? 'seleccionado' : 'seleccionados'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleExitSelectionMode}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          <IconClose className="w-4 h-4" />
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-sm text-text-secondary">
+                          {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditSheetOpen(true)}
+                          className="btn btn-primary btn-sm"
+                        >
+                          <IconEdit className="w-4 h-4" />
+                          Editar
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Product List */}
+                  {filteredProducts.length === 0 ? (
+                    <div className="empty-state">
+                      <IconSearch className="empty-state-icon" />
+                      <h3 className="empty-state-title">Sin resultados</h3>
+                      <p className="empty-state-description">
+                        No se encontraron productos con ese criterio
+                      </p>
+                    </div>
                   ) : (
-                    <>
-                      <span className="text-sm text-text-secondary">
-                        {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setIsEditSheetOpen(true)}
-                        className="btn btn-primary btn-sm"
-                      >
-                        <IconEdit className="w-4 h-4" />
-                        Editar
-                      </button>
-                    </>
+                    <div className="space-y-2">
+                      {filteredProducts.map((product) => {
+                        const imageUrl = getProductImageUrl(product, '100x100')
+                        const categoryConfig = product.category ? CATEGORY_CONFIG[product.category] : null
+                        const isSelected = selectedProducts.has(product.id)
+                        const stockValue = product.stock ?? 0
+                        const threshold = product.lowStockThreshold ?? 10
+                        const isLowStock = stockValue <= threshold
+
+                        return (
+                          <div
+                            key={product.id}
+                            className="list-item-clickable list-item-flat"
+                            onClick={() => {
+                              if (isSelectionMode) {
+                                handleToggleProductSelection(product.id)
+                              } else {
+                                handleOpenEdit(product)
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                if (isSelectionMode) {
+                                  handleToggleProductSelection(product.id)
+                                } else {
+                                  handleOpenEdit(product)
+                                }
+                              }
+                            }}
+                            tabIndex={0}
+                            role="button"
+                          >
+                            {/* Selection checkbox or Product Image/Icon */}
+                            {isSelectionMode ? (
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'bg-brand text-white' : 'bg-bg-muted text-text-tertiary'}`}>
+                                {isSelected && <IconCheck className="w-4 h-4" />}
+                              </div>
+                            ) : (
+                              <div className={`product-list-image ${isLowStock && product.active ? 'ring-2 ring-error' : ''}`}>
+                                {imageUrl ? (
+                                  <Image
+                                    src={imageUrl}
+                                    alt={product.name}
+                                    width={40}
+                                    height={40}
+                                    className="product-list-image-img"
+                                    unoptimized
+                                  />
+                                ) : (
+                                  <IconImage className="w-5 h-5 text-text-tertiary" />
+                                )}
+                              </div>
+                            )}
+
+                            {/* Product Info */}
+                            <div className="flex-1 min-w-0">
+                              <span className={`font-medium truncate block ${!product.active ? 'text-text-tertiary' : ''}`}>
+                                {product.name}
+                              </span>
+                              <span className="text-xs text-text-tertiary mt-0.5 block">
+                                {categoryConfig ? categoryConfig.label : '-'}
+                              </span>
+                            </div>
+
+                            {/* Price and Stock */}
+                            <div className="text-right">
+                              <span className={`font-medium block ${!product.active ? 'text-text-tertiary' : 'text-text-primary'}`}>
+                                S/ {product.price.toFixed(2)}
+                              </span>
+                              <span className={`text-xs mt-0.5 block ${isLowStock && product.active ? 'text-error' : 'text-text-tertiary'}`}>
+                                {stockValue} uds
+                              </span>
+                            </div>
+
+                            {/* Chevron (only in normal mode) */}
+                            {!isSelectionMode && (
+                              <div className="text-text-tertiary ml-2">
+                                <IconChevronRight className="w-5 h-5" />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
                   )}
+
                 </div>
+
+                {/* Back to top button */}
+                {filteredProducts.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={scrollToTop}
+                    className="w-full py-3 flex items-center justify-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    <IconArrowUp className="w-4 h-4" />
+                    Volver arriba
+                  </button>
+                )}
               </>
             )}
 
-            {/* Product List */}
-            {products.length === 0 ? (
+            {/* Empty state - no products at all */}
+            {products.length === 0 && (
               <div className="empty-state-fill">
                 <IconProducts className="empty-state-icon" />
                 <h3 className="empty-state-title">No hay productos</h3>
@@ -1214,113 +1327,6 @@ export default function ProductosPage() {
                   Agregar producto
                 </button>
               </div>
-            ) : filteredProducts.length === 0 ? (
-            <div className="empty-state">
-              <IconSearch className="empty-state-icon" />
-              <h3 className="empty-state-title">Sin resultados</h3>
-              <p className="empty-state-description">
-                No se encontraron productos con ese criterio
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {filteredProducts.map((product, index) => {
-                const imageUrl = getProductImageUrl(product, '100x100')
-                const categoryConfig = product.category ? CATEGORY_CONFIG[product.category] : null
-                const isSelected = selectedProducts.has(product.id)
-                const stockValue = product.stock ?? 0
-                const threshold = product.lowStockThreshold ?? 10
-                const isLowStock = stockValue <= threshold
-
-                return (
-                  <div
-                    key={product.id}
-                    className="list-item-clickable entering"
-                    style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
-                    onClick={() => {
-                      if (isSelectionMode) {
-                        handleToggleProductSelection(product.id)
-                      } else {
-                        handleOpenEdit(product)
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        if (isSelectionMode) {
-                          handleToggleProductSelection(product.id)
-                        } else {
-                          handleOpenEdit(product)
-                        }
-                      }
-                    }}
-                    tabIndex={0}
-                    role="button"
-                  >
-                    {/* Selection checkbox or Product Image/Icon */}
-                    {isSelectionMode ? (
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'bg-brand text-white' : 'bg-bg-muted text-text-tertiary'}`}>
-                        {isSelected && <IconCheck className="w-4 h-4" />}
-                      </div>
-                    ) : (
-                      <div className={`product-list-image ${isLowStock && product.active ? 'ring-2 ring-error' : ''}`}>
-                        {imageUrl ? (
-                          <Image
-                            src={imageUrl}
-                            alt={product.name}
-                            width={40}
-                            height={40}
-                            className="product-list-image-img"
-                            unoptimized
-                          />
-                        ) : (
-                          <IconImage className="w-5 h-5 text-text-tertiary" />
-                        )}
-                      </div>
-                    )}
-
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <span className={`font-medium truncate block ${!product.active ? 'text-text-tertiary' : ''}`}>
-                        {product.name}
-                      </span>
-                      <span className="text-xs text-text-tertiary mt-0.5 block">
-                        {categoryConfig ? categoryConfig.label : '-'}
-                      </span>
-                    </div>
-
-                    {/* Price and Stock */}
-                    <div className="text-right">
-                      <span className={`font-medium block ${!product.active ? 'text-text-tertiary' : 'text-text-primary'}`}>
-                        S/ {product.price.toFixed(2)}
-                      </span>
-                      <span className={`text-xs mt-0.5 block ${isLowStock && product.active ? 'text-error' : 'text-text-tertiary'}`}>
-                        {stockValue} uds
-                      </span>
-                    </div>
-
-                    {/* Chevron (only in normal mode) */}
-                    {!isSelectionMode && (
-                      <div className="text-text-tertiary ml-2">
-                        <IconChevronRight className="w-5 h-5" />
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-            {/* Back to top button */}
-            {filteredProducts.length > 5 && (
-              <button
-                type="button"
-                onClick={scrollToTop}
-                className="w-full py-3 mt-4 flex items-center justify-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
-              >
-                <IconArrowUp className="w-4 h-4" />
-                Volver arriba
-              </button>
             )}
           </div>
         ) : (
@@ -1407,101 +1413,104 @@ export default function ProductosPage() {
                   </button>
                 </div>
 
-                {/* Count and New Order button */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-text-secondary">
-                    {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleOpenNewOrder}
-                    className="btn btn-primary btn-sm"
-                  >
-                    <IconAdd className="w-4 h-4" />
-                    Nuevo Pedido
-                  </button>
+                {/* Orders List Card */}
+                <div className="card p-4 space-y-4">
+                  {/* Count and New Order button */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-text-secondary">
+                      {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleOpenNewOrder}
+                      className="btn btn-primary btn-sm"
+                    >
+                      <IconAdd className="w-4 h-4" />
+                      Nuevo Pedido
+                    </button>
+                  </div>
+
+                  {/* Orders List */}
+                  {filteredOrders.length === 0 ? (
+                    <div className="text-center py-8 text-text-secondary">
+                      No se encontraron pedidos
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredOrders.map((order) => {
+                        const items = order.expand?.['order_items(order)'] || []
+                        const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+                        const isPending = order.status === 'pending'
+
+                        return (
+                          <div
+                            key={order.id}
+                            className="list-item-clickable list-item-flat"
+                            onClick={() => handleOpenOrderDetail(order)}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            {/* Status indicator */}
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              isPending
+                                ? 'bg-warning-subtle text-warning'
+                                : 'bg-success-subtle text-success'
+                            }`}>
+                              <IconInventory className="w-5 h-5" />
+                            </div>
+
+                            {/* Order info */}
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium block">
+                                {formatDate(new Date(order.date))}
+                              </span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-text-tertiary">
+                                  {itemCount} {itemCount === 1 ? 'unidad' : 'unidades'}
+                                </span>
+                                {order.expand?.provider && (
+                                  <>
+                                    <span className="text-text-muted">·</span>
+                                    <span className="text-xs text-text-tertiary truncate">
+                                      {order.expand.provider.name}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Total and Status */}
+                            <div className="text-right">
+                              <span className="font-medium block text-error">
+                                -{formatCurrency(order.total)}
+                              </span>
+                              <span className={`text-xs mt-0.5 block ${isPending ? 'text-warning' : 'text-success'}`}>
+                                {isPending ? 'Pendiente' : 'Recibido'}
+                              </span>
+                            </div>
+
+                            {/* Action indicator */}
+                            <div className="text-text-tertiary ml-2">
+                              <IconChevronRight className="w-5 h-5" />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
                 </div>
 
-                {/* Orders List */}
-                {filteredOrders.length === 0 ? (
-                  <div className="text-center py-8 text-text-secondary">
-                    No se encontraron pedidos
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                {filteredOrders.map((order, index) => {
-                  const items = order.expand?.['order_items(order)'] || []
-                  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
-                  const isPending = order.status === 'pending'
-
-                  return (
-                    <div
-                      key={order.id}
-                      className="list-item-clickable entering"
-                      style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
-                      onClick={() => handleOpenOrderDetail(order)}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      {/* Status indicator */}
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isPending
-                          ? 'bg-warning-subtle text-warning'
-                          : 'bg-success-subtle text-success'
-                      }`}>
-                        <IconInventory className="w-5 h-5" />
-                      </div>
-
-                      {/* Order info */}
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium block">
-                          {formatDate(new Date(order.date))}
-                        </span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-text-tertiary">
-                            {itemCount} {itemCount === 1 ? 'unidad' : 'unidades'}
-                          </span>
-                          {order.expand?.provider && (
-                            <>
-                              <span className="text-text-muted">·</span>
-                              <span className="text-xs text-text-tertiary truncate">
-                                {order.expand.provider.name}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Total and Status */}
-                      <div className="text-right">
-                        <span className="font-medium block text-error">
-                          -{formatCurrency(order.total)}
-                        </span>
-                        <span className={`text-xs mt-0.5 block ${isPending ? 'text-warning' : 'text-success'}`}>
-                          {isPending ? 'Pendiente' : 'Recibido'}
-                        </span>
-                      </div>
-
-                      {/* Action indicator */}
-                      <div className="text-text-tertiary ml-2">
-                        <IconChevronRight className="w-5 h-5" />
-                      </div>
-                    </div>
-                  )
-                })}
-
-                    {/* Back to top button */}
-                    {filteredOrders.length > 5 && (
-                      <button
-                        type="button"
-                        onClick={scrollToTop}
-                        className="w-full py-3 mt-4 flex items-center justify-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
-                      >
-                        <IconArrowUp className="w-4 h-4" />
-                        Volver arriba
-                      </button>
-                    )}
-                  </div>
+                {/* Back to top button */}
+                {filteredOrders.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={scrollToTop}
+                    className="w-full py-3 flex items-center justify-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    <IconArrowUp className="w-4 h-4" />
+                    Volver arriba
+                  </button>
                 )}
               </>
             )}
@@ -1573,7 +1582,7 @@ export default function ProductosPage() {
 
           {/* Name */}
           <Modal.Item>
-            <label htmlFor="name" className="label">Nombre</label>
+            <label htmlFor="name" className="label">Nombre <span className="text-error">*</span></label>
             <input
               id="name"
               type="text"
@@ -1589,7 +1598,7 @@ export default function ProductosPage() {
           <Modal.Item>
             <div className="flex gap-3">
               <div className="flex-1">
-                <label htmlFor="price" className="label">Precio (S/)</label>
+                <label htmlFor="price" className="label">Precio (S/) <span className="text-error">*</span></label>
                 <div className="input-number-wrapper">
                   <input
                     id="price"
@@ -1631,7 +1640,7 @@ export default function ProductosPage() {
                 </div>
               </div>
               <div className="flex-1">
-                <label htmlFor="category" className="label">Categoria</label>
+                <label htmlFor="category" className="label">Categoria <span className="text-error">*</span></label>
                 <select
                   id="category"
                   value={category}
@@ -1694,7 +1703,7 @@ export default function ProductosPage() {
               type="button"
               onClick={handleSubmit}
               className="btn btn-primary flex-1"
-              disabled={isSaving}
+              disabled={isSaving || !name.trim() || !price || parseFloat(price) < 0 || !category}
             >
               {isSaving ? <Spinner /> : 'Guardar'}
             </button>

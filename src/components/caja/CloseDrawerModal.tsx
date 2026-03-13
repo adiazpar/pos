@@ -202,7 +202,7 @@ function CloseDrawerForm({
       </Modal.Item>
 
       <Modal.Item>
-        <label htmlFor="closing-balance" className="label">Saldo real (S/)</label>
+        <label htmlFor="closing-balance" className="label">Saldo real (S/) <span className="text-error">*</span></label>
         <input
           id="closing-balance"
           type="number"

@@ -52,9 +52,10 @@ export function ModalNextButton({ children, className = '', disabled, onClick }:
 
 interface GoToStepButtonProps extends ModalButtonProps {
   step: number
+  title?: string
 }
 
-export function ModalGoToStepButton({ children, className = '', disabled, step, onClick }: GoToStepButtonProps) {
+export function ModalGoToStepButton({ children, className = '', disabled, step, onClick, title }: GoToStepButtonProps) {
   const { goToStep, isLocked, isTransitioning } = useMorphingModal()
 
   const handleClick = () => {
@@ -68,6 +69,7 @@ export function ModalGoToStepButton({ children, className = '', disabled, step, 
       className={className}
       onClick={handleClick}
       disabled={disabled || isLocked || isTransitioning}
+      title={title}
     >
       {children}
     </button>

@@ -254,7 +254,7 @@ export default function ProveedoresPage() {
 
           {/* Name */}
           <div>
-            <label htmlFor="provider-name" className="label">Nombre *</label>
+            <label htmlFor="provider-name" className="label">Nombre <span className="text-error">*</span></label>
             <input
               id="provider-name"
               type="text"
@@ -328,7 +328,7 @@ export default function ProveedoresPage() {
             type="submit"
             form="provider-form"
             className="btn btn-primary flex-1"
-            disabled={isSaving}
+            disabled={isSaving || !name.trim()}
           >
             {isSaving ? <Spinner /> : 'Guardar'}
           </button>

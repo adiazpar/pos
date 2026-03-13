@@ -3528,6 +3528,13 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Variant: no horizontal padding (for use inside cards) */
+.list-item-clickable.list-item-flat {
+  padding-left: 0;
+  padding-right: 0;
+  border-radius: 0;
+}
+
 @media (hover: hover) {
   .list-item-clickable:hover {
     background: var(--color-bg-muted);
