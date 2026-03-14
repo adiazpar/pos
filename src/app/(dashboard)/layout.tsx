@@ -12,12 +12,12 @@ export default function DashboardLayout({
   return (
     <AuthGuard requireAuth>
       <NavbarProvider>
-        <div className="min-h-screen">
+        <div className="h-full">
           {/* Sidebar for desktop */}
           <Sidebar />
 
           {/* Main content area */}
-          <div className="with-sidebar flex flex-col h-screen overflow-y-auto">
+          <div className="with-sidebar flex flex-col h-full overflow-y-auto">
             {/* Transfer banner for recipients with pending transfers */}
             <TransferBanner />
 

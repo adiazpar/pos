@@ -250,6 +250,9 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     scroll-behavior: smooth;
+    /* Prevent body scroll - only inner containers should scroll */
+    height: 100%;
+    overflow: hidden;
   }
 
   body {
@@ -259,8 +262,17 @@
     line-height: 1.6;
     color: var(--color-text-primary);
     background-color: var(--color-bg-base);
-    min-height: 100vh;
-    min-height: 100dvh;
+    /* Fixed height with dvh for mobile browser chrome */
+    height: 100dvh;
+    height: 100vh; /* Fallback for older browsers */
+    overflow: hidden;
+  }
+
+  /* Support for dvh - modern browsers */
+  @supports (height: 100dvh) {
+    body {
+      height: 100dvh;
+    }
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -702,7 +714,6 @@
     background: var(--color-bg-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-xl);
-    overflow: hidden;
   }
 
   .card-bordered {
@@ -2610,14 +2621,14 @@
 
   /* ===== Auth Layout ===== */
   .auth-container {
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: var(--space-6);
     background: var(--color-bg-base);
+    overflow-y: auto;
   }
 
   .auth-card {
@@ -3328,24 +3339,13 @@
     display: flex;
     border-bottom: 1px solid var(--color-border);
     margin-bottom: var(--space-4);
+    background: var(--color-bg-base);
+    /* Sticky header when scrolling */
     position: sticky;
     top: 0;
-    background: var(--color-bg-base);
-    z-index: var(--z-sticky);
-    margin-left: calc(var(--page-padding) * -1);
-    margin-right: calc(var(--page-padding) * -1);
-    padding-left: var(--page-padding);
-    padding-right: var(--page-padding);
-    animation: content-enter var(--duration-slow) var(--ease-out-expo) backwards;
-  }
-
-  @media (min-width: 1024px) {
-    .section-tabs {
-      margin-left: calc(var(--space-6) * -1);
-      margin-right: calc(var(--space-6) * -1);
-      padding-left: var(--space-6);
-      padding-right: var(--space-6);
-    }
+    z-index: 10;
+    /* Entrance animation */
+    animation: pageEnter var(--transition-normal) ease-out;
   }
 
   .section-tab {
