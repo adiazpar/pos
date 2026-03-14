@@ -305,6 +305,7 @@ function CelebrationContent({
                 src="/animations/trophy.json"
                 loop={false}
                 autoplay={true}
+                delay={500}
                 style={{ width: 200, height: 200 }}
               />
             )}

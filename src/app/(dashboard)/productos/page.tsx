@@ -117,6 +117,7 @@ export default function ProductosPage() {
   // Delete state
   const [isDeleting, setIsDeleting] = useState(false)
   const [productDeleted, setProductDeleted] = useState(false)
+  const [productSaved, setProductSaved] = useState(false)
 
   // Stock adjustment form state (used in modal step 1)
   const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'remove'>('remove')
@@ -334,6 +335,7 @@ export default function ProductosPage() {
     setEditingProduct(null)
     setError('')
     setProductDeleted(false)
+    setProductSaved(false)
   }, [])
 
   const handleOpenAdd = useCallback(() => {
@@ -405,19 +407,17 @@ export default function ProductosPage() {
     }
   }, [])
 
-  const handleSubmit = useCallback(async (e?: React.FormEvent) => {
-    e?.preventDefault()
-
+  const handleSubmit = useCallback(async (): Promise<boolean> => {
     // Validate
     if (!name.trim()) {
       setError('El nombre es requerido')
-      return
+      return false
     }
 
     const priceNum = parseFloat(price)
     if (isNaN(priceNum) || priceNum < 0) {
       setError('Ingresa un precio valido')
-      return
+      return false
     }
 
     setIsSaving(true)
@@ -447,14 +447,16 @@ export default function ProductosPage() {
         setProducts(prev => [...prev, record].sort((a, b) => a.name.localeCompare(b.name)))
       }
 
-      handleCloseModal()
+      setProductSaved(true)
+      return true
     } catch (err) {
       console.error('Error saving product:', err)
       setError('Error al guardar el producto')
+      return false
     } finally {
       setIsSaving(false)
     }
-  }, [name, price, category, active, imageFile, removeImage, editingProduct, pb, handleCloseModal])
+  }, [name, price, category, active, imageFile, removeImage, editingProduct, pb])
 
   // Stock adjustment handler
   const handleSaveAdjustment = useCallback(async () => {
@@ -951,6 +953,29 @@ export default function ProductosPage() {
         disabled={isDeletingOrder}
       >
         {isDeletingOrder ? <Spinner /> : 'Eliminar'}
+      </button>
+    )
+  }
+
+  // SaveProductButton - saves product and goes to success step
+  const SaveProductButton = () => {
+    const { goToStep } = useMorphingModal()
+
+    const handleClick = async () => {
+      const success = await handleSubmit()
+      if (success) {
+        goToStep(5) // Go to save success step
+      }
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        className="btn btn-primary flex-1"
+        disabled={isSaving || !name.trim() || !price || parseFloat(price) < 0 || !category}
+      >
+        {isSaving ? <Spinner /> : 'Guardar'}
       </button>
     )
   }
@@ -1698,14 +1723,7 @@ export default function ProductosPage() {
             >
               Cancelar
             </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="btn btn-primary flex-1"
-              disabled={isSaving || !name.trim() || !price || parseFloat(price) < 0 || !category}
-            >
-              {isSaving ? <Spinner /> : 'Guardar'}
-            </button>
+            <SaveProductButton />
           </Modal.Footer>
         </Modal.Step>
 
@@ -1908,6 +1926,7 @@ export default function ProductosPage() {
                     src="/animations/error.json"
                     loop={false}
                     autoplay={true}
+                    delay={500}
                     style={{ width: 160, height: 160 }}
                   />
                 )}
@@ -1923,6 +1942,50 @@ export default function ProductosPage() {
                 style={{ opacity: productDeleted ? 1 : 0 }}
               >
                 El producto ha sido eliminado correctamente
+              </p>
+            </div>
+          </Modal.Item>
+
+          <Modal.Footer>
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="btn btn-primary flex-1"
+            >
+              Listo
+            </button>
+          </Modal.Footer>
+        </Modal.Step>
+
+        {/* Step 5: Product saved success */}
+        <Modal.Step title={editingProduct ? 'Producto actualizado' : 'Producto creado'} hideBackButton>
+          <Modal.Item>
+            <div className="flex flex-col items-center text-center py-4">
+              {/* Lottie animation */}
+              <div style={{ width: 160, height: 160 }}>
+                {productSaved && (
+                  <LottiePlayer
+                    src="/animations/success.json"
+                    loop={false}
+                    autoplay={true}
+                    delay={500}
+                    style={{ width: 160, height: 160 }}
+                  />
+                )}
+              </div>
+
+              {/* Confirmation text with fade-in */}
+              <p
+                className="text-lg font-semibold text-text-primary mt-4 transition-opacity duration-500"
+                style={{ opacity: productSaved ? 1 : 0 }}
+              >
+                {editingProduct ? 'Cambios guardados!' : 'Producto agregado!'}
+              </p>
+              <p
+                className="text-sm text-text-secondary mt-1 transition-opacity duration-500 delay-200"
+                style={{ opacity: productSaved ? 1 : 0 }}
+              >
+                {editingProduct ? 'El producto ha sido actualizado' : 'El producto ha sido creado correctamente'}
               </p>
             </div>
           </Modal.Item>
@@ -2422,6 +2485,7 @@ export default function ProductosPage() {
                     src="/animations/success.json"
                     loop={false}
                     autoplay={true}
+                    delay={500}
                     style={{ width: 160, height: 160 }}
                   />
                 )}
@@ -2784,6 +2848,7 @@ export default function ProductosPage() {
                       src="/animations/success.json"
                       loop={false}
                       autoplay={true}
+                      delay={500}
                       style={{ width: 160, height: 160 }}
                     />
                   )}
@@ -2941,6 +3006,7 @@ export default function ProductosPage() {
                       src="/animations/success.json"
                       loop={false}
                       autoplay={true}
+                      delay={500}
                       style={{ width: 160, height: 160 }}
                     />
                   )}
@@ -2982,6 +3048,7 @@ export default function ProductosPage() {
                       src="/animations/error.json"
                       loop={false}
                       autoplay={true}
+                      delay={500}
                       style={{ width: 160, height: 160 }}
                     />
                   )}
