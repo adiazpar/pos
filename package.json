@@ -17,14 +17,17 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@imgly/background-removal": "^1.7.0",
     "date-fns": "^3.6.0",
     "firebase": "^10.14.0",
+    "heic-convert": "^2.1.0",
     "lottie-react": "^2.4.1",
     "next": "^15.5.12",
     "pocketbase": "^0.21.0",
     "qrcode": "^1.5.4",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "sharp": "^0.34.5",
     "zod": "^3.23.0"
   },
   "devDependencies": {

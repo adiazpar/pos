@@ -55,14 +55,14 @@ export type ProductCategory = 'chifles_grande' | 'chifles_chico' | 'miel' | 'alg
 
 export interface Product {
   id: string
-  collectionId: string // Needed for image URL
-  collectionName: string // Needed for image URL
+  collectionId: string // Needed for icon URL
+  collectionName: string // Needed for icon URL
   name: string
   price: number // Selling price per unit
   costPrice?: number // Estimated cost per unit (optional)
   active: boolean
   category?: ProductCategory // Product category for grouping
-  image?: string // Filename from PocketBase
+  icon?: string // Filename from PocketBase (AI-generated emoji icon)
   stock?: number // Current stock quantity
   lowStockThreshold?: number // Alert threshold (default: 10)
   created: string

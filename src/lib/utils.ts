@@ -65,20 +65,20 @@ export function cn(...classes: (string | undefined | false)[]): string {
 import { POCKETBASE_URL } from './pocketbase'
 
 /**
- * Get product image URL from PocketBase
- * @param product - Product with id, collectionId, and optional image filename
- * @param thumb - Optional thumbnail size ('100x100' or '200x200') or baseURL for full image
- * @returns Full URL to the image or null if no image
+ * Get product icon URL from PocketBase
+ * @param product - Product with id, collectionId, and optional icon filename
+ * @param thumb - Optional thumbnail size ('64x64' or '128x128') or baseURL for full icon
+ * @returns Full URL to the icon or null if no icon
  */
-export function getProductImageUrl(
-  product: { id: string; collectionId: string; image?: string },
-  thumb?: '100x100' | '200x200' | string
+export function getProductIconUrl(
+  product: { id: string; collectionId: string; icon?: string },
+  thumb?: '64x64' | '128x128' | string
 ): string | null {
-  if (!product.image) return null
+  if (!product.icon) return null
 
-  const baseUrl = `${POCKETBASE_URL}/api/files/${product.collectionId}/${product.id}/${product.image}`
+  const baseUrl = `${POCKETBASE_URL}/api/files/${product.collectionId}/${product.id}/${product.icon}`
 
-  if (thumb === '100x100' || thumb === '200x200') {
+  if (thumb === '64x64' || thumb === '128x128') {
     return `${baseUrl}?thumb=${thumb}`
   }
 

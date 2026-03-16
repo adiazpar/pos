@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react'
 import Image from 'next/image'
+import { removeBackground } from '@imgly/background-removal'
 import { Spinner, Modal, useMorphingModal, StockStepper } from '@/components/ui'
 import { LottiePlayer } from '@/components/animations/LottiePlayer'
 import { useHeader } from '@/contexts/header-context'
 import { IconAdd, IconClose, IconTrash, IconImage, IconProducts, IconSearch, IconArrowUp, IconArrowDown, IconFilter, IconCheck, IconEdit, IconChevronRight, IconChevronDown, IconWarning, IconInventory, IconAdjust, IconCirclePlus, IconCircleMinus, IconCalendarTime } from '@/components/icons'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { useAuth } from '@/contexts/auth-context'
-import { formatCurrency, formatDate, getProductImageUrl } from '@/lib/utils'
-import { transitionModals } from '@/lib/modal-utils'
+import { formatCurrency, formatDate, getProductIconUrl } from '@/lib/utils'
 import { PRODUCT_FILTERS_KEY } from '@/lib/constants'
 import type { Product, ProductCategory, Order, OrderItem, Provider } from '@/types'
 
@@ -83,6 +83,44 @@ function saveProductFilters(filters: ProductFilters): void {
   localStorage.setItem(PRODUCT_FILTERS_KEY, JSON.stringify(filters))
 }
 
+// Stable navigator components - defined outside main component to prevent recreation on each render
+// Using ref pattern to avoid goToStep in dependency array (it changes on every phase transition)
+
+function AiFlowNavigator({ aiPhoto }: { aiPhoto: File | null }) {
+  const { goToStep } = useMorphingModal()
+  const goToStepRef = useRef(goToStep)
+
+  // Keep ref updated without triggering effect
+  useLayoutEffect(() => {
+    goToStepRef.current = goToStep
+  })
+
+  useEffect(() => {
+    if (aiPhoto) {
+      goToStepRef.current(2) // Go to AI Processing step
+    }
+  }, [aiPhoto]) // Only trigger on aiPhoto change
+
+  return null
+}
+
+function AiProcessingNavigator({ aiStep }: { aiStep: string }) {
+  const { goToStep } = useMorphingModal()
+  const goToStepRef = useRef(goToStep)
+
+  useLayoutEffect(() => {
+    goToStepRef.current = goToStep
+  })
+
+  useEffect(() => {
+    if (aiStep === 'review') {
+      goToStepRef.current(3) // Go to AI Review step
+    }
+  }, [aiStep])
+
+  return null
+}
+
 
 export default function ProductosPage() {
   const { user, pb } = useAuth()
@@ -152,11 +190,17 @@ export default function ProductosPage() {
   const [price, setPrice] = useState('')
   const [category, setCategory] = useState<ProductCategory | ''>('')
   const [active, setActive] = useState(true)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [removeImage, setRemoveImage] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [iconPreview, setIconPreview] = useState<string | null>(null)
+  const [generatedIconBlob, setGeneratedIconBlob] = useState<Blob | null>(null) // AI-generated icon as blob for form submission
   const receiptInputRef = useRef<HTMLInputElement>(null)
+
+  // AI product creation state
+  const [aiPhoto, setAiPhoto] = useState<string | null>(null) // base64 photo for AI analysis
+  const [aiProcessing, setAiProcessing] = useState(false)
+  const [aiStep, setAiStep] = useState<'photo' | 'processing' | 'review'>('photo')
+  const [extractedData, setExtractedData] = useState<{ name: string } | null>(null)
+  const [cachedBgRemovedUrl, setCachedBgRemovedUrl] = useState<string | null>(null) // Cache for regenerations
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   // Permission check
   const canDelete = user?.role === 'owner' || user?.role === 'partner'
@@ -324,13 +368,18 @@ export default function ProductosPage() {
     setPrice('')
     setCategory('')
     setActive(true)
-    setImageFile(null)
-    setImagePreview(null)
-    setRemoveImage(false)
+    setIconPreview(null)
+    setGeneratedIconBlob(null)
     setEditingProduct(null)
     setError('')
     setProductDeleted(false)
     setProductSaved(false)
+    // Reset AI state
+    setAiPhoto(null)
+    setAiProcessing(false)
+    setAiStep('photo')
+    setExtractedData(null)
+    setCachedBgRemovedUrl(null)
   }, [])
 
   const handleOpenAdd = useCallback(() => {
@@ -344,11 +393,16 @@ export default function ProductosPage() {
     setPrice(product.price.toString())
     setCategory(product.category || '')
     setActive(product.active)
-    setImageFile(null)
-    setRemoveImage(false)
-    // Set existing image preview
-    const existingImageUrl = getProductImageUrl(product, '200x200')
-    setImagePreview(existingImageUrl)
+    // Set existing icon preview
+    const existingIconUrl = getProductIconUrl(product, '128x128')
+    setIconPreview(existingIconUrl)
+    setGeneratedIconBlob(null)
+    // Reset AI state
+    setAiPhoto(null)
+    setAiProcessing(false)
+    setAiStep('photo')
+    setExtractedData(null)
+    setCachedBgRemovedUrl(null)
     // Reset adjustment form state
     setAdjustmentQuantity(0)
     setAdjustmentNotes('')
@@ -358,46 +412,273 @@ export default function ProductosPage() {
 
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false)
-    resetForm()
-  }, [resetForm])
+    // Don't reset form here - use onExitComplete to avoid flash during close animation
+  }, [])
 
-  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle AI photo capture for product identification
+  const handleAiPhotoCapture = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file size (5MB max)
-    if (file.size > 5242880) {
-      setError('La imagen debe ser menor a 5MB')
-      return
-    }
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
-    const isHeicFile = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
-    if (!validTypes.includes(file.type) && !isHeicFile) {
-      setError('Solo se permiten imagenes JPG, PNG, WebP o HEIC')
+    // Validate file size (20MB max raw, will be compressed)
+    if (file.size > 20971520) {
+      setError('La imagen debe ser menor a 20MB')
       return
     }
 
     setError('')
-    setImageFile(file)
-    setRemoveImage(false)
+    
+    // Immediately show processing step (includes HEIC conversion)
+    setAiStep('processing')
 
-    // Create preview
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      setImagePreview(e.target?.result as string)
+    try {
+      // Check if file is HEIC/HEIF (needs server-side conversion)
+      const isHeic = file.type === 'image/heic' || 
+                     file.type === 'image/heif' || 
+                     file.name.toLowerCase().endsWith('.heic') ||
+                     file.name.toLowerCase().endsWith('.heif')
+
+      let imageSource: Blob | string = file
+
+      if (isHeic) {
+        console.log('[AI] Detected HEIC image, converting server-side...')
+        
+        // Send to server for conversion
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const response = await fetch('/api/convert-heic', {
+          method: 'POST',
+          body: formData,
+        })
+
+        const result = await response.json()
+
+        if (!result.success) {
+          setError('Error al convertir la imagen HEIC')
+          setAiStep('camera')
+          return
+        }
+
+        console.log('[AI] HEIC converted successfully')
+        imageSource = result.data.image // base64 data URL
+      }
+
+      // Use createImageBitmap to properly handle EXIF orientation from iPhone photos
+      let bitmap: ImageBitmap
+      if (typeof imageSource === 'string') {
+        // It's a base64 data URL from HEIC conversion
+        const response = await fetch(imageSource)
+        const blob = await response.blob()
+        bitmap = await createImageBitmap(blob, {
+          imageOrientation: 'from-image',
+        })
+      } else {
+        bitmap = await createImageBitmap(imageSource, {
+          imageOrientation: 'from-image',
+        })
+      }
+
+      // Target max dimension of 1024px for faster processing
+      const maxDim = 1024
+      let width = bitmap.width
+      let height = bitmap.height
+
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width)
+          width = maxDim
+        } else {
+          width = Math.round((width * maxDim) / height)
+          height = maxDim
+        }
+      }
+
+      // Create canvas and draw resized image (EXIF rotation already applied)
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        setError('Error al procesar la imagen')
+        setAiStep('camera')
+        return
+      }
+      ctx.drawImage(bitmap, 0, 0, width, height)
+      bitmap.close() // Free memory
+
+      // Compress to JPEG at 80% quality
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8)
+      console.log(`[AI] Image resized: ${bitmap.width}x${bitmap.height} -> ${width}x${height}, size: ~${Math.round(compressedBase64.length * 0.75 / 1024)}KB`)
+
+      setAiPhoto(compressedBase64)
+    } catch (err) {
+      console.error('Error processing image:', err)
+      setError('Error al procesar la imagen')
+      setAiStep('camera')
     }
-    reader.readAsDataURL(file)
   }, [])
 
-  const handleRemoveImage = useCallback(() => {
-    setImageFile(null)
-    setImagePreview(null)
-    setRemoveImage(true)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+  // Process photo with AI to identify product and generate icon
+  const processAiPhoto = useCallback(async (photoBase64: string) => {
+    setAiProcessing(true)
+    setError('')
+
+    try {
+      // Step 1: Identify product using GPT-4o Mini Vision
+      const identifyResponse = await fetch('/api/ai/identify-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: photoBase64 }),
+      })
+
+      const identifyResult = await identifyResponse.json()
+
+      if (!identifyResult.success) {
+        setError(identifyResult.error || 'Error al identificar el producto')
+        setAiStep('photo')
+        setAiProcessing(false)
+        return
+      }
+
+      setExtractedData(identifyResult.data)
+      setName(identifyResult.data.name)
+
+      // Step 2: Remove background from photo client-side (FREE, uses @imgly/background-removal)
+      console.log('[AI] GPT-4o Mini extracted:', identifyResult.data)
+      console.log('[AI] Removing background client-side...')
+
+      // Convert base64 to blob for background removal
+      const photoResponse = await fetch(photoBase64)
+      const photoBlob = await photoResponse.blob()
+
+      // Remove background using client-side ML model (runs in browser, no API cost)
+      const bgRemovedBlob = await removeBackground(photoBlob)
+      console.log('[AI] Background removed successfully')
+
+      // Convert bg-removed blob to base64 for API and caching
+      const bgRemovedBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(bgRemovedBlob)
+      })
+
+      // Cache the bg-removed image for regenerations (saves processing time)
+      setCachedBgRemovedUrl(bgRemovedBase64)
+
+      // Step 3: Generate emoji icon using OpenAI GPT Image 1 Mini
+      console.log('[AI] Sending bg-removed image to OpenAI GPT Image 1 Mini')
+
+      const iconResponse = await fetch('/api/ai/generate-icon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: bgRemovedBase64 }),
+      })
+
+      const iconResult = await iconResponse.json()
+
+      if (!iconResult.success) {
+        setError(iconResult.error || 'Error al generar el icono')
+        // Still show review step with extracted data but no icon
+        setAiStep('review')
+        setAiProcessing(false)
+        return
+      }
+
+      // Step 4: Remove background from generated icon (ensures transparency)
+      console.log('[AI] Removing background from generated icon...')
+      const iconDataUrl = iconResult.data.icon
+      const iconResponse2 = await fetch(iconDataUrl)
+      const iconBlob = await iconResponse2.blob()
+      const transparentIconBlob = await removeBackground(iconBlob)
+      console.log('[AI] Icon background removed, now transparent')
+
+      // Convert transparent icon to base64 for preview
+      const transparentIconBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(transparentIconBlob)
+      })
+
+      // Set icon preview with transparent background
+      setIconPreview(transparentIconBase64)
+      setGeneratedIconBlob(transparentIconBlob)
+
+      setAiStep('review')
+    } catch (err) {
+      console.error('AI processing error:', err)
+      setError('Error al procesar la imagen')
+      setAiStep('photo')
+    } finally {
+      setAiProcessing(false)
     }
+  }, [])
+
+  // Trigger AI processing when photo is captured
+  useEffect(() => {
+    if (aiPhoto && aiStep === 'processing' && !aiProcessing) {
+      processAiPhoto(aiPhoto)
+    }
+  }, [aiPhoto, aiStep, aiProcessing, processAiPhoto])
+
+  // Regenerate icon - uses cached bg-removed image (already processed client-side)
+  const handleRegenerateIcon = useCallback(async () => {
+    // Need the cached bg-removed image
+    if (!cachedBgRemovedUrl) {
+      setError('No hay imagen procesada para regenerar')
+      return
+    }
+
+    setAiProcessing(true)
+    setError('')
+
+    try {
+      // Send cached bg-removed image directly to OpenAI (no bg removal needed for input)
+      console.log('[AI] Regenerating icon with cached bg-removed image')
+
+      const iconResponse = await fetch('/api/ai/generate-icon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: cachedBgRemovedUrl }),
+      })
+
+      const iconResult = await iconResponse.json()
+
+      if (!iconResult.success) {
+        setError(iconResult.error || 'Error al regenerar el icono')
+        setAiProcessing(false)
+        return
+      }
+
+      // Remove background from generated icon (ensures transparency)
+      console.log('[AI] Removing background from regenerated icon...')
+      const iconDataUrl = iconResult.data.icon
+      const iconResponse2 = await fetch(iconDataUrl)
+      const iconBlob = await iconResponse2.blob()
+      const transparentIconBlob = await removeBackground(iconBlob)
+      console.log('[AI] Icon background removed, now transparent')
+
+      // Convert transparent icon to base64 for preview
+      const transparentIconBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(transparentIconBlob)
+      })
+
+      setIconPreview(transparentIconBase64)
+      setGeneratedIconBlob(transparentIconBlob)
+    } catch (err) {
+      console.error('Icon regeneration error:', err)
+      setError('Error al regenerar el icono')
+    } finally {
+      setAiProcessing(false)
+    }
+  }, [cachedBgRemovedUrl, aiPhoto])
+
+  // Clear icon
+  const handleClearIcon = useCallback(() => {
+    setIconPreview(null)
+    setGeneratedIconBlob(null)
   }, [])
 
   const handleSubmit = useCallback(async (): Promise<boolean> => {
@@ -425,10 +706,9 @@ export default function ProductosPage() {
       }
       formData.append('active', active.toString())
 
-      if (imageFile) {
-        formData.append('image', imageFile)
-      } else if (removeImage && editingProduct?.image) {
-        formData.append('image', '')
+      // Handle icon - either a new AI-generated icon or keep existing
+      if (generatedIconBlob) {
+        formData.append('icon', generatedIconBlob, 'icon.png')
       }
 
       let record: Product
@@ -449,7 +729,7 @@ export default function ProductosPage() {
     } finally {
       setIsSaving(false)
     }
-  }, [name, price, category, active, imageFile, removeImage, editingProduct, pb])
+  }, [name, price, category, active, generatedIconBlob, editingProduct, pb])
 
   // Stock adjustment handler
   const handleSaveAdjustment = useCallback(async () => {
@@ -899,7 +1179,7 @@ export default function ProductosPage() {
     const handleClick = async () => {
       const success = await handleSubmit()
       if (success) {
-        goToStep(4) // Go to save success step
+        goToStep(7) // Go to save success step
       }
     }
 
@@ -908,7 +1188,7 @@ export default function ProductosPage() {
         type="button"
         onClick={handleClick}
         className="btn btn-primary flex-1"
-        disabled={isSaving || !name.trim() || !price || parseFloat(price) < 0 || !category}
+        disabled={isSaving || !name.trim() || !price || parseFloat(price) < 0}
       >
         {isSaving ? <Spinner /> : 'Guardar'}
       </button>
@@ -929,7 +1209,7 @@ export default function ProductosPage() {
         await pb.collection('products').delete(editingProduct.id)
         setProducts(prev => prev.filter(p => p.id !== editingProduct.id))
         setProductDeleted(true)
-        goToStep(3) // Go to delete success step
+        goToStep(6) // Go to delete success step
       } catch (err) {
         console.error('Error deleting product:', err)
         setError('Error al eliminar el producto')
@@ -1151,7 +1431,7 @@ export default function ProductosPage() {
                   ) : (
                     <div className="space-y-2">
                       {filteredProducts.map((product) => {
-                        const imageUrl = getProductImageUrl(product, '100x100')
+                        const iconUrl = getProductIconUrl(product, '64x64')
                         const categoryConfig = product.category ? CATEGORY_CONFIG[product.category] : null
                         const stockValue = product.stock ?? 0
                         const threshold = product.lowStockThreshold ?? 10
@@ -1171,11 +1451,11 @@ export default function ProductosPage() {
                             tabIndex={0}
                             role="button"
                           >
-                            {/* Product Image/Icon */}
+                            {/* Product Icon */}
                             <div className={`product-list-image ${isLowStock && product.active ? 'ring-2 ring-error' : ''}`}>
-                              {imageUrl ? (
+                              {iconUrl ? (
                                 <Image
-                                  src={imageUrl}
+                                  src={iconUrl}
                                   alt={product.name}
                                   width={40}
                                   height={40}
@@ -1444,8 +1724,64 @@ export default function ProductosPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        onExitComplete={resetForm}
         title={editingProduct ? 'Editar producto' : 'Agregar producto'}
+        initialStep={editingProduct ? 1 : 0}
       >
+        {/* Step 0: Mode Selection (only for new products) */}
+        <Modal.Step title="Agregar producto">
+          {/* AI Navigation Helper - handles step transitions for AI flow */}
+          <AiFlowNavigator aiPhoto={aiPhoto} />
+
+          <Modal.Item>
+            <p className="text-sm text-text-secondary mb-4">
+              Elige como quieres agregar el producto:
+            </p>
+            <div className="caja-actions">
+              {/* AI Mode Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  cameraInputRef.current?.click()
+                }}
+                className="caja-action-btn"
+              >
+                <svg className="caja-action-btn__icon text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="text-brand">Snap to Add</span>
+                <span className="text-[10px] text-text-tertiary -mt-1">Foto + IA</span>
+              </button>
+
+              {/* Manual Mode Button */}
+              <Modal.GoToStepButton
+                step={1}
+                className="caja-action-btn"
+              >
+                <IconEdit className="caja-action-btn__icon text-text-secondary" />
+                <span>Manual</span>
+                <span className="text-[10px] text-text-tertiary -mt-1">Ingreso manual</span>
+              </Modal.GoToStepButton>
+            </div>
+          </Modal.Item>
+
+          {/* Hidden camera input - accept only JPEG/PNG to force iOS to convert HEIC automatically */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            capture="environment"
+            onChange={handleAiPhotoCapture}
+            className="hidden"
+          />
+
+          <Modal.Footer>
+            <Modal.CancelBackButton />
+          </Modal.Footer>
+        </Modal.Step>
+
+        {/* Step 1: Manual Form */}
         <Modal.Step title={editingProduct ? 'Editar producto' : 'Agregar producto'}>
           {error && (
             <Modal.Item>
@@ -1455,52 +1791,31 @@ export default function ProductosPage() {
             </Modal.Item>
           )}
 
-          {/* Image upload */}
-          <Modal.Item>
-            <label className="label">Imagen</label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-
-            {imagePreview ? (
-              <div className="image-preview">
-                <Image
-                  src={imagePreview}
-                  alt="Vista previa"
-                  width={120}
-                  height={120}
-                  className="image-preview-img"
-                  unoptimized
-                />
+          {/* Icon Preview (if exists) */}
+          {iconPreview && (
+            <Modal.Item>
+              <label className="label">Icono</label>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center border border-border">
+                  <Image
+                    src={iconPreview}
+                    alt="Icono del producto"
+                    width={64}
+                    height={64}
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
                 <button
                   type="button"
-                  onClick={handleRemoveImage}
-                  className="image-preview-remove"
-                  title="Eliminar imagen"
+                  onClick={handleClearIcon}
+                  className="btn btn-secondary btn-sm"
                 >
-                  <IconClose className="w-4 h-4" />
+                  Eliminar
                 </button>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="image-upload-zone"
-              >
-                <IconImage className="w-8 h-8 text-text-tertiary mb-2" />
-                <span className="text-sm text-text-secondary">
-                  Toca para agregar imagen
-                </span>
-                <span className="text-xs text-text-tertiary mt-1">
-                  JPG, PNG, WebP o HEIC (max 5MB)
-                </span>
-              </button>
-            )}
-          </Modal.Item>
+            </Modal.Item>
+          )}
 
           {/* Name */}
           <Modal.Item>
@@ -1562,14 +1877,14 @@ export default function ProductosPage() {
                 </div>
               </div>
               <div className="flex-1">
-                <label htmlFor="category" className="label">Categoria <span className="text-error">*</span></label>
+                <label htmlFor="category" className="label">Categoria</label>
                 <select
                   id="category"
                   value={category}
                   onChange={e => setCategory(e.target.value as ProductCategory | '')}
                   className={`input ${category === '' ? 'select-placeholder' : ''}`}
                 >
-                  <option value="">Seleccionar</option>
+                  <option value="">Sin categoria</option>
                   {Object.entries(CATEGORY_CONFIG)
                     .sort(([, a], [, b]) => a.order - b.order)
                     .map(([key, config]) => (
@@ -1604,37 +1919,189 @@ export default function ProductosPage() {
             {editingProduct && (
               <>
                 {canDelete && (
-                  <Modal.GoToStepButton step={2} className="btn-icon !bg-transparent text-error hover:!bg-error-subtle rounded-lg">
+                  <Modal.GoToStepButton step={5} className="btn-icon !bg-transparent text-error hover:!bg-error-subtle rounded-lg">
                     <IconTrash className="w-5 h-5" />
                   </Modal.GoToStepButton>
                 )}
-                <Modal.GoToStepButton step={1} className="modal-action-adjust">
+                <Modal.GoToStepButton step={4} className="modal-action-adjust">
                   <IconAdjust className="w-5 h-5" />
                 </Modal.GoToStepButton>
               </>
             )}
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              className="btn btn-secondary flex-1"
-              disabled={isSaving}
+            <Modal.CancelBackButton disabled={isSaving} />
+            <SaveProductButton />
+          </Modal.Footer>
+        </Modal.Step>
+
+        {/* Step 2: AI Processing */}
+        <Modal.Step title="Analizando...">
+          {/* Navigator for Step 2 → Step 3 transition */}
+          <AiProcessingNavigator aiStep={aiStep} />
+
+          <Modal.Item>
+            <div className="flex flex-col items-center justify-center py-12">
+              <Spinner className="spinner-lg mb-4" />
+              <p className="text-sm text-text-secondary">Analizando producto...</p>
+              <p className="text-xs text-text-tertiary mt-1">Esto puede tomar unos segundos</p>
+            </div>
+          </Modal.Item>
+
+          <Modal.Footer>
+            <Modal.CancelBackButton />
+          </Modal.Footer>
+        </Modal.Step>
+
+        {/* Step 3: AI Review */}
+        <Modal.Step title="Revisar producto" backStep={0}>
+          {error && (
+            <Modal.Item>
+              <div className="p-3 bg-error-subtle text-error text-sm rounded-lg">
+                {error}
+              </div>
+            </Modal.Item>
+          )}
+
+          {/* Generated Icon Preview */}
+          <Modal.Item>
+            <label className="label">Icono generado</label>
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-24 rounded-xl overflow-hidden bg-bg-muted flex items-center justify-center border border-border">
+                {iconPreview ? (
+                  <Image
+                    src={iconPreview}
+                    alt="Icono generado"
+                    width={96}
+                    height={96}
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <IconImage className="w-8 h-8 text-text-tertiary" />
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <button
+                  type="button"
+                  onClick={handleRegenerateIcon}
+                  disabled={aiProcessing}
+                  className="btn btn-secondary btn-sm w-full"
+                >
+                  {aiProcessing ? <Spinner /> : 'Regenerar icono'}
+                </button>
+                <p className="text-xs text-text-tertiary text-center">
+                  Costo: ~$0.004
+                </p>
+              </div>
+            </div>
+          </Modal.Item>
+
+          {/* Name (editable) */}
+          <Modal.Item>
+            <label htmlFor="ai-name" className="label">Nombre <span className="text-error">*</span></label>
+            <input
+              id="ai-name"
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="input"
+              placeholder="Ej: Chifle Grande"
+              autoComplete="off"
+            />
+          </Modal.Item>
+
+          {/* Price */}
+          <Modal.Item>
+            <label htmlFor="ai-price" className="label">Precio (S/) <span className="text-error">*</span></label>
+            <div className="input-number-wrapper">
+              <input
+                id="ai-price"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                value={price}
+                onChange={e => setPrice(e.target.value)}
+                className="input"
+                placeholder="0.00"
+              />
+              <div className="input-number-spinners">
+                <button
+                  type="button"
+                  className="input-number-spinner"
+                  onClick={() => {
+                    const current = parseFloat(price) || 0
+                    setPrice((current + 1).toFixed(2))
+                  }}
+                  tabIndex={-1}
+                  aria-label="Incrementar precio"
+                >
+                  <IconArrowUp />
+                </button>
+                <button
+                  type="button"
+                  className="input-number-spinner"
+                  onClick={() => {
+                    const current = parseFloat(price) || 0
+                    setPrice(Math.max(0, current - 1).toFixed(2))
+                  }}
+                  tabIndex={-1}
+                  aria-label="Decrementar precio"
+                >
+                  <IconArrowDown />
+                </button>
+              </div>
+            </div>
+          </Modal.Item>
+
+          {/* Category (optional) */}
+          <Modal.Item>
+            <label htmlFor="ai-category" className="label">Categoria</label>
+            <select
+              id="ai-category"
+              value={category}
+              onChange={e => setCategory(e.target.value as ProductCategory | '')}
+              className={`input ${category === '' ? 'select-placeholder' : ''}`}
             >
-              Cancelar
-            </button>
+              <option value="">Sin categoria</option>
+              {Object.entries(CATEGORY_CONFIG)
+                .sort(([, a], [, b]) => a.order - b.order)
+                .map(([key, config]) => (
+                  <option key={key} value={key}>
+                    {config.label}{config.size ? ` (${config.size})` : ''}
+                  </option>
+                ))}
+            </select>
+          </Modal.Item>
+
+          <Modal.Footer>
+            <Modal.BackButton
+              onClick={() => {
+                setAiPhoto(null)
+                setExtractedData(null)
+                setName('')
+                setPrice('')
+                setIconPreview(null)
+                setGeneratedIconBlob(null)
+                setCachedBgRemovedUrl(null) // Clear cache on back
+              }}
+              disabled={isSaving || aiProcessing}
+            >
+              Atras
+            </Modal.BackButton>
             <SaveProductButton />
           </Modal.Footer>
         </Modal.Step>
 
         {/* Adjust inventory - single step with stepper */}
-        <Modal.Step title="Ajustar inventario">
+        <Modal.Step title="Ajustar inventario" backStep={1}>
           {/* Product info */}
           {editingProduct && (
             <Modal.Item>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-bg-muted">
-                  {editingProduct.image ? (
+                  {editingProduct.icon ? (
                     <Image
-                      src={getProductImageUrl(editingProduct)!}
+                      src={getProductIconUrl(editingProduct)!}
                       alt={editingProduct.name}
                       width={48}
                       height={48}
@@ -1702,7 +2169,7 @@ export default function ProductosPage() {
         </Modal.Step>
 
         {/* Delete confirmation step */}
-        <Modal.Step title="Eliminar producto" backStep={0}>
+        <Modal.Step title="Eliminar producto" backStep={1}>
           <Modal.Item>
             <p className="text-text-secondary">
               Estas seguro que deseas eliminar <strong>{editingProduct?.name}</strong>? Esta accion no se puede deshacer.
@@ -1710,7 +2177,7 @@ export default function ProductosPage() {
           </Modal.Item>
 
           <Modal.Footer>
-            <Modal.GoToStepButton step={0} className="btn btn-secondary flex-1" disabled={isDeleting}>
+            <Modal.GoToStepButton step={1} className="btn btn-secondary flex-1" disabled={isDeleting}>
               Cancelar
             </Modal.GoToStepButton>
             <ConfirmDeleteProductButton />
@@ -1850,9 +2317,9 @@ export default function ProductosPage() {
                   >
                     {/* Product image */}
                     <div className="w-10 h-10 rounded-lg bg-bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {getProductImageUrl(product, '100x100') ? (
+                      {getProductIconUrl(product, '64x64') ? (
                         <Image
-                          src={getProductImageUrl(product, '100x100')!}
+                          src={getProductIconUrl(product, '64x64')!}
                           alt={product.name}
                           width={40}
                           height={40}
@@ -1927,9 +2394,9 @@ export default function ProductosPage() {
                 <div key={item.product.id} className="flex items-center gap-3 p-3 bg-bg-muted rounded-lg">
                   {/* Product image */}
                   <div className="w-12 h-12 rounded-lg bg-bg-elevated flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {getProductImageUrl(item.product, '100x100') ? (
+                    {getProductIconUrl(item.product, '64x64') ? (
                       <Image
-                        src={getProductImageUrl(item.product, '100x100')!}
+                        src={getProductIconUrl(item.product, '64x64')!}
                         alt={item.product.name}
                         width={48}
                         height={48}
@@ -2463,9 +2930,9 @@ export default function ProductosPage() {
                   <div key={item.product.id} className="flex items-center gap-3 p-3 bg-bg-muted rounded-lg">
                     {/* Product image */}
                     <div className="w-12 h-12 rounded-lg bg-bg-elevated flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {getProductImageUrl(item.product, '100x100') ? (
+                      {getProductIconUrl(item.product, '64x64') ? (
                         <Image
-                          src={getProductImageUrl(item.product, '100x100')!}
+                          src={getProductIconUrl(item.product, '64x64')!}
                           alt={item.product.name}
                           width={48}
                           height={48}
@@ -2711,9 +3178,9 @@ export default function ProductosPage() {
                     <div key={item.id} className="flex items-center gap-3 p-3 bg-bg-muted rounded-lg">
                       {/* Product image */}
                       <div className="w-12 h-12 rounded-lg bg-bg-elevated flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {product && getProductImageUrl(product, '100x100') ? (
+                        {product && getProductIconUrl(product, '64x64') ? (
                           <Image
-                            src={getProductImageUrl(product, '100x100')!}
+                            src={getProductIconUrl(product, '64x64')!}
                             alt={product.name}
                             width={48}
                             height={48}
