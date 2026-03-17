@@ -1548,31 +1548,32 @@ export default function ProductosPage() {
           <AiPipelineNavigator pipelineStep={pipeline.state.step} isCompressing={compression.state.isProcessing} />
 
           <Modal.Item>
-            <p className="text-sm text-text-secondary mb-4">
-              Elige como quieres agregar el producto:
-            </p>
-            <div className="caja-actions">
+            <div className="caja-actions caja-actions--stacked">
               {/* AI Mode Button */}
               <button
                 type="button"
                 onClick={() => {
                   cameraInputRef.current?.click()
                 }}
-                className="caja-action-btn"
+                className="caja-action-btn caja-action-btn--large"
               >
                 <IconPhotoFocus className="caja-action-btn__icon text-brand" />
-                <span>Snap to Add</span>
-                <span className="text-[10px] text-text-tertiary -mt-1">Foto + IA</span>
+                <div className="caja-action-btn__text">
+                  <span className="caja-action-btn__title">Snap to Add</span>
+                  <span className="caja-action-btn__desc">Toma una foto y la IA completa los datos</span>
+                </div>
               </button>
 
               {/* Manual Mode Button */}
               <Modal.GoToStepButton
                 step={1}
-                className="caja-action-btn"
+                className="caja-action-btn caja-action-btn--large"
               >
                 <IconEdit className="caja-action-btn__icon text-text-secondary" />
-                <span>Manual</span>
-                <span className="text-[10px] text-text-tertiary -mt-1">Ingreso manual</span>
+                <div className="caja-action-btn__text">
+                  <span className="caja-action-btn__title">Agregar manual</span>
+                  <span className="caja-action-btn__desc">Ingresa los datos del producto tu mismo</span>
+                </div>
               </Modal.GoToStepButton>
             </div>
           </Modal.Item>

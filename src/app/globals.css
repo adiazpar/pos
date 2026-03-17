@@ -4117,6 +4117,12 @@
   gap: var(--space-3);
 }
 
+/* Stacked variant - full width buttons stacked vertically */
+.caja-actions--stacked {
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
 .caja-action-btn {
   display: flex;
   flex-direction: column;
@@ -4162,6 +4168,41 @@
   align-items: center;
   gap: var(--space-4);
   text-align: left;
+}
+
+/* Large stacked variant - column layout with centered content */
+.caja-action-btn--large {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+}
+
+.caja-action-btn--large .caja-action-btn__icon {
+  width: 36px;
+  height: 36px;
+}
+
+.caja-action-btn--large .caja-action-btn__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.caja-action-btn--large .caja-action-btn__title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.caja-action-btn--large .caja-action-btn__desc {
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  line-height: 1.4;
 }
 
 /* ===== Empty State Animation Container ===== */
