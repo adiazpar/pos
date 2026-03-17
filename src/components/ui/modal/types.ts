@@ -5,12 +5,13 @@ import { ReactNode } from 'react'
 export type Phase = 'idle' | 'exiting' | 'transitioning' | 'entering'
 export type Direction = 'forward' | 'backward'
 
-// Timing constants (centralized per spec reviewer recommendation)
+// Timing constants (must match CSS variables in globals.css)
+// CSS: --duration-fast: 150ms, --duration-normal: 250ms
 export const TIMING = {
   STAGGER_DELAY: 40,        // ms between each item animation
-  EXIT_DURATION: 120,       // base exit animation duration
-  ENTER_DURATION: 120,      // base enter animation duration
-  HEIGHT_TRANSITION: 300,   // height collapse/expand duration
+  EXIT_DURATION: 150,       // matches --duration-fast
+  ENTER_DURATION: 150,      // matches --duration-fast
+  HEIGHT_TRANSITION: 250,   // matches --duration-normal
 } as const
 
 // Internal state
@@ -49,6 +50,7 @@ export interface ModalContextValue {
   _registerStep: (index: number) => void
   _unregisterStep: (index: number) => void
   _onClose: () => void
+  _initialStep: number
   _currentStepHideBackButton: boolean
   _setCurrentStepHideBackButton: (hide: boolean) => void
   _currentStepBackStep: number | undefined

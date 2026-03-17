@@ -39,9 +39,19 @@ const nextConfig = {
             value: '1; mode=block',
           },
           {
-            // Permissions policy - restrict sensitive browser features
+            // Permissions policy - camera enabled for AI photo capture
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            value: 'camera=(self), microphone=(), geolocation=()',
+          },
+          {
+            // Cross-Origin-Embedder-Policy for SharedArrayBuffer (needed by @imgly/background-removal)
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'credentialless',
+          },
+          {
+            // Cross-Origin-Opener-Policy for SharedArrayBuffer
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
           },
         ],
       },

@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --experimental-https",
     "dev:all": "concurrently \"npm run dev\" \"npm run pb:start\"",
     "build": "next build",
     "start": "next start",

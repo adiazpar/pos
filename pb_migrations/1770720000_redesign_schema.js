@@ -82,14 +82,14 @@ migrate((app) => {
         required: false,
       },
       {
-        id: "prodimage001",
-        name: 'image',
+        id: "prodicon0001",
+        name: 'icon',
         type: 'file',
         required: false,
         maxSelect: 1,
-        maxSize: 5242880, // 5MB
-        mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
-        thumbs: ['100x100', '200x200'],
+        maxSize: 512000, // 500KB
+        mimeTypes: ['image/png'],
+        thumbs: ['64x64', '128x128'],
       },
       {
         id: "prodcateg001",

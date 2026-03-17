@@ -46,6 +46,7 @@ function ModalHeader({ title, singleStepTitle }: { title?: string; singleStepTit
   const displayTitle = singleStepTitle || title || ''
 
   // Show back button if: multi-step modal, not first step, and step doesn't hide it
+  // Back button animates AFTER height transition (when currentStep updates during 'entering' phase)
   const showBackIcon = !singleStepTitle && !isFirstStep && !_currentStepHideBackButton
 
   // Handle back navigation - use custom backStep if defined, otherwise default goBack

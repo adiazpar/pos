@@ -5,11 +5,14 @@ import { useModalContext, useMorphingModal } from './ModalContext'
 import type { ModalButtonProps } from './types'
 
 export function ModalBackButton({ children, className = '', disabled, onClick }: ModalButtonProps) {
-  const { goBack, isLocked, isTransitioning, isFirstStep } = useMorphingModal()
+  const ctx = useModalContext()
+  const { goBack, goToStep, isLocked, isTransitioning, isFirstStep, _currentStepBackStep } = ctx
 
   const handleClick = () => {
-    if (onClick) {
-      onClick()
+    onClick?.()
+    // Respect the step's backStep prop if defined
+    if (_currentStepBackStep !== undefined) {
+      goToStep(_currentStepBackStep)
     } else {
       goBack()
     }
@@ -31,11 +34,8 @@ export function ModalNextButton({ children, className = '', disabled, onClick }:
   const { goNext, isLocked, isTransitioning, isLastStep } = useMorphingModal()
 
   const handleClick = () => {
-    if (onClick) {
-      onClick()
-    } else {
-      goNext()
-    }
+    onClick?.()
+    goNext()
   }
 
   return (
@@ -87,7 +87,7 @@ export function ModalCancelBackButton({
   onCancel,
 }: CancelBackButtonProps) {
   const ctx = useModalContext()
-  const { goBack, isLocked, isTransitioning, isFirstStep } = ctx
+  const { goBack, goToStep, isLocked, isTransitioning, isFirstStep, _currentStepBackStep } = ctx
 
   const handleClick = () => {
     if (isFirstStep) {
@@ -97,7 +97,12 @@ export function ModalCancelBackButton({
         ctx._onClose()
       }
     } else {
-      goBack()
+      // Respect the step's backStep prop if defined
+      if (_currentStepBackStep !== undefined) {
+        goToStep(_currentStepBackStep)
+      } else {
+        goBack()
+      }
     }
   }
 
