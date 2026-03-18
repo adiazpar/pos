@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react'
 import Link from 'next/link'
 import QRCode from 'qrcode'
-import { Badge, Spinner, Modal } from '@/components/ui'
+import { Badge, Spinner, Modal, useMorphingModal } from '@/components/ui'
 import { useHeader } from '@/contexts/header-context'
-import { User, UserCircle, Check, RefreshCw, Copy, Trash2, Plus, Phone } from 'lucide-react'
+import { User as UserIcon, UserCircle, Check, RefreshCw, Copy, Trash2, Plus, Phone } from 'lucide-react'
 import { PhoneInput } from '@/components/auth/phone-input'
 import { useAuth } from '@/contexts/auth-context'
 import {
@@ -48,6 +48,493 @@ function RoleCard({ icon, title, description, selected, onClick }: RoleCardProps
   )
 }
 
+// ============================================
+// ADD MEMBER MODAL COMPONENTS
+// ============================================
+
+interface RoleSelectionStepProps {
+  selectedRole: InviteRole
+  setSelectedRole: (role: InviteRole) => void
+  isGenerating: boolean
+  onGenerate: () => Promise<void>
+  onClose: () => void
+}
+
+function RoleSelectionStep({
+  selectedRole,
+  setSelectedRole,
+  isGenerating,
+  onGenerate,
+  onClose,
+}: RoleSelectionStepProps) {
+  const { goNext, lock, unlock } = useMorphingModal()
+
+  const handleGenerate = async () => {
+    lock()
+    await onGenerate()
+    unlock()
+    goNext()
+  }
+
+  return (
+    <>
+      <Modal.Item>
+        <label className="label">Rol del nuevo miembro</label>
+        <div className="space-y-3">
+          <RoleCard
+            icon={<UserIcon className="w-5 h-5" />}
+            title="Empleado"
+            description="Puede registrar ventas y ver el resumen del dia"
+            selected={selectedRole === 'employee'}
+            onClick={() => setSelectedRole('employee')}
+          />
+          <RoleCard
+            icon={<UserCircle className="w-5 h-5" />}
+            title="Socio"
+            description="Acceso completo a reportes, inventario y configuracion"
+            selected={selectedRole === 'partner'}
+            onClick={() => setSelectedRole('partner')}
+          />
+        </div>
+      </Modal.Item>
+      <Modal.Footer>
+        <button
+          type="button"
+          onClick={onClose}
+          className="btn btn-secondary flex-1"
+          disabled={isGenerating}
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={handleGenerate}
+          className="btn btn-primary flex-1"
+          disabled={isGenerating}
+        >
+          {isGenerating ? <Spinner /> : 'Generar codigo'}
+        </button>
+      </Modal.Footer>
+    </>
+  )
+}
+
+interface CodeGeneratedStepProps {
+  selectedRole: InviteRole
+  newCode: string
+  qrDataUrl: string | null
+  isGenerating: boolean
+  copyFeedback: string | null
+  onRegenerate: () => Promise<void>
+  onCopy: (code: string) => void
+  onClose: () => void
+}
+
+function CodeGeneratedStep({
+  selectedRole,
+  newCode,
+  qrDataUrl,
+  isGenerating,
+  copyFeedback,
+  onRegenerate,
+  onCopy,
+  onClose,
+}: CodeGeneratedStepProps) {
+  return (
+    <>
+      <Modal.Item>
+        <div className="invite-success-compact">
+          {/* Role badge and expiry */}
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Badge variant="brand">{getInviteRoleLabel(selectedRole)}</Badge>
+            <span className="text-xs text-text-tertiary">Valido por 7 dias</span>
+          </div>
+
+          {/* QR Code */}
+          {qrDataUrl && (
+            <div className="flex justify-center mb-3">
+              <div className="invite-qr-box">
+                {/* eslint-disable-next-line @next/next/no-img-element -- Data URL for QR code, no optimization benefit */}
+                <img src={qrDataUrl} alt="Codigo QR para registro" />
+              </div>
+            </div>
+          )}
+
+          {/* Large readable code */}
+          <div className="text-center mb-1">
+            <code className="text-3xl font-display font-bold tracking-[0.3em] -mr-[0.3em] text-text-primary">
+              {newCode}
+            </code>
+          </div>
+
+          {/* Regenerate button */}
+          <button
+            type="button"
+            onClick={onRegenerate}
+            disabled={isGenerating}
+            className="invite-regenerate"
+          >
+            {isGenerating ? (
+              <>
+                <Spinner />
+                <span>Regenerando...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Regenerar codigo</span>
+              </>
+            )}
+          </button>
+        </div>
+      </Modal.Item>
+      <Modal.Footer>
+        <button
+          type="button"
+          onClick={() => onCopy(newCode)}
+          className="btn btn-secondary flex-1"
+        >
+          {copyFeedback === newCode ? 'Copiado!' : 'Copiar codigo'}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="btn btn-primary flex-1"
+        >
+          Listo
+        </button>
+      </Modal.Footer>
+    </>
+  )
+}
+
+// ============================================
+// USER MANAGEMENT MODAL COMPONENTS
+// ============================================
+
+interface UserDetailsStepProps {
+  member: User
+  currentUser: User | null
+  canManageTeam: boolean
+  pinResetLoading: boolean
+  onToggleStatus: () => void
+  onResetPin: () => void
+}
+
+function UserDetailsStep({
+  member,
+  currentUser,
+  canManageTeam,
+  pinResetLoading,
+  onToggleStatus,
+  onResetPin,
+}: UserDetailsStepProps) {
+  const { goToStep } = useMorphingModal()
+  const isSelf = member.id === currentUser?.id
+  const isManageable = canManageTeam && !isSelf && member.role !== 'owner'
+
+  return (
+    <>
+      <Modal.Item>
+        {/* Member header */}
+        <div className="flex items-center gap-3">
+          <div className="sidebar-user-avatar w-11 h-11 text-sm">
+            {getUserInitials(member.name)}
+          </div>
+          <div>
+            <h3 className="font-display font-bold text-lg">{member.name}</h3>
+            <div className="text-xs text-text-tertiary mt-0.5">
+              {getRoleLabel(member.role)}
+              <span className="mx-1.5">·</span>
+              <span className={member.status === 'active' ? 'text-success' : 'text-error'}>
+                {member.status === 'active' ? 'Activo' : 'Deshabilitado'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </Modal.Item>
+
+      <Modal.Item>
+        {/* Member details */}
+        <div className="space-y-3 p-4 bg-bg-muted rounded-lg">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-text-secondary">Telefono</span>
+            <span className="text-sm font-medium">
+              {isSelf
+                ? formatPhoneForDisplay(member.phoneNumber)
+                : `****${member.phoneNumber.slice(-4)}`}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-text-secondary">Miembro desde</span>
+            <span className="text-sm font-medium">
+              {formatDate(member.created)}
+            </span>
+          </div>
+        </div>
+      </Modal.Item>
+
+      {isManageable && (
+        <Modal.Item>
+          <div className="space-y-3">
+            {/* Change phone button */}
+            <button
+              type="button"
+              onClick={() => goToStep(1)}
+              className="btn btn-secondary w-full justify-start gap-3"
+            >
+              <Phone className="w-5 h-5" />
+              <span>Cambiar numero de telefono</span>
+            </button>
+
+            {/* Change role button */}
+            <button
+              type="button"
+              onClick={() => goToStep(2)}
+              className="btn btn-secondary w-full justify-start gap-3"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>Cambiar rol</span>
+            </button>
+
+            {/* Reset PIN button */}
+            <button
+              type="button"
+              onClick={onResetPin}
+              disabled={pinResetLoading || member.pinResetRequired}
+              className="btn btn-secondary w-full justify-start gap-3"
+            >
+              {pinResetLoading ? (
+                <Spinner />
+              ) : member.pinResetRequired ? (
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M13.5 16.5854C13.5 17.4138 12.8284 18.0854 12 18.0854C11.1716 18.0854 10.5 17.4138 10.5 16.5854C10.5 15.7569 11.1716 15.0854 12 15.0854C12.8284 15.0854 13.5 15.7569 13.5 16.5854Z" />
+                  <path fillRule="evenodd" clipRule="evenodd" d="M6.33367 10C6.20971 9.64407 6.09518 9.27081 5.99836 8.88671C5.69532 7.68444 5.54485 6.29432 5.89748 4.97439C6.26228 3.60888 7.14664 2.39739 8.74323 1.59523C10.3398 0.793061 11.8397 0.806642 13.153 1.32902C14.4225 1.83396 15.448 2.78443 16.2317 3.7452C16.4302 3.98851 16.6166 4.23669 16.7907 4.48449C17.0806 4.89706 16.9784 5.45918 16.5823 5.7713C16.112 6.14195 15.4266 6.01135 15.0768 5.52533C14.9514 5.35112 14.8197 5.17831 14.6819 5.0094C14.0088 4.18414 13.2423 3.51693 12.4138 3.18741C11.6292 2.87533 10.7252 2.83767 9.64112 3.38234C8.55703 3.92702 8.04765 4.6748 7.82971 5.49059C7.5996 6.35195 7.6774 7.36518 7.93771 8.39788C8.07953 8.96054 8.26936 9.50489 8.47135 10H18C19.6569 10 21 11.3431 21 13V20C21 21.6569 19.6569 23 18 23H6C4.34315 23 3 21.6569 3 20V13C3 11.3431 4.34315 10 6 10H6.33367ZM19 13C19 12.4477 18.5523 12 18 12H6C5.44772 12 5 12.4477 5 13V20C5 20.5523 5.44772 21 6 21H18C18.5523 21 19 20.5523 19 20V13Z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M13.5 16.5854C13.5 17.4138 12.8284 18.0854 12 18.0854C11.1716 18.0854 10.5 17.4138 10.5 16.5854C10.5 15.7569 11.1716 15.0854 12 15.0854C12.8284 15.0854 13.5 15.7569 13.5 16.5854Z" />
+                  <path fillRule="evenodd" clipRule="evenodd" d="M5.94209 10.0005C5.93921 9.87333 5.9375 9.73733 5.9375 9.59375C5.9375 8.70739 6.00254 7.50382 6.27381 6.28307C6.54278 5.07271 7.03242 3.76302 7.94009 2.74189C8.8791 1.6855 10.2132 1 12 1C13.7868 1 15.1209 1.6855 16.0599 2.74189C16.9676 3.76302 17.4572 5.07271 17.7262 6.28307C17.9975 7.50382 18.0625 8.70739 18.0625 9.59375C18.0625 9.73733 18.0608 9.87333 18.0579 10.0005C19.688 10.0314 21 11.3625 21 13V20C21 21.6569 19.6569 23 18 23H6C4.34315 23 3 21.6569 3 20V13C3 11.3625 4.31196 10.0314 5.94209 10.0005ZM16.0573 10C16.0605 9.87465 16.0625 9.73868 16.0625 9.59375C16.0625 8.79261 16.0025 7.74618 15.7738 6.71693C15.5428 5.67729 15.1574 4.73698 14.5651 4.07061C14.0041 3.4395 13.2132 3 12 3C10.7868 3 9.9959 3.4395 9.43491 4.07061C8.84258 4.73698 8.45722 5.67729 8.22619 6.71693C7.99747 7.74618 7.9375 8.79261 7.9375 9.59375C7.9375 9.73868 7.93946 9.87465 7.94265 10H16.0573ZM19 13C19 12.4477 18.5523 12 18 12H6C5.44772 12 5 12.4477 5 13V20C5 20.5523 5.44772 21 6 21H18C18.5523 21 19 20.5523 19 20V13Z" />
+                </svg>
+              )}
+              <span>{member.pinResetRequired ? 'PIN reset pendiente' : 'Forzar reset de PIN'}</span>
+            </button>
+
+            {/* PIN reset explanation */}
+            {member.pinResetRequired && (
+              <p className="text-xs text-text-tertiary">
+                El usuario debera crear un nuevo PIN la proxima vez que inicie sesion.
+              </p>
+            )}
+
+            {/* Toggle status button */}
+            <button
+              type="button"
+              onClick={onToggleStatus}
+              className={`btn w-full justify-start gap-3 ${
+                member.status === 'active'
+                  ? 'btn-ghost text-error hover:bg-error-subtle'
+                  : 'btn-secondary'
+              }`}
+            >
+              {member.status === 'active' ? (
+                <>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                  <span>Deshabilitar cuenta</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Habilitar cuenta</span>
+                </>
+              )}
+            </button>
+
+            {/* Status explanation */}
+            {member.status === 'disabled' && (
+              <p className="text-xs text-text-tertiary">
+                Este usuario no puede iniciar sesion mientras su cuenta este deshabilitada.
+              </p>
+            )}
+          </div>
+        </Modal.Item>
+      )}
+
+      {/* Self view hint */}
+      {isSelf && (
+        <Modal.Item>
+          <p className="text-xs text-text-tertiary text-center">
+            Para cambiar tu numero de telefono, ve a{' '}
+            <Link href="/ajustes" className="text-brand hover:underline">
+              Configuracion
+            </Link>.
+          </p>
+        </Modal.Item>
+      )}
+    </>
+  )
+}
+
+interface PhoneChangeStepProps {
+  memberName: string
+  newMemberPhone: string
+  setNewMemberPhone: (phone: string) => void
+  phoneChangeError: string
+  phoneChangeLoading: boolean
+  onSubmit: (e: React.FormEvent) => Promise<boolean>
+}
+
+function PhoneChangeStep({
+  memberName,
+  newMemberPhone,
+  setNewMemberPhone,
+  phoneChangeError,
+  phoneChangeLoading,
+  onSubmit,
+}: PhoneChangeStepProps) {
+  const { goToStep } = useMorphingModal()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    const success = await onSubmit(e)
+    if (success) {
+      goToStep(0)
+    }
+  }
+
+  return (
+    <>
+      <Modal.Item>
+        <p className="text-sm text-text-secondary">
+          Ingresa el nuevo numero de telefono para {memberName}.
+        </p>
+      </Modal.Item>
+
+      {phoneChangeError && (
+        <Modal.Item>
+          <div className="p-3 bg-error-subtle text-error text-sm rounded-lg">
+            {phoneChangeError}
+          </div>
+        </Modal.Item>
+      )}
+
+      <Modal.Item>
+        <PhoneInput
+          label="Nuevo numero de telefono"
+          value={newMemberPhone}
+          onChange={setNewMemberPhone}
+          autoFocus
+        />
+      </Modal.Item>
+
+      <Modal.Item>
+        <p className="text-xs text-text-tertiary">
+          El usuario debera usar este numero para iniciar sesion.
+        </p>
+      </Modal.Item>
+
+      <Modal.Footer>
+        <button
+          type="button"
+          onClick={() => goToStep(0)}
+          className="btn btn-secondary flex-1"
+          disabled={phoneChangeLoading}
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="btn btn-primary flex-1"
+          disabled={phoneChangeLoading}
+        >
+          {phoneChangeLoading ? <Spinner /> : 'Guardar'}
+        </button>
+      </Modal.Footer>
+    </>
+  )
+}
+
+interface RoleChangeStepProps {
+  memberName: string
+  memberRole: string
+  newRole: 'partner' | 'employee'
+  setNewRole: (role: 'partner' | 'employee') => void
+  roleChangeLoading: boolean
+  onSubmit: () => Promise<boolean>
+}
+
+function RoleChangeStep({
+  memberName,
+  memberRole,
+  newRole,
+  setNewRole,
+  roleChangeLoading,
+  onSubmit,
+}: RoleChangeStepProps) {
+  const { goToStep } = useMorphingModal()
+
+  const handleSubmit = async () => {
+    const success = await onSubmit()
+    if (success) {
+      goToStep(0)
+    }
+  }
+
+  return (
+    <>
+      <Modal.Item>
+        <p className="text-sm text-text-secondary">
+          Selecciona el nuevo rol para {memberName}.
+        </p>
+      </Modal.Item>
+
+      <Modal.Item>
+        <div className="space-y-3">
+          <RoleCard
+            icon={<UserIcon className="w-5 h-5" />}
+            title="Empleado"
+            description="Puede registrar ventas y ver el resumen del dia"
+            selected={newRole === 'employee'}
+            onClick={() => setNewRole('employee')}
+          />
+          <RoleCard
+            icon={<UserCircle className="w-5 h-5" />}
+            title="Socio"
+            description="Acceso completo a reportes, inventario y configuracion"
+            selected={newRole === 'partner'}
+            onClick={() => setNewRole('partner')}
+          />
+        </div>
+      </Modal.Item>
+
+      <Modal.Footer>
+        <button
+          type="button"
+          onClick={() => goToStep(0)}
+          className="btn btn-secondary flex-1"
+          disabled={roleChangeLoading}
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="btn btn-primary flex-1"
+          disabled={roleChangeLoading || newRole === memberRole}
+        >
+          {roleChangeLoading ? <Spinner /> : 'Guardar'}
+        </button>
+      </Modal.Footer>
+    </>
+  )
+}
+
 export default function TeamPage() {
   const { user, pb } = useAuth()
 
@@ -72,18 +559,19 @@ export default function TeamPage() {
   // User management modal state
   const [selectedMember, setSelectedMember] = useState<User | null>(null)
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
-  const [isPhoneChangeOpen, setIsPhoneChangeOpen] = useState(false)
   const [newMemberPhone, setNewMemberPhone] = useState('')
   const [phoneChangeError, setPhoneChangeError] = useState('')
   const [phoneChangeLoading, setPhoneChangeLoading] = useState(false)
 
   // Role change state
-  const [isRoleChangeOpen, setIsRoleChangeOpen] = useState(false)
   const [newRole, setNewRole] = useState<'partner' | 'employee'>('employee')
   const [roleChangeLoading, setRoleChangeLoading] = useState(false)
 
   // PIN reset state
   const [pinResetLoading, setPinResetLoading] = useState(false)
+
+  // Animation state for list items
+  const [isEntering, setIsEntering] = useState(false)
 
   // Check if current user is owner
   const canManageTeam = isOwner(user)
@@ -130,6 +618,15 @@ export default function TeamPage() {
       cancelled = true
     }
   }, [pb, canManageTeam])
+
+  // Trigger entering animation after loading completes
+  useLayoutEffect(() => {
+    if (!isLoading) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => setIsEntering(true), 50)
+      return () => clearTimeout(timer)
+    }
+  }, [isLoading])
 
   // Sort team members: owner first, then partners, then employees
   const sortedTeamMembers = useMemo(() => {
@@ -325,18 +822,18 @@ export default function TeamPage() {
   const handleOpenUserModal = useCallback((member: User) => {
     setSelectedMember(member)
     setIsUserModalOpen(true)
-    setIsPhoneChangeOpen(false)
+    // Reset form state when opening
     setNewMemberPhone('')
     setPhoneChangeError('')
+    setNewRole(member.role === 'partner' ? 'partner' : 'employee')
   }, [])
 
   const handleCloseUserModal = useCallback(() => {
     setIsUserModalOpen(false)
     setSelectedMember(null)
-    setIsPhoneChangeOpen(false)
+    // Reset form state when closing
     setNewMemberPhone('')
     setPhoneChangeError('')
-    setIsRoleChangeOpen(false)
   }, [])
 
   const handleToggleUserStatusInModal = useCallback(async () => {
@@ -354,32 +851,20 @@ export default function TeamPage() {
     }
   }, [selectedMember, pb])
 
-  const handleOpenPhoneChange = useCallback(() => {
-    setIsPhoneChangeOpen(true)
-    setNewMemberPhone(selectedMember?.phoneNumber || '')
-    setPhoneChangeError('')
-  }, [selectedMember?.phoneNumber])
-
-  const handleCancelPhoneChange = useCallback(() => {
-    setIsPhoneChangeOpen(false)
-    setNewMemberPhone('')
-    setPhoneChangeError('')
-  }, [])
-
-  const handleSubmitPhoneChange = useCallback(async (e: React.FormEvent) => {
+  const handleSubmitPhoneChange = useCallback(async (e: React.FormEvent): Promise<boolean> => {
     e.preventDefault()
-    if (!selectedMember) return
+    if (!selectedMember) return false
 
     setPhoneChangeError('')
 
     if (!newMemberPhone || !isValidE164(newMemberPhone)) {
       setPhoneChangeError('Ingresa un numero de telefono valido')
-      return
+      return false
     }
 
     if (newMemberPhone === selectedMember.phoneNumber) {
       setPhoneChangeError('El nuevo numero debe ser diferente al actual')
-      return
+      return false
     }
 
     setPhoneChangeLoading(true)
@@ -402,7 +887,7 @@ export default function TeamPage() {
       if (!data.success) {
         setPhoneChangeError(data.error || 'Error al cambiar el numero')
         setPhoneChangeLoading(false)
-        return
+        return false
       }
 
       // Update local state
@@ -412,30 +897,19 @@ export default function TeamPage() {
         prev.map(m => m.id === selectedMember.id ? updatedMember : m)
       )
 
-      // Close phone change view
-      setIsPhoneChangeOpen(false)
+      // Clear form state on success
       setNewMemberPhone('')
+      return true
     } catch {
       setPhoneChangeError('Error de conexion')
+      return false
     } finally {
       setPhoneChangeLoading(false)
     }
   }, [selectedMember, newMemberPhone, pb])
 
-  // Role change handlers
-  const handleOpenRoleChange = useCallback(() => {
-    if (!selectedMember) return
-    setIsRoleChangeOpen(true)
-    // Start with current role selected (only partner/employee can be changed)
-    setNewRole(selectedMember.role === 'partner' ? 'partner' : 'employee')
-  }, [selectedMember])
-
-  const handleCancelRoleChange = useCallback(() => {
-    setIsRoleChangeOpen(false)
-  }, [])
-
-  const handleSubmitRoleChange = useCallback(async () => {
-    if (!selectedMember) return
+  const handleSubmitRoleChange = useCallback(async (): Promise<boolean> => {
+    if (!selectedMember) return false
 
     setRoleChangeLoading(true)
 
@@ -449,10 +923,10 @@ export default function TeamPage() {
         prev.map(m => m.id === selectedMember.id ? updatedMember : m)
       )
 
-      // Close role change view
-      setIsRoleChangeOpen(false)
+      return true
     } catch (err) {
       console.error('Error changing role:', err)
+      return false
     } finally {
       setRoleChangeLoading(false)
     }
@@ -484,7 +958,7 @@ export default function TeamPage() {
 
   if (isLoading) {
     return (
-      <main className="page-loading">
+      <main className="page-content flex items-center justify-center">
         <Spinner className="spinner-lg" />
       </main>
     )
@@ -492,7 +966,7 @@ export default function TeamPage() {
 
   return (
     <>
-      <main className="main-content space-y-6">
+      <main className="page-content space-y-6">
         {error && (
           <div className="p-4 bg-error-subtle text-error rounded-lg">
             {error}
@@ -517,12 +991,13 @@ export default function TeamPage() {
         </div>
 
         <div className="space-y-1">
-          {sortedTeamMembers.map(member => {
+          {sortedTeamMembers.map((member, index) => {
             const isSelf = member.id === user?.id
             return (
               <div
                 key={member.id}
-                className="list-item-clickable"
+                className={`list-item-clickable ${isEntering ? 'entering' : ''}`}
+                style={isEntering ? { animationDelay: `${index * 30}ms` } : undefined}
                 onClick={() => handleOpenUserModal(member)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -572,12 +1047,13 @@ export default function TeamPage() {
               </span>
             </div>
             <div className="space-y-1">
-              {inviteCodes.map(code => (
+              {inviteCodes.map((code, index) => (
                 <button
                   key={code.id}
                   type="button"
                   onClick={() => handleOpenExistingCode(code)}
-                  className="list-item-clickable w-full text-left"
+                  className={`list-item-clickable w-full text-left ${isEntering ? 'entering' : ''}`}
+                  style={isEntering ? { animationDelay: `${(sortedTeamMembers.length + index) * 30}ms` } : undefined}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -642,356 +1118,77 @@ export default function TeamPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title="Agregar miembro"
+        initialStep={newCode ? 1 : 0}
       >
-        {!newCode ? (
-          /* Step 1: Role Selection */
-          <div>
-            <label className="label">Rol del nuevo miembro</label>
-            <div className="space-y-3">
-              <RoleCard
-                icon={<User className="w-5 h-5" />}
-                title="Empleado"
-                description="Puede registrar ventas y ver el resumen del dia"
-                selected={selectedRole === 'employee'}
-                onClick={() => setSelectedRole('employee')}
-              />
-              <RoleCard
-                icon={<UserCircle className="w-5 h-5" />}
-                title="Socio"
-                description="Acceso completo a reportes, inventario y configuracion"
-                selected={selectedRole === 'partner'}
-                onClick={() => setSelectedRole('partner')}
-              />
-            </div>
-          </div>
-        ) : (
-          /* Step 2: Success State - Single View */
-          <div className="invite-success-compact">
-            {/* Role badge and expiry */}
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <Badge variant="brand">{getInviteRoleLabel(selectedRole)}</Badge>
-              <span className="text-xs text-text-tertiary">Valido por 7 dias</span>
-            </div>
-
-            {/* QR Code */}
-            {qrDataUrl && (
-              <div className="flex justify-center mb-3">
-                <div className="invite-qr-box">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- Data URL for QR code, no optimization benefit */}
-                  <img src={qrDataUrl} alt="Codigo QR para registro" />
-                </div>
-              </div>
-            )}
-
-            {/* Large readable code */}
-            <div className="text-center mb-1">
-              <code className="text-3xl font-display font-bold tracking-[0.3em] -mr-[0.3em] text-text-primary">
-                {newCode}
-              </code>
-            </div>
-
-            {/* Regenerate button */}
-            <button
-              type="button"
-              onClick={handleRegenerateCode}
-              disabled={isGenerating}
-              className="invite-regenerate"
-            >
-              {isGenerating ? (
-                <>
-                  <Spinner />
-                  <span>Regenerando...</span>
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Regenerar codigo</span>
-                </>
-              )}
-            </button>
-          </div>
-        )}
-        <Modal.Footer>
-          {!newCode ? (
-            <>
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="btn btn-secondary flex-1"
-                disabled={isGenerating}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleGenerateCode}
-                className="btn btn-primary flex-1"
-                disabled={isGenerating}
-              >
-                {isGenerating ? <Spinner /> : 'Generar codigo'}
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => handleCopyCode(newCode)}
-                className="btn btn-secondary flex-1"
-              >
-                {copyFeedback === newCode ? 'Copiado!' : 'Copiar codigo'}
-              </button>
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="btn btn-primary flex-1"
-              >
-                Listo
-              </button>
-            </>
+        <Modal.Step title="Agregar miembro">
+          <RoleSelectionStep
+            selectedRole={selectedRole}
+            setSelectedRole={setSelectedRole}
+            isGenerating={isGenerating}
+            onGenerate={handleGenerateCode}
+            onClose={handleCloseModal}
+          />
+        </Modal.Step>
+        <Modal.Step title="Codigo generado" hideBackButton>
+          {newCode && (
+            <CodeGeneratedStep
+              selectedRole={selectedRole}
+              newCode={newCode}
+              qrDataUrl={qrDataUrl}
+              isGenerating={isGenerating}
+              copyFeedback={copyFeedback}
+              onRegenerate={handleRegenerateCode}
+              onCopy={handleCopyCode}
+              onClose={handleCloseModal}
+            />
           )}
-        </Modal.Footer>
+        </Modal.Step>
       </Modal>
 
       {/* User Management Modal */}
       <Modal
         isOpen={isUserModalOpen}
         onClose={handleCloseUserModal}
-        title={
-          isPhoneChangeOpen
-            ? 'Cambiar telefono'
-            : isRoleChangeOpen
-              ? 'Cambiar rol'
-              : selectedMember?.id === user?.id
-                ? 'Tu perfil'
-                : 'Gestionar miembro'
-        }
       >
-        {selectedMember && !isPhoneChangeOpen && !isRoleChangeOpen ? (
-          /* Main user details view */
-          <div className="space-y-5">
-            {/* Member header */}
-            <div className="flex items-center gap-3">
-              <div className="sidebar-user-avatar w-11 h-11 text-sm">
-                {getUserInitials(selectedMember.name)}
-              </div>
-              <div>
-                <h3 className="font-display font-bold text-lg">{selectedMember.name}</h3>
-                <div className="text-xs text-text-tertiary mt-0.5">
-                  {getRoleLabel(selectedMember.role)}
-                  <span className="mx-1.5">·</span>
-                  <span className={selectedMember.status === 'active' ? 'text-success' : 'text-error'}>
-                    {selectedMember.status === 'active' ? 'Activo' : 'Deshabilitado'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Member details */}
-            <div className="space-y-3 p-4 bg-bg-muted rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-secondary">Telefono</span>
-                <span className="text-sm font-medium">
-                  {selectedMember.id === user?.id
-                    ? formatPhoneForDisplay(selectedMember.phoneNumber)
-                    : `****${selectedMember.phoneNumber.slice(-4)}`}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-secondary">Miembro desde</span>
-                <span className="text-sm font-medium">
-                  {formatDate(selectedMember.created)}
-                </span>
-              </div>
-            </div>
-
-            {/* Actions - only show for manageable members (not self, not owner) */}
-            {canManageTeam && selectedMember.id !== user?.id && selectedMember.role !== 'owner' && (
-              <div className="space-y-3">
-                {/* Change phone button */}
-                <button
-                  type="button"
-                  onClick={handleOpenPhoneChange}
-                  className="btn btn-secondary w-full justify-start gap-3"
-                >
-                  <Phone className="w-5 h-5" />
-                  <span>Cambiar numero de telefono</span>
-                </button>
-
-                {/* Change role button */}
-                <button
-                  type="button"
-                  onClick={handleOpenRoleChange}
-                  className="btn btn-secondary w-full justify-start gap-3"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>Cambiar rol</span>
-                </button>
-
-                {/* Reset PIN button */}
-                <button
-                  type="button"
-                  onClick={handleResetPin}
-                  disabled={pinResetLoading || selectedMember.pinResetRequired}
-                  className="btn btn-secondary w-full justify-start gap-3"
-                >
-                  {pinResetLoading ? (
-                    <Spinner />
-                  ) : selectedMember.pinResetRequired ? (
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M13.5 16.5854C13.5 17.4138 12.8284 18.0854 12 18.0854C11.1716 18.0854 10.5 17.4138 10.5 16.5854C10.5 15.7569 11.1716 15.0854 12 15.0854C12.8284 15.0854 13.5 15.7569 13.5 16.5854Z" />
-                      <path fillRule="evenodd" clipRule="evenodd" d="M6.33367 10C6.20971 9.64407 6.09518 9.27081 5.99836 8.88671C5.69532 7.68444 5.54485 6.29432 5.89748 4.97439C6.26228 3.60888 7.14664 2.39739 8.74323 1.59523C10.3398 0.793061 11.8397 0.806642 13.153 1.32902C14.4225 1.83396 15.448 2.78443 16.2317 3.7452C16.4302 3.98851 16.6166 4.23669 16.7907 4.48449C17.0806 4.89706 16.9784 5.45918 16.5823 5.7713C16.112 6.14195 15.4266 6.01135 15.0768 5.52533C14.9514 5.35112 14.8197 5.17831 14.6819 5.0094C14.0088 4.18414 13.2423 3.51693 12.4138 3.18741C11.6292 2.87533 10.7252 2.83767 9.64112 3.38234C8.55703 3.92702 8.04765 4.6748 7.82971 5.49059C7.5996 6.35195 7.6774 7.36518 7.93771 8.39788C8.07953 8.96054 8.26936 9.50489 8.47135 10H18C19.6569 10 21 11.3431 21 13V20C21 21.6569 19.6569 23 18 23H6C4.34315 23 3 21.6569 3 20V13C3 11.3431 4.34315 10 6 10H6.33367ZM19 13C19 12.4477 18.5523 12 18 12H6C5.44772 12 5 12.4477 5 13V20C5 20.5523 5.44772 21 6 21H18C18.5523 21 19 20.5523 19 20V13Z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M13.5 16.5854C13.5 17.4138 12.8284 18.0854 12 18.0854C11.1716 18.0854 10.5 17.4138 10.5 16.5854C10.5 15.7569 11.1716 15.0854 12 15.0854C12.8284 15.0854 13.5 15.7569 13.5 16.5854Z" />
-                      <path fillRule="evenodd" clipRule="evenodd" d="M5.94209 10.0005C5.93921 9.87333 5.9375 9.73733 5.9375 9.59375C5.9375 8.70739 6.00254 7.50382 6.27381 6.28307C6.54278 5.07271 7.03242 3.76302 7.94009 2.74189C8.8791 1.6855 10.2132 1 12 1C13.7868 1 15.1209 1.6855 16.0599 2.74189C16.9676 3.76302 17.4572 5.07271 17.7262 6.28307C17.9975 7.50382 18.0625 8.70739 18.0625 9.59375C18.0625 9.73733 18.0608 9.87333 18.0579 10.0005C19.688 10.0314 21 11.3625 21 13V20C21 21.6569 19.6569 23 18 23H6C4.34315 23 3 21.6569 3 20V13C3 11.3625 4.31196 10.0314 5.94209 10.0005ZM16.0573 10C16.0605 9.87465 16.0625 9.73868 16.0625 9.59375C16.0625 8.79261 16.0025 7.74618 15.7738 6.71693C15.5428 5.67729 15.1574 4.73698 14.5651 4.07061C14.0041 3.4395 13.2132 3 12 3C10.7868 3 9.9959 3.4395 9.43491 4.07061C8.84258 4.73698 8.45722 5.67729 8.22619 6.71693C7.99747 7.74618 7.9375 8.79261 7.9375 9.59375C7.9375 9.73868 7.93946 9.87465 7.94265 10H16.0573ZM19 13C19 12.4477 18.5523 12 18 12H6C5.44772 12 5 12.4477 5 13V20C5 20.5523 5.44772 21 6 21H18C18.5523 21 19 20.5523 19 20V13Z" />
-                    </svg>
-                  )}
-                  <span>{selectedMember.pinResetRequired ? 'PIN reset pendiente' : 'Forzar reset de PIN'}</span>
-                </button>
-
-                {/* PIN reset explanation */}
-                {selectedMember.pinResetRequired && (
-                  <p className="text-xs text-text-tertiary">
-                    El usuario debera crear un nuevo PIN la proxima vez que inicie sesion.
-                  </p>
-                )}
-
-                {/* Toggle status button */}
-                <button
-                  type="button"
-                  onClick={handleToggleUserStatusInModal}
-                  className={`btn w-full justify-start gap-3 ${
-                    selectedMember.status === 'active'
-                      ? 'btn-ghost text-error hover:bg-error-subtle'
-                      : 'btn-secondary'
-                  }`}
-                >
-                  {selectedMember.status === 'active' ? (
-                    <>
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                      </svg>
-                      <span>Deshabilitar cuenta</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Habilitar cuenta</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Status explanation */}
-                {selectedMember.status === 'disabled' && (
-                  <p className="text-xs text-text-tertiary">
-                    Este usuario no puede iniciar sesion mientras su cuenta este deshabilitada.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Self view hint */}
-            {selectedMember.id === user?.id && (
-              <p className="text-xs text-text-tertiary text-center">
-                Para cambiar tu numero de telefono, ve a{' '}
-                <Link href="/ajustes" className="text-brand hover:underline">
-                  Configuracion
-                </Link>.
-              </p>
-            )}
-          </div>
-        ) : selectedMember && isPhoneChangeOpen ? (
-          /* Phone change view */
-          <form onSubmit={handleSubmitPhoneChange} className="space-y-4">
-            <p className="text-sm text-text-secondary">
-              Ingresa el nuevo numero de telefono para {selectedMember.name}.
-            </p>
-
-            {phoneChangeError && (
-              <div className="p-3 bg-error-subtle text-error text-sm rounded-lg">
-                {phoneChangeError}
-              </div>
-            )}
-
-            <PhoneInput
-              label="Nuevo numero de telefono"
-              value={newMemberPhone}
-              onChange={setNewMemberPhone}
-              autoFocus
+        <Modal.Step
+          title={selectedMember?.id === user?.id ? 'Tu perfil' : 'Gestionar miembro'}
+          hideBackButton
+        >
+          {selectedMember && (
+            <UserDetailsStep
+              member={selectedMember}
+              currentUser={user}
+              canManageTeam={canManageTeam}
+              pinResetLoading={pinResetLoading}
+              onToggleStatus={handleToggleUserStatusInModal}
+              onResetPin={handleResetPin}
             />
-
-            <p className="text-xs text-text-tertiary">
-              El usuario debera usar este numero para iniciar sesion.
-            </p>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleCancelPhoneChange}
-                className="btn btn-secondary flex-1"
-                disabled={phoneChangeLoading}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary flex-1"
-                disabled={phoneChangeLoading}
-              >
-                {phoneChangeLoading ? <Spinner /> : 'Guardar'}
-              </button>
-            </div>
-          </form>
-        ) : selectedMember && isRoleChangeOpen ? (
-          /* Role change view */
-          <div className="space-y-4">
-            <p className="text-sm text-text-secondary">
-              Selecciona el nuevo rol para {selectedMember.name}.
-            </p>
-
-            <div className="space-y-3">
-              <RoleCard
-                icon={<User className="w-5 h-5" />}
-                title="Empleado"
-                description="Puede registrar ventas y ver el resumen del dia"
-                selected={newRole === 'employee'}
-                onClick={() => setNewRole('employee')}
-              />
-              <RoleCard
-                icon={<UserCircle className="w-5 h-5" />}
-                title="Socio"
-                description="Acceso completo a reportes, inventario y configuracion"
-                selected={newRole === 'partner'}
-                onClick={() => setNewRole('partner')}
-              />
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleCancelRoleChange}
-                className="btn btn-secondary flex-1"
-                disabled={roleChangeLoading}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmitRoleChange}
-                className="btn btn-primary flex-1"
-                disabled={roleChangeLoading || newRole === selectedMember.role}
-              >
-                {roleChangeLoading ? <Spinner /> : 'Guardar'}
-              </button>
-            </div>
-          </div>
-        ) : null}
+          )}
+        </Modal.Step>
+        <Modal.Step title="Cambiar telefono" backStep={0}>
+          {selectedMember && (
+            <PhoneChangeStep
+              memberName={selectedMember.name}
+              newMemberPhone={newMemberPhone}
+              setNewMemberPhone={setNewMemberPhone}
+              phoneChangeError={phoneChangeError}
+              phoneChangeLoading={phoneChangeLoading}
+              onSubmit={handleSubmitPhoneChange}
+            />
+          )}
+        </Modal.Step>
+        <Modal.Step title="Cambiar rol" backStep={0}>
+          {selectedMember && (
+            <RoleChangeStep
+              memberName={selectedMember.name}
+              memberRole={selectedMember.role}
+              newRole={newRole}
+              setNewRole={setNewRole}
+              roleChangeLoading={roleChangeLoading}
+              onSubmit={handleSubmitRoleChange}
+            />
+          )}
+        </Modal.Step>
       </Modal>
     </>
   )

@@ -2065,6 +2065,7 @@
   .modal-body {
     padding: var(--space-5);
     flex: 1;
+    min-height: 0; /* Allow shrinking below content size for proper overflow */
     overflow-y: auto;
     /* Hide scrollbar across browsers */
     scrollbar-width: none; /* Firefox */
