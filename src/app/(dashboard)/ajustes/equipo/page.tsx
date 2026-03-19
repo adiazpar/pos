@@ -49,24 +49,45 @@ function RoleCard({ icon, title, description, selected, onClick }: RoleCardProps
 }
 
 // ============================================
-// ADD MEMBER MODAL COMPONENTS
+// ADD MEMBER MODAL CONTENT COMPONENTS
+// Note: These return only Modal.Item content, not Modal.Footer
+// Modal.Footer must be a direct child of Modal.Step for proper extraction
 // ============================================
 
-interface RoleSelectionStepProps {
+interface RoleSelectionContentProps {
   selectedRole: InviteRole
   setSelectedRole: (role: InviteRole) => void
-  isGenerating: boolean
-  onGenerate: () => Promise<void>
-  onClose: () => void
 }
 
-function RoleSelectionStep({
+function RoleSelectionContent({
   selectedRole,
   setSelectedRole,
-  isGenerating,
-  onGenerate,
-  onClose,
-}: RoleSelectionStepProps) {
+}: RoleSelectionContentProps) {
+  return (
+    <Modal.Item>
+      <label className="label">Rol del nuevo miembro</label>
+      <div className="space-y-3">
+        <RoleCard
+          icon={<UserIcon className="w-5 h-5" />}
+          title="Empleado"
+          description="Puede registrar ventas y ver el resumen del dia"
+          selected={selectedRole === 'employee'}
+          onClick={() => setSelectedRole('employee')}
+        />
+        <RoleCard
+          icon={<UserCircle className="w-5 h-5" />}
+          title="Socio"
+          description="Acceso completo a reportes, inventario y configuracion"
+          selected={selectedRole === 'partner'}
+          onClick={() => setSelectedRole('partner')}
+        />
+      </div>
+    </Modal.Item>
+  )
+}
+
+// Footer button that handles generate logic
+function GenerateCodeButton({ isGenerating, onGenerate }: { isGenerating: boolean; onGenerate: () => Promise<void> }) {
   const { goNext, lock, unlock } = useMorphingModal()
 
   const handleGenerate = async () => {
@@ -77,134 +98,79 @@ function RoleSelectionStep({
   }
 
   return (
-    <>
-      <Modal.Item>
-        <label className="label">Rol del nuevo miembro</label>
-        <div className="space-y-3">
-          <RoleCard
-            icon={<UserIcon className="w-5 h-5" />}
-            title="Empleado"
-            description="Puede registrar ventas y ver el resumen del dia"
-            selected={selectedRole === 'employee'}
-            onClick={() => setSelectedRole('employee')}
-          />
-          <RoleCard
-            icon={<UserCircle className="w-5 h-5" />}
-            title="Socio"
-            description="Acceso completo a reportes, inventario y configuracion"
-            selected={selectedRole === 'partner'}
-            onClick={() => setSelectedRole('partner')}
-          />
-        </div>
-      </Modal.Item>
-      <Modal.Footer>
-        <button
-          type="button"
-          onClick={onClose}
-          className="btn btn-secondary flex-1"
-          disabled={isGenerating}
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          onClick={handleGenerate}
-          className="btn btn-primary flex-1"
-          disabled={isGenerating}
-        >
-          {isGenerating ? <Spinner /> : 'Generar codigo'}
-        </button>
-      </Modal.Footer>
-    </>
+    <button
+      type="button"
+      onClick={handleGenerate}
+      className="btn btn-primary flex-1"
+      disabled={isGenerating}
+    >
+      {isGenerating ? <Spinner /> : 'Generar codigo'}
+    </button>
   )
 }
 
-interface CodeGeneratedStepProps {
+interface CodeGeneratedContentProps {
   selectedRole: InviteRole
   newCode: string
   qrDataUrl: string | null
   isGenerating: boolean
-  copyFeedback: string | null
   onRegenerate: () => Promise<void>
-  onCopy: (code: string) => void
-  onClose: () => void
 }
 
-function CodeGeneratedStep({
+function CodeGeneratedContent({
   selectedRole,
   newCode,
   qrDataUrl,
   isGenerating,
-  copyFeedback,
   onRegenerate,
-  onCopy,
-  onClose,
-}: CodeGeneratedStepProps) {
+}: CodeGeneratedContentProps) {
   return (
-    <>
-      <Modal.Item>
-        <div className="invite-success-compact">
-          {/* Role badge and expiry */}
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <Badge variant="brand">{getInviteRoleLabel(selectedRole)}</Badge>
-            <span className="text-xs text-text-tertiary">Valido por 7 dias</span>
-          </div>
-
-          {/* QR Code */}
-          {qrDataUrl && (
-            <div className="flex justify-center mb-3">
-              <div className="invite-qr-box">
-                {/* eslint-disable-next-line @next/next/no-img-element -- Data URL for QR code, no optimization benefit */}
-                <img src={qrDataUrl} alt="Codigo QR para registro" />
-              </div>
-            </div>
-          )}
-
-          {/* Large readable code */}
-          <div className="text-center mb-1">
-            <code className="text-3xl font-display font-bold tracking-[0.3em] -mr-[0.3em] text-text-primary">
-              {newCode}
-            </code>
-          </div>
-
-          {/* Regenerate button */}
-          <button
-            type="button"
-            onClick={onRegenerate}
-            disabled={isGenerating}
-            className="invite-regenerate"
-          >
-            {isGenerating ? (
-              <>
-                <Spinner />
-                <span>Regenerando...</span>
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Regenerar codigo</span>
-              </>
-            )}
-          </button>
+    <Modal.Item>
+      <div className="invite-success-compact">
+        {/* Role badge and expiry */}
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <Badge variant="brand">{getInviteRoleLabel(selectedRole)}</Badge>
+          <span className="text-xs text-text-tertiary">Valido por 7 dias</span>
         </div>
-      </Modal.Item>
-      <Modal.Footer>
+
+        {/* QR Code */}
+        {qrDataUrl && (
+          <div className="flex justify-center mb-3">
+            <div className="invite-qr-box">
+              {/* eslint-disable-next-line @next/next/no-img-element -- Data URL for QR code, no optimization benefit */}
+              <img src={qrDataUrl} alt="Codigo QR para registro" />
+            </div>
+          </div>
+        )}
+
+        {/* Large readable code */}
+        <div className="text-center mb-1">
+          <code className="text-3xl font-display font-bold tracking-[0.3em] -mr-[0.3em] text-text-primary">
+            {newCode}
+          </code>
+        </div>
+
+        {/* Regenerate button */}
         <button
           type="button"
-          onClick={() => onCopy(newCode)}
-          className="btn btn-secondary flex-1"
+          onClick={onRegenerate}
+          disabled={isGenerating}
+          className="invite-regenerate"
         >
-          {copyFeedback === newCode ? 'Copiado!' : 'Copiar codigo'}
+          {isGenerating ? (
+            <>
+              <Spinner />
+              <span>Regenerando...</span>
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Regenerar codigo</span>
+            </>
+          )}
         </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="btn btn-primary flex-1"
-        >
-          Listo
-        </button>
-      </Modal.Footer>
-    </>
+      </div>
+    </Modal.Item>
   )
 }
 
@@ -381,32 +347,19 @@ function UserDetailsStep({
   )
 }
 
-interface PhoneChangeStepProps {
+interface PhoneChangeContentProps {
   memberName: string
   newMemberPhone: string
   setNewMemberPhone: (phone: string) => void
   phoneChangeError: string
-  phoneChangeLoading: boolean
-  onSubmit: (e: React.FormEvent) => Promise<boolean>
 }
 
-function PhoneChangeStep({
+function PhoneChangeContent({
   memberName,
   newMemberPhone,
   setNewMemberPhone,
   phoneChangeError,
-  phoneChangeLoading,
-  onSubmit,
-}: PhoneChangeStepProps) {
-  const { goToStep } = useMorphingModal()
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    const success = await onSubmit(e)
-    if (success) {
-      goToStep(0)
-    }
-  }
-
+}: PhoneChangeContentProps) {
   return (
     <>
       <Modal.Item>
@@ -437,55 +390,66 @@ function PhoneChangeStep({
           El usuario debera usar este numero para iniciar sesion.
         </p>
       </Modal.Item>
-
-      <Modal.Footer>
-        <button
-          type="button"
-          onClick={() => goToStep(0)}
-          className="btn btn-secondary flex-1"
-          disabled={phoneChangeLoading}
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="btn btn-primary flex-1"
-          disabled={phoneChangeLoading}
-        >
-          {phoneChangeLoading ? <Spinner /> : 'Guardar'}
-        </button>
-      </Modal.Footer>
     </>
   )
 }
 
-interface RoleChangeStepProps {
-  memberName: string
-  memberRole: string
-  newRole: 'partner' | 'employee'
-  setNewRole: (role: 'partner' | 'employee') => void
-  roleChangeLoading: boolean
-  onSubmit: () => Promise<boolean>
-}
-
-function RoleChangeStep({
-  memberName,
-  memberRole,
-  newRole,
-  setNewRole,
-  roleChangeLoading,
+// Footer button for phone change that handles navigation
+function PhoneChangeSaveButton({
+  phoneChangeLoading,
   onSubmit,
-}: RoleChangeStepProps) {
+}: {
+  phoneChangeLoading: boolean
+  onSubmit: (e: React.FormEvent) => Promise<boolean>
+}) {
   const { goToStep } = useMorphingModal()
 
-  const handleSubmit = async () => {
-    const success = await onSubmit()
+  const handleSubmit = async (e: React.FormEvent) => {
+    const success = await onSubmit(e)
     if (success) {
       goToStep(0)
     }
   }
 
+  return (
+    <button
+      type="button"
+      onClick={handleSubmit}
+      className="btn btn-primary flex-1"
+      disabled={phoneChangeLoading}
+    >
+      {phoneChangeLoading ? <Spinner /> : 'Guardar'}
+    </button>
+  )
+}
+
+// Footer button for cancel/back navigation
+function PhoneChangeCancelButton({ disabled }: { disabled: boolean }) {
+  const { goToStep } = useMorphingModal()
+
+  return (
+    <button
+      type="button"
+      onClick={() => goToStep(0)}
+      className="btn btn-secondary flex-1"
+      disabled={disabled}
+    >
+      Cancelar
+    </button>
+  )
+}
+
+interface RoleChangeContentProps {
+  memberName: string
+  newRole: 'partner' | 'employee'
+  setNewRole: (role: 'partner' | 'employee') => void
+}
+
+function RoleChangeContent({
+  memberName,
+  newRole,
+  setNewRole,
+}: RoleChangeContentProps) {
   return (
     <>
       <Modal.Item>
@@ -512,26 +476,54 @@ function RoleChangeStep({
           />
         </div>
       </Modal.Item>
-
-      <Modal.Footer>
-        <button
-          type="button"
-          onClick={() => goToStep(0)}
-          className="btn btn-secondary flex-1"
-          disabled={roleChangeLoading}
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="btn btn-primary flex-1"
-          disabled={roleChangeLoading || newRole === memberRole}
-        >
-          {roleChangeLoading ? <Spinner /> : 'Guardar'}
-        </button>
-      </Modal.Footer>
     </>
+  )
+}
+
+// Footer button for role change that handles navigation
+function RoleChangeSaveButton({
+  roleChangeLoading,
+  isDisabled,
+  onSubmit,
+}: {
+  roleChangeLoading: boolean
+  isDisabled: boolean
+  onSubmit: () => Promise<boolean>
+}) {
+  const { goToStep } = useMorphingModal()
+
+  const handleSubmit = async () => {
+    const success = await onSubmit()
+    if (success) {
+      goToStep(0)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleSubmit}
+      className="btn btn-primary flex-1"
+      disabled={roleChangeLoading || isDisabled}
+    >
+      {roleChangeLoading ? <Spinner /> : 'Guardar'}
+    </button>
+  )
+}
+
+// Footer button for cancel/back navigation (shared with phone change)
+function RoleChangeCancelButton({ disabled }: { disabled: boolean }) {
+  const { goToStep } = useMorphingModal()
+
+  return (
+    <button
+      type="button"
+      onClick={() => goToStep(0)}
+      className="btn btn-secondary flex-1"
+      disabled={disabled}
+    >
+      Cancelar
+    </button>
   )
 }
 
@@ -775,6 +767,10 @@ export default function TeamPage() {
   }, [user, generatedCodeId, selectedRole, pb])
 
   const handleOpenModal = useCallback(() => {
+    // Close user modal if open (mutual exclusivity)
+    // Note: state cleanup happens via onExitComplete
+    setIsUserModalOpen(false)
+    // Reset and open add member modal
     setNewCode(null)
     setGeneratedCodeId(null)
     setQrDataUrl(null)
@@ -784,6 +780,10 @@ export default function TeamPage() {
   }, [])
 
   const handleOpenExistingCode = useCallback(async (code: InviteCode) => {
+    // Close user modal if open (mutual exclusivity)
+    // Note: state cleanup happens via onExitComplete
+    setIsUserModalOpen(false)
+    // Open existing code modal
     setSelectedRole(code.role)
     setGeneratedCodeId(code.id)
     setNewCode(code.code)
@@ -805,11 +805,18 @@ export default function TeamPage() {
   }, [])
 
   const handleCloseModal = useCallback(() => {
+    // Only close the modal - state cleanup happens in onExitComplete
+    // to avoid changing initialStep during close animation
     setIsModalOpen(false)
+  }, [])
+
+  // Called after modal close animation completes
+  const handleModalExitComplete = useCallback(() => {
     setNewCode(null)
     setGeneratedCodeId(null)
     setQrDataUrl(null)
     setError('')
+    setSelectedRole('employee')
     // Clear copy feedback timer and state
     if (copyFeedbackTimerRef.current) {
       clearTimeout(copyFeedbackTimerRef.current)
@@ -820,6 +827,10 @@ export default function TeamPage() {
 
   // User management modal handlers
   const handleOpenUserModal = useCallback((member: User) => {
+    // Close add member modal if open (mutual exclusivity)
+    // Note: state cleanup happens via onExitComplete
+    setIsModalOpen(false)
+    // Open user modal
     setSelectedMember(member)
     setIsUserModalOpen(true)
     // Reset form state when opening
@@ -829,7 +840,12 @@ export default function TeamPage() {
   }, [])
 
   const handleCloseUserModal = useCallback(() => {
+    // Only close the modal - state cleanup happens in onExitComplete
     setIsUserModalOpen(false)
+  }, [])
+
+  // Called after user modal close animation completes
+  const handleUserModalExitComplete = useCallback(() => {
     setSelectedMember(null)
     // Reset form state when closing
     setNewMemberPhone('')
@@ -1118,30 +1134,54 @@ export default function TeamPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        onExitComplete={handleModalExitComplete}
         initialStep={newCode ? 1 : 0}
       >
         <Modal.Step title="Agregar miembro">
-          <RoleSelectionStep
+          <RoleSelectionContent
             selectedRole={selectedRole}
             setSelectedRole={setSelectedRole}
-            isGenerating={isGenerating}
-            onGenerate={handleGenerateCode}
-            onClose={handleCloseModal}
           />
+          <Modal.Footer>
+            <Modal.CancelBackButton />
+            <GenerateCodeButton
+              isGenerating={isGenerating}
+              onGenerate={handleGenerateCode}
+            />
+          </Modal.Footer>
         </Modal.Step>
         <Modal.Step title="Codigo generado" hideBackButton>
           {newCode && (
-            <CodeGeneratedStep
+            <CodeGeneratedContent
               selectedRole={selectedRole}
               newCode={newCode}
               qrDataUrl={qrDataUrl}
               isGenerating={isGenerating}
-              copyFeedback={copyFeedback}
               onRegenerate={handleRegenerateCode}
-              onCopy={handleCopyCode}
-              onClose={handleCloseModal}
             />
           )}
+          <Modal.Footer>
+            <button
+              type="button"
+              onClick={() => newCode && handleCopyCode(newCode)}
+              className="btn btn-secondary"
+              title="Copiar codigo"
+            >
+              {copyFeedback === newCode ? (
+                <Check className="w-5 h-5 text-success" />
+              ) : (
+                <Copy className="w-5 h-5" />
+              )}
+            </button>
+            <Modal.CancelBackButton />
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="btn btn-primary flex-1"
+            >
+              Listo
+            </button>
+          </Modal.Footer>
         </Modal.Step>
       </Modal>
 
@@ -1149,6 +1189,7 @@ export default function TeamPage() {
       <Modal
         isOpen={isUserModalOpen}
         onClose={handleCloseUserModal}
+        onExitComplete={handleUserModalExitComplete}
       >
         <Modal.Step
           title={selectedMember?.id === user?.id ? 'Tu perfil' : 'Gestionar miembro'}
@@ -1167,27 +1208,37 @@ export default function TeamPage() {
         </Modal.Step>
         <Modal.Step title="Cambiar telefono" backStep={0}>
           {selectedMember && (
-            <PhoneChangeStep
+            <PhoneChangeContent
               memberName={selectedMember.name}
               newMemberPhone={newMemberPhone}
               setNewMemberPhone={setNewMemberPhone}
               phoneChangeError={phoneChangeError}
+            />
+          )}
+          <Modal.Footer>
+            <PhoneChangeCancelButton disabled={phoneChangeLoading} />
+            <PhoneChangeSaveButton
               phoneChangeLoading={phoneChangeLoading}
               onSubmit={handleSubmitPhoneChange}
             />
-          )}
+          </Modal.Footer>
         </Modal.Step>
         <Modal.Step title="Cambiar rol" backStep={0}>
           {selectedMember && (
-            <RoleChangeStep
+            <RoleChangeContent
               memberName={selectedMember.name}
-              memberRole={selectedMember.role}
               newRole={newRole}
               setNewRole={setNewRole}
-              roleChangeLoading={roleChangeLoading}
-              onSubmit={handleSubmitRoleChange}
             />
           )}
+          <Modal.Footer>
+            <RoleChangeCancelButton disabled={roleChangeLoading} />
+            <RoleChangeSaveButton
+              roleChangeLoading={roleChangeLoading}
+              isDisabled={selectedMember ? newRole === selectedMember.role : false}
+              onSubmit={handleSubmitRoleChange}
+            />
+          </Modal.Footer>
         </Modal.Step>
       </Modal>
     </>

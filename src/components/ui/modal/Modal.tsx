@@ -1,4 +1,38 @@
 // src/components/ui/modal/Modal.tsx
+//
+// IMPORTANT: Modal.Footer Placement Rule
+// =======================================
+// Modal.Footer MUST be a DIRECT child of Modal.Step for proper extraction.
+//
+// The separateFooter() function scans step.props.children looking for Modal.Footer.
+// It can only detect Modal.Footer when it's a direct child - NOT when it's returned
+// from a sub-component, because React hasn't rendered the sub-component yet at
+// scan time.
+//
+// CORRECT - Footer is direct child, gets extracted and rendered outside modal-body:
+// ```tsx
+// <Modal.Step title="Example">
+//   <MyContentComponent />        // Returns only Modal.Item elements
+//   <Modal.Footer>                // Direct child - EXTRACTED properly
+//     <button>Save</button>
+//   </Modal.Footer>
+// </Modal.Step>
+// ```
+//
+// WRONG - Footer inside sub-component, stays in modal-body with extra padding:
+// ```tsx
+// <Modal.Step title="Example">
+//   <MyStepComponent />           // Returns <><Modal.Item>...</Modal.Item><Modal.Footer>...</Modal.Footer></>
+// </Modal.Step>                   // Footer NOT extracted - renders inside modal-body!
+// ```
+//
+// When creating multi-step modals with reusable content:
+// 1. Create content-only components that return ONLY Modal.Item elements
+// 2. If footer buttons need useMorphingModal(), create separate button components
+// 3. Place Modal.Footer as direct child of Modal.Step in the modal JSX
+//
+// See: src/app/(dashboard)/ajustes/equipo/page.tsx for examples
+//
 'use client'
 
 import React, { useState, useEffect, Children, isValidElement, ReactElement } from 'react'

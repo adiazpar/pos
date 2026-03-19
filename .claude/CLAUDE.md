@@ -178,17 +178,29 @@ function getGreeting(): string {
 | `npm run db:reset` | Reset database and run migrations |
 | `npm run pb:download` | Download PocketBase binary |
 
-### Dev Server URLs
+### Starting/Restarting Dev Servers (IMPORTANT)
+
+**ALWAYS use `npm run dev:all` to start development servers.** Run it as a background task.
+
+To restart servers:
+1. Kill processes on ports 3000 and 8090: `lsof -ti:3000,8090 | xargs kill -9`
+2. Start fresh: `npm run dev:all` (as background task)
+
+### Dev Server URLs (Tailscale)
+
+Access via Tailscale IP for both local and remote development:
+
 | Service | URL |
 |---------|-----|
-| Next.js | http://localhost:3000 |
+| Next.js | http://100.113.9.34:3000 |
+| PocketBase API | http://100.113.9.34:8090/api/ |
 | PocketBase Admin | http://127.0.0.1:8090/_/ |
 
 ### Database Reset Workflow
 After modifying migrations in `pb_migrations/`:
-1. Stop `dev:all`
+1. Stop `dev:all` (kill the background task)
 2. Run `npm run db:reset`
-3. Restart `dev:all`
+3. Restart `dev:all` (as background task)
 
 ---
 
@@ -221,6 +233,33 @@ import { Home, ShoppingCart, Package } from 'lucide-react'
 <Home className="w-5 h-5" />
 <ShoppingCart size={20} />
 ```
+
+### Modal Component (IMPORTANT)
+When creating multi-step modals, `Modal.Footer` **MUST be a direct child** of `Modal.Step`:
+
+```tsx
+// CORRECT - Footer extracted properly, no extra padding
+<Modal.Step title="Example">
+  <MyContentComponent />   {/* Returns only Modal.Item elements */}
+  <Modal.Footer>           {/* Direct child - works! */}
+    <button>Save</button>
+  </Modal.Footer>
+</Modal.Step>
+
+// WRONG - Footer inside sub-component, gets double padding
+<Modal.Step title="Example">
+  <MyStepComponent />      {/* Returns Modal.Item + Modal.Footer - broken! */}
+</Modal.Step>
+```
+
+**Why:** The `separateFooter()` function scans `step.props.children` for `Modal.Footer`. It cannot detect footers returned from sub-components because React hasn't rendered them yet.
+
+**Pattern for reusable step content:**
+1. Create content-only components that return ONLY `Modal.Item` elements
+2. If footer buttons need `useMorphingModal()`, create separate button components
+3. Place `Modal.Footer` as direct child of `Modal.Step`
+
+See `src/components/ui/modal/Modal.tsx` header comments and `src/app/(dashboard)/ajustes/equipo/page.tsx` for examples.
 
 ---
 
