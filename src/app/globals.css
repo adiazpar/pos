@@ -4009,8 +4009,24 @@
 }
 
 /* Modal footer wrapper for animations */
+/* Uses CSS Grid for height animation when footer appears/disappears */
 .morph-footer-wrapper {
   flex-shrink: 0;
+  display: grid;
+  transition: grid-template-rows var(--duration-normal) ease-out;
+}
+
+.morph-footer-expanded {
+  grid-template-rows: 1fr;
+}
+
+.morph-footer-collapsed {
+  grid-template-rows: 0fr;
+}
+
+.morph-footer-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* Modal footer for morphing modal */

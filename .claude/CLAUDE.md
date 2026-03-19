@@ -261,6 +261,57 @@ When creating multi-step modals, `Modal.Footer` **MUST be a direct child** of `M
 
 See `src/components/ui/modal/Modal.tsx` header comments and `src/app/(dashboard)/ajustes/equipo/page.tsx` for examples.
 
+### Multi-Step Modals with Variable Footers
+
+When building multi-step modals where some steps have footers and others don't, the modal handles this automatically with smooth height animations.
+
+**How it works:**
+- Footer updates based on `targetStep` during transitions (not `currentStep`)
+- AnimatedFooter uses CSS Grid to animate height changes
+- The footer element stays in the DOM and animates between expanded/collapsed states
+
+**Example - Steps with and without footers:**
+```tsx
+<Modal isOpen={isOpen} onClose={onClose}>
+  {/* Step 0: No footer - just content */}
+  <Modal.Step title="User Details" hideBackButton>
+    <UserDetailsContent />
+    {/* No Modal.Footer here - footer will animate to collapsed */}
+  </Modal.Step>
+
+  {/* Step 1: Has footer */}
+  <Modal.Step title="Edit Phone" backStep={0}>
+    <PhoneEditContent />
+    <Modal.Footer>
+      <CancelButton />
+      <SaveButton />
+    </Modal.Footer>
+  </Modal.Step>
+</Modal>
+```
+
+**Navigation between non-adjacent steps:**
+Use `goToStep(index)` from `useMorphingModal()` to jump between steps:
+```tsx
+function UserDetailsContent() {
+  const { goToStep } = useMorphingModal()
+  return (
+    <Modal.Item>
+      <button onClick={() => goToStep(1)}>Edit Phone</button>
+      <button onClick={() => goToStep(2)}>Change Role</button>
+    </Modal.Item>
+  )
+}
+```
+
+**The `backStep` prop:**
+Override the default back navigation to return to a specific step:
+```tsx
+<Modal.Step title="Edit Phone" backStep={0}>
+  {/* Back button goes to step 0 instead of previous step */}
+</Modal.Step>
+```
+
 ---
 
 ## Environment Variables

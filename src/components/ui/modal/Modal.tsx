@@ -45,7 +45,8 @@ import { ModalBackButton, ModalNextButton, ModalCancelBackButton, ModalGoToStepB
 import type { ModalProps, ModalStepProps } from './types'
 
 // Animated footer wrapper that syncs with step transitions
-function AnimatedFooter({ children }: { children: React.ReactNode }) {
+// Uses CSS Grid for height animation when footer appears/disappears
+function AnimatedFooter({ children, hasFooter }: { children: React.ReactNode; hasFooter: boolean }) {
   const { phase, direction } = useModalContext()
 
   // Determine animation class based on phase and direction
@@ -63,9 +64,14 @@ function AnimatedFooter({ children }: { children: React.ReactNode }) {
     return ''
   }
 
+  // Use CSS Grid to animate height when footer appears/disappears
+  const heightClass = hasFooter ? 'morph-footer-expanded' : 'morph-footer-collapsed'
+
   return (
-    <div className={`morph-footer-wrapper ${getAnimationClass()}`}>
-      {children}
+    <div className={`morph-footer-wrapper ${heightClass} ${getAnimationClass()}`}>
+      <div className="morph-footer-inner">
+        {children}
+      </div>
     </div>
   )
 }
@@ -151,7 +157,11 @@ function ModalBody({
   setCurrentTitle: (title: string) => void
   setCurrentFooter: (footer: React.ReactNode) => void
 }) {
-  const { currentStep } = useModalContext()
+  const { currentStep, targetStep, phase } = useModalContext()
+
+  // Determine which step to use for footer extraction
+  // Use targetStep during transitions so footer animates with content
+  const footerStep = phase === 'idle' ? currentStep : targetStep
 
   // Extract titles and footers from Step children
   useEffect(() => {
@@ -167,13 +177,17 @@ function ModalBody({
         isValidElement(child) && (child.type as any)._isModalStep
     )
 
+    // Title updates with currentStep (for header animation timing)
     if (steps[currentStep]) {
       setCurrentTitle(steps[currentStep].props.title)
-      // Extract footer from current step's children
-      const { footer } = separateFooter(steps[currentStep].props.children)
+    }
+
+    // Footer updates with footerStep (so it animates with content transition)
+    if (steps[footerStep]) {
+      const { footer } = separateFooter(steps[footerStep].props.children)
       setCurrentFooter(footer)
     }
-  }, [children, currentStep, isSingleStep, setCurrentTitle, setCurrentFooter])
+  }, [children, currentStep, footerStep, isSingleStep, setCurrentTitle, setCurrentFooter])
 
   if (isSingleStep) {
     // Single-step: wrap content in morph classes for consistency (without footer)
@@ -354,8 +368,15 @@ function ModalInner({
           {children}
         </ModalBody>
         {/* Footer rendered outside modal-body for sticky positioning */}
-        {currentFooter && (
-          <AnimatedFooter>
+        {/* Always render AnimatedFooter for multi-step modals to animate height changes */}
+        {isSingleStep ? (
+          currentFooter && (
+            <AnimatedFooter hasFooter={true}>
+              {currentFooter}
+            </AnimatedFooter>
+          )
+        ) : (
+          <AnimatedFooter hasFooter={currentFooter !== null}>
             {currentFooter}
           </AnimatedFooter>
         )}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface BottomSheetProps {
@@ -18,6 +19,12 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
   const currentY = useRef<number>(0)
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Track if component is mounted (for portal)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Handle open/close state
   useEffect(() => {
@@ -82,9 +89,11 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
     currentY.current = 0
   }
 
-  if (!isVisible) return null
+  // Don't render if not visible or not mounted (SSR safety)
+  if (!isVisible || !mounted) return null
 
-  return (
+  // Use portal to escape parent stacking contexts (fixes z-index issues with fixed navbars)
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -128,6 +137,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
           {children}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
