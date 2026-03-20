@@ -91,6 +91,7 @@ export function OrdersTab({
               onClick={onNewOrder}
               className="btn btn-primary mt-4"
             >
+              <Plus className="w-4 h-4" />
               Crear pedido
             </button>
           </div>

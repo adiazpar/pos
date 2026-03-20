@@ -269,6 +269,7 @@ export function ProductsTab({
               onClick={onAddProduct}
               className="btn btn-primary mt-4"
             >
+              <Plus className="w-4 h-4" />
               Agregar producto
             </button>
           </div>

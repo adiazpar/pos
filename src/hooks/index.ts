@@ -32,3 +32,6 @@ export type { UseCashSessionReturn, UseCashSessionOptions } from './useCashSessi
 
 export { useCashMovements } from './useCashMovements'
 export type { UseCashMovementsReturn } from './useCashMovements'
+
+export { useProviderManagement } from './useProviderManagement'
+export type { UseProviderManagementReturn } from './useProviderManagement'
