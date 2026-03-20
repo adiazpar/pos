@@ -1,51 +1,29 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useHeader } from '@/contexts/header-context'
-import { Spinner, Modal, Stagger } from '@/components/ui'
-import { Plus, ArrowDownCircle, ArrowUpCircle, PackageOpen, Receipt, Coins, History, ArrowUp, Trash2 } from 'lucide-react'
-import { BalanceHero } from '@/components/caja/BalanceHero'
-import { CloseDrawerModal } from '@/components/caja/CloseDrawerModal'
+import { Spinner, Stagger } from '@/components/ui'
+import { Plus, PackageOpen, Receipt, Coins, History } from 'lucide-react'
+import {
+  BalanceHero,
+  CloseDrawerModal,
+  OpenDrawerModal,
+  MovementsList,
+  AddMovementModal,
+  EditMovementModal,
+  LoansModal,
+} from '@/components/caja'
 import { LottiePlayer } from '@/components/animations'
 import { useAuth } from '@/contexts/auth-context'
 import { useNavbar } from '@/contexts/navbar-context'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { transitionModals } from '@/lib/modal-utils'
-import type { CashSession, CashMovement, CashMovementType, CashMovementCategory } from '@/types'
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const CATEGORY_LABELS: Record<CashMovementCategory, string> = {
-  venta: 'Venta',
-  prestamo_empleado: 'Prestamo',
-  retiro_banco: 'Retiro de banco',
-  devolucion_prestamo: 'Devolucion',
-  deposito_banco: 'Deposito a banco',
-  otro: 'Otro',
-}
-
-const INGRESO_CATEGORIES: CashMovementCategory[] = [
-  'prestamo_empleado',
-  'retiro_banco',
-  'otro'
-]
-
-const EGRESO_CATEGORIES: CashMovementCategory[] = [
-  'devolucion_prestamo',
-  'deposito_banco',
-  'otro'
-]
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
+import { useCashSession, useCashMovements } from '@/hooks'
+import { formatDateTime } from '@/lib/cash'
+import type { CashMovement } from '@/types'
 
 export default function CajaPage() {
   const router = useRouter()
-  const { user, pb } = useAuth()
+  const { user } = useAuth()
   const { isReturning, setReturning } = useNavbar()
 
   useHeader({
@@ -54,163 +32,20 @@ export default function CajaPage() {
     isReturning,
   })
 
-  // Session state
-  const [currentSession, setCurrentSession] = useState<CashSession | null>(null)
-  const [movements, setMovements] = useState<CashMovement[]>([])
-  const [sessions, setSessions] = useState<CashSession[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  // Use extracted hooks
+  const movementsHook = useCashMovements()
+  const sessionHook = useCashSession({ movements: movementsHook.movements })
 
   // Modal states
   const [isOpenDrawerModalOpen, setIsOpenDrawerModalOpen] = useState(false)
   const [isCloseDrawerModalOpen, setIsCloseDrawerModalOpen] = useState(false)
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false)
-  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] = useState(false)
-  const [viewingSession, setViewingSession] = useState<CashSession | null>(null)
-  const [viewingSessionMovements, setViewingSessionMovements] = useState<CashMovement[]>([])
-
-  // Form states
-  const [openingBalance, setOpeningBalance] = useState('')
-  const [movementType, setMovementType] = useState<CashMovementType>('ingreso')
-  const [movementCategory, setMovementCategory] = useState<CashMovementCategory | ''>('')
-  const [movementAmount, setMovementAmount] = useState('')
-  const [movementNote, setMovementNote] = useState('')
-
-  // Loading states
-  const [isOpening, setIsOpening] = useState(false)
-  const [isSavingMovement, setIsSavingMovement] = useState(false)
-  const [isLoadingSessionDetail, setIsLoadingSessionDetail] = useState(false)
-
-  // Animation states
-  const [lastMovementType, setLastMovementType] = useState<'ingreso' | 'retiro' | null>(null)
-  const [newMovementId, setNewMovementId] = useState<string | null>(null)
-  const [showOpenAnimation, setShowOpenAnimation] = useState(false)
-
-  // Modal states (continued)
   const [isLoansModalOpen, setIsLoansModalOpen] = useState(false)
-
-  // Edit movement states
   const [isEditMovementModalOpen, setIsEditMovementModalOpen] = useState(false)
   const [editingMovement, setEditingMovement] = useState<CashMovement | null>(null)
-  const [editType, setEditType] = useState<CashMovementType>('ingreso')
-  const [editCategory, setEditCategory] = useState<CashMovementCategory | ''>('')
-  const [editAmount, setEditAmount] = useState('')
-  const [editNote, setEditNote] = useState('')
-  const [isSavingEdit, setIsSavingEdit] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
-  // ============================================
-  // CALCULATED VALUES
-  // ============================================
-
-  const expectedBalance = useMemo(() => {
-    if (!currentSession) return 0
-
-    let balance = currentSession.openingBalance
-
-    for (const mov of movements) {
-      if (mov.type === 'ingreso') {
-        balance += mov.amount
-      } else {
-        balance -= mov.amount
-      }
-    }
-
-    return balance
-  }, [currentSession, movements])
-
-  const outstandingLoans = useMemo(() => {
-    const loans = new Map<string, { name: string; amount: number }>()
-
-    for (const mov of movements) {
-      if (mov.category === 'prestamo_empleado' && mov.employee) {
-        const employeeName = mov.expand?.employee?.name || 'Empleado'
-        const current = loans.get(mov.employee) || { name: employeeName, amount: 0 }
-        // Update name if we have expanded data (in case earlier entries didn't)
-        if (mov.expand?.employee?.name) {
-          current.name = mov.expand.employee.name
-        }
-        current.amount += mov.amount
-        loans.set(mov.employee, current)
-      } else if (mov.category === 'devolucion_prestamo' && mov.employee) {
-        const employeeName = mov.expand?.employee?.name || 'Empleado'
-        const current = loans.get(mov.employee) || { name: employeeName, amount: 0 }
-        // Update name if we have expanded data
-        if (mov.expand?.employee?.name) {
-          current.name = mov.expand.employee.name
-        }
-        current.amount -= mov.amount
-        loans.set(mov.employee, current)
-      }
-    }
-
-    // Filter out zero balances
-    for (const [key, value] of loans) {
-      if (value.amount <= 0) {
-        loans.delete(key)
-      }
-    }
-
-    return loans
-  }, [movements])
-
-  // Get the most recent closed session (for reference when opening new drawer)
-  const lastClosedSession = useMemo(() => {
-    return sessions.find(s => s.closedAt != null) || null
-  }, [sessions])
-
-  // ============================================
-  // DATA LOADING
-  // ============================================
-
-  const loadCurrentSession = useCallback(async () => {
-    try {
-      // Find open session (closedAt is null)
-      const openSessions = await pb.collection('cash_sessions').getList<CashSession>(1, 1, {
-        filter: 'closedAt = null',
-        sort: '-openedAt',
-        expand: 'openedBy',
-        requestKey: null,
-      })
-
-      if (openSessions.items.length > 0) {
-        setCurrentSession(openSessions.items[0])
-        return openSessions.items[0].id
-      } else {
-        setCurrentSession(null)
-        return null
-      }
-    } catch (err) {
-      console.error('Error loading current session:', err)
-      return null
-    }
-  }, [pb])
-
-  const loadMovements = useCallback(async (sessionId: string) => {
-    try {
-      // Use simple getList with client-side filtering (workaround for SDK issue)
-      const result = await pb.collection('cash_movements').getList<CashMovement>(1, 50, {
-        expand: 'employee',
-      })
-      const movs = result.items.filter(m => m.session === sessionId)
-      setMovements(movs)
-    } catch (err: unknown) {
-      console.error('Error loading movements:', err)
-    }
-  }, [pb])
-
-  const loadSessions = useCallback(async () => {
-    try {
-      const sess = await pb.collection('cash_sessions').getFullList<CashSession>({
-        sort: '-openedAt',
-        expand: 'openedBy,closedBy',
-        requestKey: null,
-      })
-      setSessions(sess)
-    } catch (err) {
-      console.error('Error loading sessions:', err)
-    }
-  }, [pb])
+  // Animation states
+  const [showOpenAnimation, setShowOpenAnimation] = useState(false)
 
   // Clear returning state after animation
   useEffect(() => {
@@ -225,23 +60,23 @@ export default function CajaPage() {
     let cancelled = false
 
     async function loadData() {
-      setIsLoading(true)
+      sessionHook.setIsLoading(true)
       try {
-        const sessionId = await loadCurrentSession()
+        const sessionId = await sessionHook.loadCurrentSession()
         if (sessionId && !cancelled) {
-          await loadMovements(sessionId)
+          await movementsHook.loadMovements(sessionId)
         }
         if (!cancelled) {
-          await loadSessions()
+          await sessionHook.loadSessions()
         }
       } catch (err) {
         if (!cancelled) {
           console.error('Error loading data:', err)
-          setError('Error al cargar los datos')
+          sessionHook.setError('Error al cargar los datos')
         }
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          sessionHook.setIsLoading(false)
         }
       }
     }
@@ -251,235 +86,56 @@ export default function CajaPage() {
     return () => {
       cancelled = true
     }
-  }, [loadCurrentSession, loadMovements, loadSessions])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ============================================
-  // ACTIONS
-  // ============================================
-
-  const handleOpenDrawer = async () => {
+  // Handlers
+  const handleOpenDrawer = async (openingBalance: number) => {
     if (!user) return
 
-    const balance = parseFloat(openingBalance)
-    if (isNaN(balance) || balance < 0) {
-      return
-    }
-
-    setIsOpening(true)
-    try {
-      const now = new Date().toISOString()
-
-      // Create session (opening balance is stored in the session, not as a movement)
-      const session = await pb.collection('cash_sessions').create<CashSession>({
-        openedAt: now,
-        openedBy: user.id,
-        openingBalance: balance,
-      })
-
-      // Reset form
-      setOpeningBalance('')
-
-      // Transition from open drawer modal to opening animation
-      // Update session state AFTER modal closes to prevent content flash
-      transitionModals(
-        () => setIsOpenDrawerModalOpen(false),
-        () => {
-          setCurrentSession(session)
-          setMovements([]) // New session starts with no movements
-          setShowOpenAnimation(true)
-          loadSessions()
-        }
-      )
-    } catch (err) {
-      console.error('Error opening drawer:', err)
-      setError('Error al abrir la caja')
-    } finally {
-      setIsOpening(false)
-    }
+    await sessionHook.openDrawer(
+      openingBalance,
+      movementsHook.setMovements,
+      setShowOpenAnimation,
+      () => setIsOpenDrawerModalOpen(false)
+    )
   }
 
   const handleCloseDrawerSuccess = async () => {
-    // Refresh data after drawer is closed
-    setCurrentSession(null)
-    setMovements([])
-    await loadSessions()
+    movementsHook.setMovements([])
+    await sessionHook.handleCloseDrawerSuccess()
   }
 
-  const handleRecordMovement = async () => {
-    if (!user || !currentSession || !movementCategory) return
+  const handleRecordMovement = async (
+    type: CashMovement['type'],
+    category: CashMovement['category'],
+    amount: number,
+    note: string
+  ) => {
+    if (!sessionHook.currentSession) return
+    await movementsHook.recordMovement(sessionHook.currentSession, type, category, amount, note)
+  }
 
-    const amount = parseFloat(movementAmount)
-    if (isNaN(amount) || amount <= 0) {
-      return
-    }
+  const handleSaveEdit = async (
+    movement: CashMovement,
+    type: CashMovement['type'],
+    category: CashMovement['category'],
+    amount: number,
+    note: string
+  ) => {
+    await movementsHook.updateMovement(movement, type, category, amount, note)
+  }
 
-    setIsSavingMovement(true)
-    try {
-      const newMovement = await pb.collection('cash_movements').create<CashMovement>({
-        session: currentSession.id,
-        type: movementType,
-        category: movementCategory,
-        amount: amount,
-        note: movementNote.trim() || null,
-        createdBy: user.id,
-        employee: (movementCategory === 'prestamo_empleado' || movementCategory === 'devolucion_prestamo') ? user.id : null,
-      })
-
-      // Add expanded employee data for immediate display
-      const movementWithExpand: CashMovement = {
-        ...newMovement,
-        expand: (movementCategory === 'prestamo_empleado' || movementCategory === 'devolucion_prestamo')
-          ? { employee: user }
-          : undefined
-      }
-
-      // Add new movement to state directly (PocketBase returns the created record with timestamp)
-      setMovements(prev => [...prev, movementWithExpand])
-
-      // Trigger balance animation
-      setLastMovementType(movementType)
-      setTimeout(() => setLastMovementType(null), 500)
-
-      // Track new movement for inline animation
-      setNewMovementId(movementWithExpand.id)
-
-      // Close modal and reset form
-      setIsMovementModalOpen(false)
-      setMovementType('ingreso')
-      setMovementCategory('')
-      setMovementAmount('')
-      setMovementNote('')
-    } catch (err) {
-      console.error('Error recording movement:', err)
-      alert('Error al registrar el movimiento')
-    } finally {
-      setIsSavingMovement(false)
-    }
+  const handleDeleteMovement = async (movementId: string) => {
+    await movementsHook.deleteMovement(movementId)
   }
 
   const handleOpenEditModal = (mov: CashMovement) => {
     setEditingMovement(mov)
-    setEditType(mov.type)
-    setEditCategory(mov.category)
-    setEditAmount(mov.amount.toString())
-    setEditNote(mov.note || '')
     setIsEditMovementModalOpen(true)
   }
 
-  const handleSaveEdit = async () => {
-    if (!user || !editingMovement || !editCategory) return
-
-    const amount = parseFloat(editAmount)
-    if (isNaN(amount) || amount <= 0) return
-
-    setIsSavingEdit(true)
-    try {
-      const updatedMovement = await pb.collection('cash_movements').update<CashMovement>(editingMovement.id, {
-        type: editType,
-        category: editCategory,
-        amount: amount,
-        note: editNote.trim() || null,
-        employee: (editCategory === 'prestamo_empleado' || editCategory === 'devolucion_prestamo') ? user.id : null,
-        editedBy: user.id,
-      })
-
-      // Update local state with expanded employee data
-      const movementWithExpand: CashMovement = {
-        ...updatedMovement,
-        expand: (editCategory === 'prestamo_empleado' || editCategory === 'devolucion_prestamo')
-          ? { employee: user }
-          : editingMovement.expand
-      }
-
-      setMovements(prev => prev.map(m => m.id === editingMovement.id ? movementWithExpand : m))
-      setIsEditMovementModalOpen(false)
-      setEditingMovement(null)
-    } catch (err) {
-      console.error('Error updating movement:', err)
-      alert('Error al actualizar el movimiento')
-    } finally {
-      setIsSavingEdit(false)
-    }
-  }
-
-  const handleDeleteMovement = async () => {
-    if (!editingMovement) return
-
-    setIsDeleting(true)
-    try {
-      await pb.collection('cash_movements').delete(editingMovement.id)
-      setMovements(prev => prev.filter(m => m.id !== editingMovement.id))
-      setIsEditMovementModalOpen(false)
-      setEditingMovement(null)
-    } catch (err) {
-      console.error('Error deleting movement:', err)
-      alert('Error al eliminar el movimiento')
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const handleViewSessionDetail = async (session: CashSession) => {
-    setViewingSession(session)
-    setIsSessionDetailModalOpen(true)
-    setIsLoadingSessionDetail(true)
-
-    try {
-      // Use simple getList with client-side filtering (same fix as loadMovements)
-      const result = await pb.collection('cash_movements').getList<CashMovement>(1, 50, {
-        expand: 'employee',
-      })
-      const movs = result.items.filter(m => m.session === session.id)
-      // Sort by created descending (newest first)
-      movs.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
-      setViewingSessionMovements(movs)
-    } catch (err) {
-      console.error('Error loading session movements:', err)
-    } finally {
-      setIsLoadingSessionDetail(false)
-    }
-  }
-
-  // ============================================
-  // FORMAT HELPERS
-  // ============================================
-
-  const formatDateTime = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleString('es-PE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Lima',
-    }).replace(/a\.\s*m\./gi, 'a.m.').replace(/p\.\s*m\./gi, 'p.m.')
-  }
-
-  const formatTime = (dateStr: string | undefined) => {
-    if (!dateStr) return 'Ahora'
-    // PocketBase returns dates like "2024-01-15 10:30:00.000Z"
-    const date = new Date(dateStr)
-    if (isNaN(date.getTime())) return 'Ahora'
-    return date.toLocaleTimeString('es-PE', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Lima',
-    }).replace(/a\.\s*m\./gi, 'a.m.').replace(/p\.\s*m\./gi, 'p.m.')
-  }
-
-  const scrollToTop = useCallback(() => {
-    const scrollContainer = document.querySelector('.with-sidebar')
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }, [])
-
-  // ============================================
-  // RENDER
-  // ============================================
-
-  if (isLoading) {
+  // Render
+  if (sessionHook.isLoading) {
     return (
       <main className="page-loading">
         <Spinner className="spinner-lg" />
@@ -490,9 +146,9 @@ export default function CajaPage() {
   return (
     <>
       <main className="page-content space-y-4">
-        {error && (
+        {sessionHook.error && (
           <div className="p-4 bg-error-subtle text-error rounded-lg">
-            {error}
+            {sessionHook.error}
           </div>
         )}
 
@@ -500,674 +156,130 @@ export default function CajaPage() {
           <Stagger delayMs={80} maxDelayMs={300}>
             {/* Balance Hero with status */}
             <BalanceHero
-            balance={expectedBalance}
-            label={currentSession ? "Saldo esperado" : ""}
-            lastMovementType={lastMovementType}
-            status={currentSession ? "Abierta" : undefined}
-            timestamp={currentSession ? formatDateTime(currentSession.openedAt) : undefined}
-            isClosed={!currentSession}
-            trend={currentSession && movements.length > 0 ? {
-              direction: expectedBalance >= currentSession.openingBalance ? 'up' : 'down',
-              amount: Math.abs(expectedBalance - currentSession.openingBalance)
-            } : undefined}
-          />
+              balance={sessionHook.expectedBalance}
+              label={sessionHook.currentSession ? "Saldo esperado" : ""}
+              lastMovementType={movementsHook.lastMovementType}
+              status={sessionHook.currentSession ? "Abierta" : undefined}
+              timestamp={sessionHook.currentSession ? formatDateTime(sessionHook.currentSession.openedAt) : undefined}
+              isClosed={!sessionHook.currentSession}
+              trend={sessionHook.currentSession && movementsHook.movements.length > 0 ? {
+                direction: sessionHook.expectedBalance >= sessionHook.currentSession.openingBalance ? 'up' : 'down',
+                amount: Math.abs(sessionHook.expectedBalance - sessionHook.currentSession.openingBalance)
+              } : undefined}
+            />
 
-          {/* Action Buttons - 2x2 grid */}
-          <div className="caja-actions">
-            {/* Row 1: Abrir/Cerrar, Historial */}
-            {currentSession ? (
-              <button
-                type="button"
-                onClick={() => setIsCloseDrawerModalOpen(true)}
-                className="caja-action-btn"
-              >
-                <PackageOpen className="caja-action-btn__icon text-error" />
-                Cerrar
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsOpenDrawerModalOpen(true)}
-                className="caja-action-btn"
-              >
-                <Plus className="caja-action-btn__icon text-success" />
-                Abrir
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => router.push('/caja/historial')}
-              className="caja-action-btn"
-            >
-              <History className="caja-action-btn__icon" />
-              Historial
-            </button>
-            {/* Row 2: Movimientos, Prestamos */}
-            <button
-              type="button"
-              onClick={() => setIsMovementModalOpen(true)}
-              className="caja-action-btn"
-              disabled={!currentSession}
-            >
-              <Receipt className="caja-action-btn__icon text-brand" />
-              Movimientos ({movements.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsLoansModalOpen(true)}
-              className="caja-action-btn"
-              disabled={!currentSession}
-            >
-              <Coins className="caja-action-btn__icon text-warning" />
-              Prestamos ({outstandingLoans.size})
-            </button>
-          </div>
-
-          {/* Movements Section (only when session is open) */}
-          {currentSession && (
-            <>
-              {/* Movements Header - only show when there are movements */}
-              {movements.length > 0 && (
-                <div className="flex items-center">
-                  <span className="text-sm text-text-secondary">
-                    {movements.length} {movements.length === 1 ? 'movimiento' : 'movimientos'}
-                  </span>
-                </div>
-              )}
-
-              {/* Movements List */}
-              {movements.length === 0 ? (
-                <div className="empty-state-fill">
-                  <p className="empty-state-description">
-                    Aun no hay movimientos registrados
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {[...movements].sort((a, b) => {
-                    // Sort by created time descending (newest first)
-                    // Fallback to ID comparison since PocketBase IDs are time-sortable
-                    if (a.created && b.created) {
-                      const timeA = new Date(a.created).getTime()
-                      const timeB = new Date(b.created).getTime()
-                      if (!isNaN(timeA) && !isNaN(timeB)) {
-                        return timeB - timeA
-                      }
-                    }
-                    // Fallback: compare IDs (PocketBase IDs are lexicographically sortable)
-                    return b.id.localeCompare(a.id)
-                  }).map((mov, index) => (
-                    <div
-                      key={mov.id}
-                      className="movement-item cursor-pointer"
-                      onClick={() => handleOpenEditModal(mov)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          handleOpenEditModal(mov)
-                        }
-                      }}
-                    >
-                      {mov.id === newMovementId ? (
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <LottiePlayer
-                            src="/animations/success.lottie"
-                            loop={false}
-                            autoplay={true}
-                            style={{ width: 56, height: 56 }}
-                            onComplete={() => setNewMovementId(null)}
-                          />
-                        </div>
-                      ) : (
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            mov.type === 'ingreso'
-                              ? 'bg-success-subtle text-success'
-                              : 'bg-error-subtle text-error'
-                          }`}
-                        >
-                          {mov.type === 'ingreso' ? (
-                            <ArrowDownCircle className="w-5 h-5" />
-                          ) : (
-                            <ArrowUpCircle className="w-5 h-5" />
-                          )}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0 h-10 flex flex-col justify-between">
-                        <span className="font-medium truncate">
-                          {CATEGORY_LABELS[mov.category]}
-                        </span>
-                        <span className="text-xs text-text-tertiary truncate">
-                          {(mov.category === 'prestamo_empleado' || mov.category === 'devolucion_prestamo') && mov.expand?.employee
-                            ? mov.expand.employee.name
-                            : mov.note || '-'}
-                        </span>
-                      </div>
-                      <div className="text-right h-10 flex flex-col justify-between flex-shrink-0">
-                        <span
-                          className={`font-medium ${
-                            mov.type === 'ingreso' ? 'text-success' : 'text-error'
-                          }`}
-                        >
-                          {mov.type === 'ingreso' ? '+' : '-'}{formatCurrency(mov.amount)}
-                        </span>
-                        <span className="text-xs text-text-tertiary">
-                          {formatTime(mov.created)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Back to top button */}
-              {movements.length > 5 && (
+            {/* Action Buttons - 2x2 grid */}
+            <div className="caja-actions">
+              {/* Row 1: Abrir/Cerrar, Historial */}
+              {sessionHook.currentSession ? (
                 <button
                   type="button"
-                  onClick={scrollToTop}
-                  className="w-full py-3 flex items-center justify-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
+                  onClick={() => setIsCloseDrawerModalOpen(true)}
+                  className="caja-action-btn"
                 >
-                  <ArrowUp className="w-4 h-4" />
-                  Volver arriba
+                  <PackageOpen className="caja-action-btn__icon text-error" />
+                  Cerrar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsOpenDrawerModalOpen(true)}
+                  className="caja-action-btn"
+                >
+                  <Plus className="caja-action-btn__icon text-success" />
+                  Abrir
                 </button>
               )}
-            </>
-          )}
-
-          {/* Closed state - centered message */}
-          {!currentSession && (
-            <div className="empty-state-fill">
-              <p className="empty-state-description">
-                La caja esta cerrada
-              </p>
+              <button
+                type="button"
+                onClick={() => router.push('/caja/historial')}
+                className="caja-action-btn"
+              >
+                <History className="caja-action-btn__icon" />
+                Historial
+              </button>
+              {/* Row 2: Movimientos, Prestamos */}
+              <button
+                type="button"
+                onClick={() => setIsMovementModalOpen(true)}
+                className="caja-action-btn"
+                disabled={!sessionHook.currentSession}
+              >
+                <Receipt className="caja-action-btn__icon text-brand" />
+                Movimientos ({movementsHook.movements.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsLoansModalOpen(true)}
+                className="caja-action-btn"
+                disabled={!sessionHook.currentSession}
+              >
+                <Coins className="caja-action-btn__icon text-warning" />
+                Prestamos ({sessionHook.outstandingLoans.size})
+              </button>
             </div>
-          )}
+
+            {/* Movements Section (only when session is open) */}
+            {sessionHook.currentSession && (
+              <MovementsList
+                movements={movementsHook.movements}
+                newMovementId={movementsHook.newMovementId}
+                onMovementClick={handleOpenEditModal}
+                onAnimationComplete={movementsHook.clearNewMovementId}
+              />
+            )}
+
+            {/* Closed state - centered message */}
+            {!sessionHook.currentSession && (
+              <div className="empty-state-fill">
+                <p className="empty-state-description">
+                  La caja esta cerrada
+                </p>
+              </div>
+            )}
           </Stagger>
         </div>
       </main>
 
-
-      {/* Open Drawer Modal */}
-      <Modal
+      {/* Modals */}
+      <OpenDrawerModal
         isOpen={isOpenDrawerModalOpen}
-        onClose={() => !isOpening && setIsOpenDrawerModalOpen(false)}
-        title="Abrir caja"
-      >
-        <div className="space-y-4">
-          {lastClosedSession && lastClosedSession.closedAt && lastClosedSession.closingBalance !== undefined && (
-            <div className="p-3 rounded-lg bg-bg-muted">
-              <div className="text-sm text-text-secondary">
-                La sesion anterior cerro con
-              </div>
-              <div className="text-lg font-display font-bold text-text-primary mt-0.5">
-                {formatCurrency(lastClosedSession.closingBalance)}
-              </div>
-              <div className="text-xs text-text-tertiary mt-1">
-                {formatDate(lastClosedSession.closedAt)}
-              </div>
-            </div>
-          )}
-          <div>
-            <label htmlFor="opening-balance" className="label">Saldo inicial (S/) <span className="text-error">*</span></label>
-            <input
-              id="opening-balance"
-              type="number"
-              inputMode="decimal"
-              value={openingBalance}
-              onChange={(e) => setOpeningBalance(e.target.value)}
-              className="input"
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-              autoFocus
-            />
-          </div>
-          <p className="text-sm text-text-tertiary">
-            Ingresa la cantidad de efectivo con la que inicias la caja
-          </p>
-        </div>
-        <Modal.Footer>
-          <button
-            type="button"
-            onClick={() => setIsOpenDrawerModalOpen(false)}
-            className="btn btn-secondary flex-1"
-            disabled={isOpening}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleOpenDrawer}
-            className="btn btn-primary flex-1"
-            disabled={isOpening || openingBalance === '' || parseFloat(openingBalance) < 0}
-          >
-            {isOpening ? <Spinner /> : 'Abrir'}
-          </button>
-        </Modal.Footer>
-      </Modal>
+        onClose={() => setIsOpenDrawerModalOpen(false)}
+        onSubmit={handleOpenDrawer}
+        lastClosedSession={sessionHook.lastClosedSession}
+      />
 
-      {/* Close Drawer Modal */}
       <CloseDrawerModal
         isOpen={isCloseDrawerModalOpen}
         onClose={() => setIsCloseDrawerModalOpen(false)}
         onSuccess={handleCloseDrawerSuccess}
-        currentSession={currentSession}
-        movements={movements}
+        currentSession={sessionHook.currentSession}
+        movements={movementsHook.movements}
       />
 
-      {/* Movement Modal */}
-      <Modal
+      <AddMovementModal
         isOpen={isMovementModalOpen}
-        onClose={() => !isSavingMovement && setIsMovementModalOpen(false)}
-        title="Registrar movimiento"
-      >
-        <div className="space-y-4">
-          {/* Type Toggle */}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setMovementType('ingreso')
-                setMovementCategory('')
-              }}
-              className={`flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                movementType === 'ingreso'
-                  ? 'bg-success text-white'
-                  : 'bg-bg-muted text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              <ArrowDownCircle className="w-5 h-5" />
-              Ingreso
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMovementType('retiro')
-                setMovementCategory('')
-              }}
-              className={`flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                movementType === 'retiro'
-                  ? 'bg-error text-white'
-                  : 'bg-bg-muted text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              <ArrowUpCircle className="w-5 h-5" />
-              Retiro
-            </button>
-          </div>
+        onClose={() => setIsMovementModalOpen(false)}
+        onSubmit={handleRecordMovement}
+        currentSession={sessionHook.currentSession}
+      />
 
-          {/* Category Select */}
-          <div>
-            <label htmlFor="movement-category" className="label">Categoria <span className="text-error">*</span></label>
-            <select
-              id="movement-category"
-              value={movementCategory}
-              onChange={(e) => setMovementCategory(e.target.value as CashMovementCategory)}
-              className="input"
-            >
-              <option value="">Seleccionar...</option>
-              {(movementType === 'ingreso' ? INGRESO_CATEGORIES : EGRESO_CATEGORIES).map((cat) => (
-                <option key={cat} value={cat}>
-                  {CATEGORY_LABELS[cat]}
-                </option>
-              ))}
-            </select>
-          </div>
+      <EditMovementModal
+        isOpen={isEditMovementModalOpen}
+        onClose={() => {
+          setIsEditMovementModalOpen(false)
+          setEditingMovement(null)
+        }}
+        movement={editingMovement}
+        onSave={handleSaveEdit}
+        onDelete={handleDeleteMovement}
+      />
 
-          {/* Amount */}
-          <div>
-            <label htmlFor="movement-amount" className="label">Monto (S/) <span className="text-error">*</span></label>
-            <input
-              id="movement-amount"
-              type="number"
-              inputMode="decimal"
-              value={movementAmount}
-              onChange={(e) => setMovementAmount(e.target.value)}
-              className="input"
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-            />
-          </div>
-
-          {/* Note */}
-          <div>
-            <label htmlFor="movement-note" className="label">Nota (opcional)</label>
-            <textarea
-              id="movement-note"
-              value={movementNote}
-              onChange={(e) => setMovementNote(e.target.value)}
-              className="input"
-              placeholder="Descripcion del movimiento..."
-              rows={2}
-            />
-          </div>
-        </div>
-        <Modal.Footer>
-          <button
-            type="button"
-            onClick={() => setIsMovementModalOpen(false)}
-            className="btn btn-secondary flex-1"
-            disabled={isSavingMovement}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleRecordMovement}
-            className="btn btn-primary flex-1"
-            disabled={isSavingMovement || !movementCategory || !movementAmount || parseFloat(movementAmount) <= 0}
-          >
-            {isSavingMovement ? <Spinner /> : 'Registrar'}
-          </button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Session Detail Modal */}
-      <Modal
-        isOpen={isSessionDetailModalOpen}
-        onClose={() => setIsSessionDetailModalOpen(false)}
-        title={viewingSession ? formatDate(viewingSession.openedAt) : 'Detalle de sesion'}
-      >
-        {isLoadingSessionDetail ? (
-          <div className="flex items-center justify-center py-8">
-            <Spinner />
-          </div>
-        ) : viewingSession ? (
-          <div className="space-y-4">
-            {/* Session Info */}
-            <div className="space-y-3 p-4 bg-bg-muted rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-secondary">Apertura</span>
-                <span className="text-sm font-medium">
-                  {formatTime(viewingSession.openedAt)} - {formatCurrency(viewingSession.openingBalance)}
-                </span>
-              </div>
-              {viewingSession.closedAt && (
-                <>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-text-secondary">Cierre</span>
-                    <span className="text-sm font-medium">
-                      {formatTime(viewingSession.closedAt)} - {formatCurrency(viewingSession.closingBalance || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-text-secondary">Esperado</span>
-                    <span className="text-sm font-medium">
-                      {formatCurrency(viewingSession.expectedBalance || 0)}
-                    </span>
-                  </div>
-                  {viewingSession.discrepancy !== undefined && viewingSession.discrepancy !== 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-text-secondary">Diferencia</span>
-                      <span
-                        className={`text-sm font-medium ${
-                          viewingSession.discrepancy > 0 ? 'text-success' : 'text-error'
-                        }`}
-                      >
-                        {viewingSession.discrepancy > 0 ? '+' : ''}{formatCurrency(viewingSession.discrepancy)}
-                      </span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {viewingSession.discrepancyNote && (
-              <div className="p-3 rounded-lg bg-warning-subtle">
-                <div className="text-xs text-text-secondary mb-1">Nota</div>
-                <div className="text-sm text-text-primary">{viewingSession.discrepancyNote}</div>
-              </div>
-            )}
-
-            {/* Movements */}
-            <div>
-              <h4 className="text-sm font-medium text-text-secondary mb-3">
-                Movimientos ({viewingSessionMovements.length})
-              </h4>
-              {viewingSessionMovements.length === 0 ? (
-                <div className="text-center py-4 text-text-tertiary">
-                  Sin movimientos
-                </div>
-              ) : (
-                <div className="space-y-4 max-h-64 overflow-y-auto scrollbar-hidden">
-                  {viewingSessionMovements.map((mov) => (
-                    <div
-                      key={mov.id}
-                      className="flex items-start gap-3"
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          mov.type === 'ingreso'
-                            ? 'bg-success-subtle text-success'
-                            : 'bg-error-subtle text-error'
-                        }`}
-                      >
-                        {mov.type === 'ingreso' ? (
-                          <ArrowDownCircle className="w-5 h-5" />
-                        ) : (
-                          <ArrowUpCircle className="w-5 h-5" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 h-10 flex flex-col justify-between">
-                        <span className="font-medium truncate">
-                          {CATEGORY_LABELS[mov.category]}
-                        </span>
-                        <span className="text-xs text-text-tertiary truncate">
-                          {(mov.category === 'prestamo_empleado' || mov.category === 'devolucion_prestamo') && mov.expand?.employee
-                            ? mov.expand.employee.name
-                            : mov.note || '-'}
-                        </span>
-                      </div>
-                      <div className="text-right h-10 flex flex-col justify-between flex-shrink-0">
-                        <span
-                          className={`font-medium ${
-                            mov.type === 'ingreso' ? 'text-success' : 'text-error'
-                          }`}
-                        >
-                          {mov.type === 'ingreso' ? '+' : '-'}{formatCurrency(mov.amount)}
-                        </span>
-                        <span className="text-xs text-text-tertiary">
-                          {formatTime(mov.created)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        ) : null}
-      </Modal>
-
-      {/* Loans Modal */}
-      <Modal
+      <LoansModal
         isOpen={isLoansModalOpen}
         onClose={() => setIsLoansModalOpen(false)}
-        title="Prestamos pendientes"
-      >
-        {outstandingLoans.size > 0 ? (
-          <div className="space-y-2">
-            {Array.from(outstandingLoans.entries()).map(([id, loan]) => (
-              <div key={id} className="flex items-center justify-between p-3 bg-bg-muted rounded-lg">
-                <span className="text-sm text-text-primary">{loan.name}</span>
-                <span className="text-sm font-medium text-warning">
-                  {formatCurrency(loan.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-text-tertiary">
-            No hay prestamos pendientes
-          </div>
-        )}
-      </Modal>
-
-      {/* Edit Movement Modal */}
-      <Modal
-        isOpen={isEditMovementModalOpen}
-        onClose={() => !isSavingEdit && !isDeleting && setIsEditMovementModalOpen(false)}
-      >
-        <Modal.Step title="Editar movimiento">
-          <Modal.Item>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditType('ingreso')
-                  setEditCategory('')
-                }}
-                className={`flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                  editType === 'ingreso'
-                    ? 'bg-success text-white'
-                    : 'bg-bg-muted text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <ArrowDownCircle className="w-5 h-5" />
-                Ingreso
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditType('retiro')
-                  setEditCategory('')
-                }}
-                className={`flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                  editType === 'retiro'
-                    ? 'bg-error text-white'
-                    : 'bg-bg-muted text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <ArrowUpCircle className="w-5 h-5" />
-                Retiro
-              </button>
-            </div>
-          </Modal.Item>
-
-          <Modal.Item>
-            <label htmlFor="edit-category" className="label">Categoria <span className="text-error">*</span></label>
-            <select
-              id="edit-category"
-              value={editCategory}
-              onChange={(e) => setEditCategory(e.target.value as CashMovementCategory)}
-              className="input"
-            >
-              <option value="">Seleccionar...</option>
-              {(editType === 'ingreso' ? INGRESO_CATEGORIES : EGRESO_CATEGORIES).map((cat) => (
-                <option key={cat} value={cat}>
-                  {CATEGORY_LABELS[cat]}
-                </option>
-              ))}
-            </select>
-          </Modal.Item>
-
-          <Modal.Item>
-            <label htmlFor="edit-amount" className="label">Monto (S/) <span className="text-error">*</span></label>
-            <input
-              id="edit-amount"
-              type="number"
-              inputMode="decimal"
-              value={editAmount}
-              onChange={(e) => setEditAmount(e.target.value)}
-              className="input"
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-            />
-          </Modal.Item>
-
-          <Modal.Item>
-            <label htmlFor="edit-note" className="label">Nota (opcional)</label>
-            <textarea
-              id="edit-note"
-              value={editNote}
-              onChange={(e) => setEditNote(e.target.value)}
-              className="input"
-              placeholder="Descripcion del movimiento..."
-              rows={2}
-            />
-          </Modal.Item>
-
-          <Modal.Footer>
-            <Modal.NextButton className="btn btn-secondary">
-              <Trash2 className="w-5 h-5" />
-            </Modal.NextButton>
-            <div className="flex-1" />
-            <button
-              type="button"
-              onClick={() => setIsEditMovementModalOpen(false)}
-              className="btn btn-secondary"
-              disabled={isSavingEdit}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveEdit}
-              className="btn btn-primary"
-              disabled={isSavingEdit || !editCategory || !editAmount || parseFloat(editAmount) <= 0}
-            >
-              {isSavingEdit ? <Spinner /> : 'Guardar'}
-            </button>
-          </Modal.Footer>
-        </Modal.Step>
-
-        <Modal.Step title="Eliminar movimiento">
-          <Modal.Item>
-            <p className="text-text-secondary">
-              Estas seguro de que deseas eliminar este movimiento?
-            </p>
-          </Modal.Item>
-
-          {editingMovement && (
-            <Modal.Item>
-              <div className="p-4 bg-bg-muted rounded-lg space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-text-secondary">Tipo</span>
-                  <span className="text-sm font-medium">
-                    {editingMovement.type === 'ingreso' ? 'Ingreso' : 'Retiro'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-text-secondary">Categoria</span>
-                  <span className="text-sm font-medium">
-                    {CATEGORY_LABELS[editingMovement.category]}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-text-secondary">Monto</span>
-                  <span className={`text-sm font-medium ${editingMovement.type === 'ingreso' ? 'text-success' : 'text-error'}`}>
-                    {editingMovement.type === 'ingreso' ? '+' : '-'}{formatCurrency(editingMovement.amount)}
-                  </span>
-                </div>
-              </div>
-            </Modal.Item>
-          )}
-
-          <Modal.Item>
-            <p className="text-sm text-error">
-              Esta accion no se puede deshacer.
-            </p>
-          </Modal.Item>
-
-          <Modal.Footer>
-            <Modal.BackButton className="btn btn-secondary flex-1">
-              Volver
-            </Modal.BackButton>
-            <button
-              type="button"
-              onClick={handleDeleteMovement}
-              className="btn bg-error text-white hover:bg-error/90 flex-1"
-              disabled={isDeleting}
-            >
-              {isDeleting ? <Spinner /> : 'Eliminar'}
-            </button>
-          </Modal.Footer>
-        </Modal.Step>
-      </Modal>
+        outstandingLoans={sessionHook.outstandingLoans}
+      />
 
       {/* Opening animation overlay */}
       {showOpenAnimation && (
@@ -1181,7 +293,6 @@ export default function CajaPage() {
           />
         </div>
       )}
-
     </>
   )
 }

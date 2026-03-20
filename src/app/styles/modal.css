@@ -1,0 +1,278 @@
+/* ==========================================================================
+ Modal and Overlay Styles
+ ========================================================================== */
+
+/* ===== Modal ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: var(--z-modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.modal {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-border);
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100vh - var(--space-8));
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-lg);
+  color: var(--color-text-tertiary);
+  background: transparent;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .modal-close:hover {
+    background: var(--color-bg-muted);
+    color: var(--color-text-primary);
+  }
+}
+
+.modal-close:active {
+  transform: scale(0.95);
+}
+
+.modal-body {
+  padding: var(--space-5);
+  flex: 1;
+  min-height: 0; /* Allow shrinking below content size for proper overflow */
+  overflow-y: auto;
+  /* Hide scrollbar across browsers */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.modal-body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.modal-footer {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  flex-shrink: 0;
+  background: var(--color-bg-surface);
+}
+
+/* Delete button aligned to the left */
+.modal-action-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  color: var(--color-error);
+  background: transparent;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  margin-right: auto;
+}
+
+@media (hover: hover) {
+  .modal-action-delete:hover {
+    background: var(--color-error-subtle);
+  }
+}
+
+.modal-action-delete:active {
+  transform: scale(0.95);
+}
+
+/* Edit button in modal footer */
+.modal-action-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  background: transparent;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .modal-action-edit:hover {
+    background: var(--color-bg-muted);
+    color: var(--color-text-primary);
+  }
+}
+
+.modal-action-edit:active {
+  transform: scale(0.95);
+}
+
+/* Action buttons group (Cancel/Save) aligned to the right */
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Modal back button in header */
+.modal-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  transition: color var(--duration-fast), background var(--duration-fast);
+  margin-right: var(--space-2);
+}
+
+.modal-back:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  background: var(--color-bg-muted);
+}
+
+.modal-back:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal back button container - animates width to push title */
+.modal-back-container {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width var(--duration-normal) ease-out;
+}
+
+.modal-back-visible {
+  width: 40px; /* 32px button + 8px spacing */
+}
+
+.modal-back-hidden {
+  width: 0;
+}
+
+.modal-back-hidden .modal-back {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-back-visible .modal-back {
+  opacity: 1;
+}
+
+/* ===== Bottom Sheet ===== */
+.bottom-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: var(--z-modal-backdrop);
+  animation: fadeIn var(--transition-fast);
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  padding-bottom: env(safe-area-inset-bottom, var(--space-4));
+  z-index: var(--z-modal);
+  animation: slideUp var(--transition-normal);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.bottom-sheet-closing {
+  animation: slideDown var(--transition-normal) forwards;
+}
+
+.bottom-sheet-backdrop-closing {
+  animation: fadeOut var(--transition-normal) forwards;
+}
+
+.bottom-sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3) 0;
+}
+
+.bottom-sheet-handle-bar {
+  width: 36px;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.bottom-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.bottom-sheet-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.bottom-sheet-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .bottom-sheet-close:hover {
+    background: var(--color-bg-muted);
+    color: var(--color-text-primary);
+  }
+}
+
+.bottom-sheet-content {
+  padding: var(--space-2) 0;
+}

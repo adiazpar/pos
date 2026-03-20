@@ -1,0 +1,347 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Irvin POS - Design System
+   Typography-focused, animation-enhanced, mobile-first PWA
+   Philosophy: Non-blocking delight - speed AND beauty
+   ========================================================================== */
+
+/* ==========================================================================
+   CSS Custom Properties (Design Tokens)
+   ========================================================================== */
+
+:root {
+  /* ===== Typography ===== */
+  /* Fonts loaded via Next.js - fallbacks for SSR */
+  --font-display: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
+  --font-body: var(--font-ibm-plex), 'IBM Plex Sans', system-ui, sans-serif;
+
+  /* Size Scale (Two-Pixel Rule) */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-4xl: 36px;
+
+  /* Hero Typography - for balance displays and key numbers */
+  --text-hero: clamp(2.5rem, 8vw, 4rem);
+  --text-display: clamp(1.75rem, 5vw, 2.5rem);
+
+  /* Letter spacing for large numbers */
+  --tracking-tight: -0.02em;
+  --tracking-tighter: -0.03em;
+
+  /* ===== Brand: Sky Blue (Professional) ===== */
+  --brand-50: #F0F9FF;
+  --brand-100: #E0F2FE;
+  --brand-200: #BAE6FD;
+  --brand-300: #7DD3FC;
+  --brand-400: #38BDF8;
+  --brand-500: #0EA5E9;
+  --brand-600: #0284C7;
+  --brand-700: #0369A1;
+  --brand-800: #075985;
+  --brand-900: #0C4A6E;
+
+  /* ===== Neutral Palette (Cool Slate) ===== */
+  --neutral-50: #F8FAFC;
+  --neutral-100: #F1F5F9;
+  --neutral-200: #E2E8F0;
+  --neutral-300: #CBD5E1;
+  --neutral-400: #94A3B8;
+  --neutral-500: #64748B;
+  --neutral-600: #475569;
+  --neutral-700: #334155;
+  --neutral-800: #1E293B;
+  --neutral-900: #0F172A;
+
+  /* ===== Semantic Mappings - Light Mode ===== */
+
+  /* Backgrounds */
+  --color-bg-base: #F8FAFC;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-muted: var(--neutral-100);
+
+  /* Brand */
+  --color-brand: var(--brand-500);
+  --color-brand-hover: var(--brand-600);
+  --color-brand-subtle: var(--brand-50);
+
+  /* Text Hierarchy (via opacity) */
+  --color-text-primary: var(--neutral-800);
+  --color-text-secondary: var(--neutral-500);
+  --color-text-tertiary: var(--neutral-400);
+  --color-text-inverse: #FAFAF9;
+  --color-text-brand: var(--brand-600);
+
+  /* Borders */
+  --color-border: var(--neutral-200);
+  --color-border-hover: var(--neutral-300);
+  --color-border-focus: var(--brand-500);
+
+  /* Payment Methods */
+  --color-cash: #2E7D4A;
+  --color-cash-hover: #256A3D;
+  --color-cash-subtle: #E8F5EB;
+
+  --color-yape: #6B21A8;
+  --color-yape-hover: #581C87;
+  --color-yape-subtle: #F3E8FF;
+
+  --color-pos: #EA580C;
+  --color-pos-hover: #C2410C;
+  --color-pos-subtle: #FFF7ED;
+
+  /* Semantic Colors */
+  --color-success: #2E7D4A;
+  --color-success-subtle: #E8F5EB;
+  --color-warning: #C17F24;
+  --color-warning-subtle: #FEF6E7;
+  --color-error: #B91C1C;
+  --color-error-subtle: #FEE7E7;
+
+  /* ===== Spacing ===== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ===== Border Radius ===== */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  /* ===== Shadows (Dual-Layer for Realistic Depth) ===== */
+  /* Each shadow has: Ambient (tight, dark) + Diffuse (soft, spread) */
+  --shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md:
+    0 2px 4px rgba(0, 0, 0, 0.07),
+    0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg:
+    0 4px 6px rgba(0, 0, 0, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.08);
+  --shadow-xl:
+    0 8px 10px rgba(0, 0, 0, 0.08),
+    0 20px 40px rgba(0, 0, 0, 0.12);
+
+  /* Colored shadows for brand emphasis */
+  --shadow-brand:
+    0 4px 12px hsla(199, 89%, 48%, 0.15),
+    0 8px 24px hsla(199, 89%, 48%, 0.1);
+  --shadow-success:
+    0 4px 12px hsla(145, 63%, 32%, 0.15),
+    0 8px 24px hsla(145, 63%, 32%, 0.1);
+
+  /* ===== Animation Tokens ===== */
+  /* Easing curves */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Durations - aligned with animation philosophy */
+  --duration-instant: 100ms;  /* Button feedback */
+  --duration-fast: 150ms;     /* Micro-interactions */
+  --duration-normal: 250ms;   /* Standard transitions */
+  --duration-slow: 400ms;     /* Page/modal transitions */
+  --duration-slower: 600ms;   /* Celebrations */
+
+  /* Composite timing */
+  --spring: var(--duration-normal) var(--ease-out-back);
+  --smooth: var(--duration-normal) var(--ease-out-expo);
+
+  /* ===== Legacy Transitions (for compatibility) ===== */
+  --transition-fast: 120ms ease-out;
+  --transition-normal: 200ms ease-out;
+  --transition-slow: 350ms ease-out;
+
+  /* ===== Z-Index ===== */
+  --z-base: 0;
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-modal-backdrop: 200;
+  --z-modal: 210;
+  --z-toast: 300;
+  --z-tooltip: 400;
+
+  /* ===== Layout ===== */
+  --sidebar-width: 260px;
+  --mobile-nav-height: 80px;
+  --header-height: 80px;
+  --page-padding: 16px;
+  --touch-target-min: 40px;
+}
+
+/* ===== Dark Mode ===== */
+.dark {
+  --color-bg-base: #131B2E;
+  --color-bg-surface: #182032;
+  --color-bg-elevated: #1E2840;
+  --color-bg-muted: #1E2840;
+
+  --color-brand: #38BDF8;
+  --color-brand-hover: #7DD3FC;
+  --color-brand-subtle: rgba(14, 165, 233, 0.15);
+
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-tertiary: #94A3B8;
+
+  --color-border: #243044;
+  --color-border-hover: #344156;
+
+  /* Semantic colors - lighter/brighter for dark backgrounds */
+  --color-success: #4ADE80;
+  --color-success-subtle: rgba(74, 222, 128, 0.15);
+  --color-warning: #EAB308;
+  --color-warning-subtle: rgba(234, 179, 8, 0.15);
+  --color-error: #F87171;
+  --color-error-subtle: rgba(248, 113, 113, 0.15);
+
+  /* Dark mode dual-layer shadows */
+  --shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg:
+    0 4px 6px rgba(0, 0, 0, 0.35),
+    0 10px 24px rgba(0, 0, 0, 0.3);
+  --shadow-xl:
+    0 8px 10px rgba(0, 0, 0, 0.35),
+    0 20px 40px rgba(0, 0, 0, 0.4);
+
+  --shadow-brand:
+    0 4px 12px hsla(199, 89%, 60%, 0.2),
+    0 8px 24px hsla(199, 89%, 60%, 0.15);
+  --shadow-success:
+    0 4px 12px hsla(145, 63%, 50%, 0.2),
+    0 8px 24px hsla(145, 63%, 50%, 0.15);
+}
+
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    /* Prevent body scroll - only inner containers should scroll */
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-base);
+    /* Fixed height with dvh for mobile browser chrome */
+    height: 100dvh;
+    height: 100vh; /* Fallback for older browsers */
+    overflow: hidden;
+  }
+
+  /* Support for dvh - modern browsers */
+  @supports (height: 100dvh) {
+    body {
+      height: 100dvh;
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary);
+  }
+
+  h1 { font-size: var(--text-4xl); font-weight: 700; }
+  h2 { font-size: var(--text-3xl); }
+  h3 { font-size: var(--text-2xl); }
+  h4 { font-size: var(--text-xl); }
+
+  p {
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+
+  a {
+    color: var(--color-brand);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  @media (hover: hover) {
+    a:hover {
+      color: var(--color-brand-hover);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  /* Focus States (Accessibility) */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-subtle);
+    color: var(--color-text-primary);
+  }
+
+  /* Custom scrollbar (subtle) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-hover);
+  }
+}

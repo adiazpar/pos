@@ -1,0 +1,397 @@
+/* ==========================================================================
+   Animations
+   Non-blocking delight: speed AND beauty
+   ========================================================================== */
+
+/* ===== Basic Keyframes ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== PIN Animations ===== */
+@keyframes pinShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  50% { transform: translateX(8px); }
+  75% { transform: translateX(-8px); }
+}
+
+@keyframes pinShakeError {
+  0% {
+    transform: translateX(0);
+    background: var(--color-error);
+  }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% {
+    transform: translateX(-8px);
+    background: var(--color-error);
+  }
+  80% { transform: translateX(0); }
+  100% {
+    transform: translateX(0);
+    background: var(--color-border);
+  }
+}
+
+/* ===== Page Header Animations ===== */
+@keyframes page-header-back-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes page-header-titles-shift {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes page-header-titles-return {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ===== Bottom Sheet Animations ===== */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ===== Balance Hero Animations ===== */
+.balance-hero {
+  font-size: var(--text-hero);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tighter);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  position: relative;
+}
+
+.balance-hero.updating {
+  animation: balance-bump var(--duration-normal) var(--ease-out-back);
+}
+
+@keyframes balance-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+/* Balance pulse effect for ingresos/retiros */
+.balance-pulse {
+  position: relative;
+}
+
+.balance-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.balance-pulse.ingreso::after {
+  background: hsla(145, 63%, 42%, 0.15);
+  animation: pulse-fade var(--duration-slow) var(--ease-out-expo) forwards;
+}
+
+.balance-pulse.retiro::after {
+  background: hsla(0, 72%, 51%, 0.08);
+  animation: pulse-fade var(--duration-slow) var(--ease-out-expo) forwards;
+}
+
+@keyframes pulse-fade {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+/* ===== Modal Animations ===== */
+.modal-animated {
+  animation: modal-enter var(--duration-normal) var(--ease-out-expo);
+}
+
+.modal-exit {
+  animation: modal-exit var(--duration-fast) var(--ease-in);
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+}
+
+.modal-backdrop-animated {
+  animation: backdrop-enter var(--duration-fast) ease-out;
+}
+
+.modal-backdrop-exit {
+  animation: backdrop-exit var(--duration-fast) ease-in;
+}
+
+@keyframes backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes backdrop-exit {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ===== Modal Content Morph ===== */
+
+/* Panel height animation using CSS Grid */
+.morph-panel {
+  display: grid;
+  transition: grid-template-rows var(--duration-normal) ease-out;
+}
+
+.morph-panel-visible {
+  grid-template-rows: 1fr;
+}
+
+.morph-panel-hidden {
+  grid-template-rows: 0fr;
+}
+
+.morph-panel-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.morph-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Content exit animation - staggered fade up */
+.morph-content-exit > .morph-item {
+  animation: morph-item-exit var(--duration-fast) ease-in forwards;
+}
+
+.morph-content-exit > .morph-item:nth-child(1) { animation-delay: 0ms; }
+.morph-content-exit > .morph-item:nth-child(2) { animation-delay: 40ms; }
+.morph-content-exit > .morph-item:nth-child(3) { animation-delay: 80ms; }
+.morph-content-exit > .morph-item:nth-child(4) { animation-delay: 120ms; }
+.morph-content-exit > .morph-item:nth-child(5) { animation-delay: 160ms; }
+
+/* Content enter animation - staggered fade in from below */
+.morph-content-enter > .morph-item {
+  animation: morph-item-enter var(--duration-fast) ease-out forwards;
+  opacity: 0;
+}
+
+.morph-content-enter > .morph-item:nth-child(1) { animation-delay: 0ms; }
+.morph-content-enter > .morph-item:nth-child(2) { animation-delay: 40ms; }
+.morph-content-enter > .morph-item:nth-child(3) { animation-delay: 80ms; }
+.morph-content-enter > .morph-item:nth-child(4) { animation-delay: 120ms; }
+.morph-content-enter > .morph-item:nth-child(5) { animation-delay: 160ms; }
+
+@keyframes morph-item-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes morph-item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Backward exit animation - fade out downward */
+.morph-content-exit-back > .morph-item {
+  animation: morph-item-exit-back var(--duration-fast) ease-in forwards;
+}
+
+.morph-content-exit-back > .morph-item:nth-child(1) { animation-delay: 0ms; }
+.morph-content-exit-back > .morph-item:nth-child(2) { animation-delay: 40ms; }
+.morph-content-exit-back > .morph-item:nth-child(3) { animation-delay: 80ms; }
+.morph-content-exit-back > .morph-item:nth-child(4) { animation-delay: 120ms; }
+.morph-content-exit-back > .morph-item:nth-child(5) { animation-delay: 160ms; }
+
+/* Backward enter animation - fade in from above */
+.morph-content-enter-back > .morph-item {
+  animation: morph-item-enter-back var(--duration-fast) ease-out forwards;
+  opacity: 0;
+}
+
+.morph-content-enter-back > .morph-item:nth-child(1) { animation-delay: 0ms; }
+.morph-content-enter-back > .morph-item:nth-child(2) { animation-delay: 40ms; }
+.morph-content-enter-back > .morph-item:nth-child(3) { animation-delay: 80ms; }
+.morph-content-enter-back > .morph-item:nth-child(4) { animation-delay: 120ms; }
+.morph-content-enter-back > .morph-item:nth-child(5) { animation-delay: 160ms; }
+
+@keyframes morph-item-exit-back {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes morph-item-enter-back {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal footer wrapper for animations */
+/* Uses CSS Grid for height animation when footer appears/disappears */
+.morph-footer-wrapper {
+  flex-shrink: 0;
+  display: grid;
+  transition: grid-template-rows var(--duration-normal) ease-out;
+}
+
+.morph-footer-expanded {
+  grid-template-rows: 1fr;
+}
+
+.morph-footer-collapsed {
+  grid-template-rows: 0fr;
+}
+
+.morph-footer-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Modal footer for morphing modal */
+.morph-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+}
+
+/* Footer exit animations */
+.morph-footer-exit .morph-footer,
+.morph-footer-exit-back .morph-footer {
+  animation: morph-footer-fade-out var(--duration-fast) ease-in forwards;
+}
+
+/* Footer enter animations */
+.morph-footer-enter .morph-footer,
+.morph-footer-enter-back .morph-footer {
+  animation: morph-footer-fade-in var(--duration-fast) ease-out forwards;
+}
+
+/* Hidden during height transition */
+.morph-footer-hidden .morph-footer {
+  opacity: 0;
+}
+
+@keyframes morph-footer-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes morph-footer-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== Stagger Animation ===== */
+/* Used by <Stagger> component - delay set via inline styles */
+.stagger-item {
+  animation: stagger-enter var(--duration-slow) var(--ease-out-expo) backwards;
+}
+
+@keyframes stagger-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

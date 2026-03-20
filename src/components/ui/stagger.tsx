@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Children, cloneElement, isValidElement } from 'react'
+import React, { Children, cloneElement, isValidElement, Fragment } from 'react'
 
 export interface StaggerProps {
   children: React.ReactNode
@@ -30,9 +30,25 @@ export function Stagger({
   maxDelayMs = 300,
   className = 'stagger-item'
 }: StaggerProps) {
+  // Flatten children - if a child is a Fragment, include its children instead
+  const flattenChildren = (nodes: React.ReactNode): React.ReactNode[] => {
+    const result: React.ReactNode[] = []
+    Children.forEach(nodes, (child) => {
+      if (isValidElement(child) && child.type === Fragment) {
+        // Recursively flatten Fragment children
+        result.push(...flattenChildren(child.props.children))
+      } else {
+        result.push(child)
+      }
+    })
+    return result
+  }
+
+  const flatChildren = flattenChildren(children)
+
   return (
     <>
-      {Children.map(children, (child, index) => {
+      {flatChildren.map((child, index) => {
         if (!isValidElement(child)) return child
 
         const delay = Math.min(index * delayMs, maxDelayMs)
@@ -40,6 +56,7 @@ export function Stagger({
         const existingStyle = child.props.style || {}
 
         return cloneElement(child, {
+          key: child.key ?? index,
           className: `${existingClassName} ${className}`.trim(),
           style: {
             ...existingStyle,

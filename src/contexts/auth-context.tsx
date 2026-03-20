@@ -22,6 +22,7 @@ import {
   PIN_VERIFIED_KEY,
   PRODUCT_FILTERS_KEY,
 } from '@/lib/constants'
+import { phoneToAuthEmail } from '@/lib/countries'
 
 // ============================================
 // TYPES
@@ -126,15 +127,6 @@ function setPinVerifiedThisSession(): void {
 function clearPinVerifiedThisSession(): void {
   if (typeof window === 'undefined') return
   sessionStorage.removeItem(PIN_VERIFIED_KEY)
-}
-
-/**
- * Convert phone number to auth email format for PocketBase
- * +51987654321 -> 51987654321@phone.local
- */
-function phoneToAuthEmail(phoneNumber: string): string {
-  const digits = phoneNumber.replace('+', '')
-  return `${digits}@phone.local`
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

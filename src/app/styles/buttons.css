@@ -1,0 +1,130 @@
+/* ==========================================================================
+   Button Styles
+   ========================================================================== */
+
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  transition: transform 100ms ease-out, filter var(--transition-fast), background-color var(--transition-fast);
+  touch-action: manipulation;
+  user-select: none;
+  min-height: var(--touch-target-min);
+}
+
+/* Luminance shift hover (NOT translateY) */
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    filter: brightness(0.92);
+    text-decoration: none;
+    color: inherit;
+  }
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+  filter: brightness(0.88);
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-brand);
+  color: white;
+}
+
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    color: white;
+  }
+}
+
+.btn-secondary {
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  border: 1.5px solid var(--color-border);
+}
+
+@media (hover: hover) {
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--color-brand);
+    background: var(--color-brand-subtle);
+    color: var(--color-text-primary);
+    filter: none;
+  }
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+@media (hover: hover) {
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-bg-muted);
+    color: var(--color-text-primary);
+    filter: none;
+  }
+}
+
+.btn-danger {
+  background: var(--color-error);
+  color: white;
+}
+
+/* Icon-only button (square) */
+.btn-icon {
+  padding: var(--space-2);
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+}
+
+/* Payment buttons */
+.btn-cash {
+  background: var(--color-cash);
+  color: white;
+}
+
+.btn-yape {
+  background: var(--color-yape);
+  color: white;
+}
+
+.btn-pos {
+  background: var(--color-pos);
+  color: white;
+}
+
+.btn-sm {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  min-height: 40px;
+}
+
+.btn-lg {
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--text-lg);
+  min-height: 56px;
+}
+
+.btn-icon {
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  padding: 0;
+}

@@ -1,17 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import PocketBase from 'pocketbase'
-import { isValidE164 } from '@/lib/countries'
+import { isValidE164, phoneToAuthEmail } from '@/lib/countries'
 
 const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090'
-
-/**
- * Convert phone number to auth email format for PocketBase
- * +51987654321 -> 51987654321@phone.local
- */
-function phoneToAuthEmail(phoneNumber: string): string {
-  const digits = phoneNumber.replace('+', '')
-  return `${digits}@phone.local`
-}
 
 /**
  * POST /api/admin/change-member-phone
