@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import QRCode from 'qrcode'
 import { Badge, Spinner, Modal, useMorphingModal } from '@/components/ui'
@@ -567,9 +567,6 @@ export default function TeamPage() {
   // PIN reset state
   const [pinResetLoading, setPinResetLoading] = useState(false)
 
-  // Animation state for list items
-  const [isEntering, setIsEntering] = useState(false)
-
   // Check if current user is owner
   const canManageTeam = isOwner(user)
 
@@ -615,15 +612,6 @@ export default function TeamPage() {
       cancelled = true
     }
   }, [pb, canManageTeam])
-
-  // Trigger entering animation after loading completes
-  useLayoutEffect(() => {
-    if (!isLoading) {
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => setIsEntering(true), 50)
-      return () => clearTimeout(timer)
-    }
-  }, [isLoading])
 
   // Sort team members: owner first, then partners, then employees
   const sortedTeamMembers = useMemo(() => {
@@ -1012,7 +1000,7 @@ export default function TeamPage() {
 
   return (
     <>
-      <main className="page-content space-y-6">
+      <main className="page-content space-y-6 page-stagger">
         {error && (
           <div className="p-4 bg-error-subtle text-error rounded-lg">
             {error}
@@ -1038,6 +1026,8 @@ export default function TeamPage() {
             )}
           </div>
 
+          <hr className="border-border" />
+
           {/* Team List */}
           <div className="space-y-2">
             {sortedTeamMembers.map((member, index) => {
@@ -1045,8 +1035,8 @@ export default function TeamPage() {
               return (
                 <div
                   key={member.id}
-                  className={`list-item-clickable list-item-flat ${isEntering ? 'entering' : ''}`}
-                  style={isEntering ? { animationDelay: `${index * 30}ms` } : undefined}
+                  className="list-item-clickable list-item-flat entering"
+                  style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
                   onClick={() => handleOpenUserModal(member)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -1104,13 +1094,15 @@ export default function TeamPage() {
               </span>
             </div>
 
+            <hr className="border-border" />
+
             {/* Codes List */}
             <div className="space-y-2">
               {inviteCodes.map((code, index) => (
                 <div
                   key={code.id}
-                  className={`list-item-clickable list-item-flat ${isEntering ? 'entering' : ''}`}
-                  style={isEntering ? { animationDelay: `${(sortedTeamMembers.length + index) * 30}ms` } : undefined}
+                  className="list-item-clickable list-item-flat entering"
+                  style={{ animationDelay: `${Math.min((sortedTeamMembers.length + index) * 30, 300)}ms` }}
                   onClick={() => handleOpenExistingCode(code)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -1232,8 +1224,9 @@ export default function TeamPage() {
                   <LottiePlayer
                     src="/animations/error.json"
                     loop={false}
-                    autoplay
-                    speed={1}
+                    autoplay={true}
+                    delay={500}
+                    style={{ width: 160, height: 160 }}
                   />
                 )}
               </div>

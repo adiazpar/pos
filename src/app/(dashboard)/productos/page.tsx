@@ -1218,6 +1218,8 @@ export default function ProductosPage() {
                     </button>
                   </div>
 
+                  <hr className="border-border" />
+
                   {/* Product List */}
                   {filteredProducts.length === 0 ? (
                     <div className="empty-state">
@@ -1430,6 +1432,8 @@ export default function ProductosPage() {
                       Nuevo Pedido
                     </button>
                   </div>
+
+                  <hr className="border-border" />
 
                   {/* Orders List */}
                   {filteredOrders.length === 0 ? (

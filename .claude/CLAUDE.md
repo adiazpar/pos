@@ -312,6 +312,71 @@ Override the default back navigation to return to a specific step:
 </Modal.Step>
 ```
 
+### Modal Lottie Animations
+
+When adding Lottie animations to modal success/error confirmation steps, use this pattern to prevent the animation from getting cut off during the modal transition:
+
+```tsx
+// State to trigger animation AFTER action completes
+const [itemDeleted, setItemDeleted] = useState(false)
+
+// In your delete handler:
+const handleDelete = async () => {
+  await pb.collection('items').delete(id)
+  setItemDeleted(true)  // Triggers animation
+  goToStep(3)           // Navigate to success step
+}
+
+// Success/Error step with Lottie:
+<Modal.Step title="Item eliminado" hideBackButton>
+  <Modal.Item>
+    <div className="flex flex-col items-center text-center py-4">
+      {/* Fixed-size container prevents layout shift */}
+      <div style={{ width: 160, height: 160 }}>
+        {itemDeleted && (
+          <LottiePlayer
+            src="/animations/error.json"  // or success.json
+            loop={false}
+            autoplay={true}
+            delay={500}  // CRITICAL: Wait for modal transition to complete
+            style={{ width: 160, height: 160 }}
+          />
+        )}
+      </div>
+      {/* Text fades in with animation */}
+      <p
+        className="text-lg font-semibold text-text-primary mt-4 transition-opacity duration-500"
+        style={{ opacity: itemDeleted ? 1 : 0 }}
+      >
+        Item eliminado
+      </p>
+      <p
+        className="text-sm text-text-secondary mt-1 transition-opacity duration-500 delay-200"
+        style={{ opacity: itemDeleted ? 1 : 0 }}
+      >
+        El item ha sido eliminado correctamente
+      </p>
+    </div>
+  </Modal.Item>
+
+  <Modal.Footer>
+    <button onClick={handleClose} className="btn btn-primary flex-1">
+      Listo
+    </button>
+  </Modal.Footer>
+</Modal.Step>
+```
+
+**Key points:**
+- `delay={500}` on LottiePlayer waits for modal step transition (~300ms) to complete before starting
+- Conditional render `{itemDeleted && <LottiePlayer />}` ensures animation only plays when state is set
+- Fixed container size (`width: 160, height: 160`) prevents layout shift while animation loads
+- Text uses `transition-opacity` with inline `opacity` style to fade in sync with animation
+
+**Available animations:**
+- `/animations/success.json` - Green checkmark for successful actions (save, create, receive)
+- `/animations/error.json` - Red X for deletions
+
 ---
 
 ## Environment Variables
