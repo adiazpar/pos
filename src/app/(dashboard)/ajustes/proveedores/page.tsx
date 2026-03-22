@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Truck } from 'lucide-react'
+import { Plus, Van } from 'lucide-react'
 import { Spinner, Stagger } from '@/components/ui'
 import { useHeader } from '@/contexts/header-context'
 import { useProviderManagement } from '@/hooks'
@@ -104,7 +104,7 @@ export default function ProveedoresPage() {
           {/* Empty state - no providers at all */}
           {providers.length === 0 && (
             <div className="empty-state-fill">
-              <Truck className="empty-state-icon" />
+              <Van className="empty-state-icon" />
               <h3 className="empty-state-title">No hay proveedores</h3>
               <p className="empty-state-description">
                 Agrega tu primer proveedor para comenzar
