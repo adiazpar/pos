@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import { Search, X, Filter, Plus, ArrowUp, Package, ChevronRight, ImageIcon } from 'lucide-react'
-import { Stagger } from '@/components/ui'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { getProductIconUrl } from '@/lib/utils'
 import {
@@ -79,8 +78,7 @@ export function ProductsTab({
 
   return (
     <div className="page-body space-y-4">
-      <Stagger delayMs={80} maxDelayMs={300}>
-        {error && !isModalOpen && (
+      {error && !isModalOpen && (
           <div className="p-4 bg-error-subtle text-error rounded-lg">
             {error}
           </div>
@@ -274,7 +272,6 @@ export function ProductsTab({
             </button>
           </div>
         )}
-      </Stagger>
 
       {/* Sort bottom sheet */}
       <BottomSheet

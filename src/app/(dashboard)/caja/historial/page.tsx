@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useHeader } from '@/contexts/header-context'
-import { Spinner, Modal, Stagger } from '@/components/ui'
+import { Spinner, Modal } from '@/components/ui'
 import { CheckCircle2, Clock, ChevronRight, ArrowDownCircle, ArrowUpCircle, ArrowUp } from 'lucide-react'
 import { useNavbar } from '@/contexts/navbar-context'
 import { useAuth } from '@/contexts/auth-context'
@@ -166,8 +166,7 @@ export default function HistorialPage() {
     <div ref={scrollContainerRef} className="flex flex-col flex-1 min-h-0 overflow-y-auto">
       <main className="page-content page-content--no-navbar">
         <div className="flex flex-col flex-1 gap-6">
-          <Stagger delayMs={80} maxDelayMs={300}>
-            {/* Summary Stats */}
+          {/* Summary Stats */}
           <div className="session-stats" role="region" aria-label="Resumen de sesiones">
             <div className="session-stat">
               <div className="session-stat__value">{sessions.length}</div>
@@ -285,8 +284,7 @@ export default function HistorialPage() {
                 <ArrowUp className="w-4 h-4" />
                 Volver arriba
               </button>
-            )}
-          </Stagger>
+          )}
         </div>
       </main>
 

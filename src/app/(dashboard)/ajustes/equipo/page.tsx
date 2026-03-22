@@ -1,7 +1,7 @@
 'use client'
 
 import { Trash2, Plus, Check, Copy } from 'lucide-react'
-import { Spinner, Modal, Stagger } from '@/components/ui'
+import { Spinner, Modal } from '@/components/ui'
 import { LottiePlayer } from '@/components/animations/LottiePlayer'
 import { useHeader } from '@/contexts/header-context'
 import { useAuth } from '@/contexts/auth-context'
@@ -97,8 +97,7 @@ export default function TeamPage() {
   return (
     <>
       <main className="page-content space-y-6">
-        <Stagger delayMs={80} maxDelayMs={300}>
-          {error && (
+        {error && (
             <div className="p-4 bg-error-subtle text-error rounded-lg">
               {error}
             </div>
@@ -158,7 +157,6 @@ export default function TeamPage() {
               </div>
             </div>
           )}
-        </Stagger>
       </main>
 
       {/* Add Member Modal */}

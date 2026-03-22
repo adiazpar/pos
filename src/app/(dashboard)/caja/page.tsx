@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useHeader } from '@/contexts/header-context'
-import { Spinner, Stagger } from '@/components/ui'
+import { Spinner } from '@/components/ui'
 import { Plus, PackageOpen, Receipt, Coins, History } from 'lucide-react'
 import {
   BalanceHero,
@@ -153,8 +153,7 @@ export default function CajaPage() {
         )}
 
         <div className="flex flex-col flex-1 gap-6">
-          <Stagger delayMs={80} maxDelayMs={300}>
-            {/* Balance Hero with status */}
+          {/* Balance Hero with status */}
             <BalanceHero
               balance={sessionHook.expectedBalance}
               label={sessionHook.currentSession ? "Saldo esperado" : ""}
@@ -236,8 +235,7 @@ export default function CajaPage() {
                   La caja esta cerrada
                 </p>
               </div>
-            )}
-          </Stagger>
+          )}
         </div>
       </main>
 

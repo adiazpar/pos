@@ -379,19 +379,3 @@
   to { opacity: 1; }
 }
 
-/* ===== Stagger Animation ===== */
-/* Used by <Stagger> component - delay set via inline styles */
-.stagger-item {
-  animation: stagger-enter var(--duration-slow) var(--ease-out-expo) backwards;
-}
-
-@keyframes stagger-enter {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}

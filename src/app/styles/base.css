@@ -159,9 +159,9 @@
   /* Durations - aligned with animation philosophy */
   --duration-instant: 100ms;  /* Button feedback */
   --duration-fast: 150ms;     /* Micro-interactions */
-  --duration-normal: 250ms;   /* Standard transitions */
-  --duration-slow: 400ms;     /* Page/modal transitions */
-  --duration-slower: 600ms;   /* Celebrations */
+  --duration-normal: 400ms;   /* Standard transitions */
+  --duration-slow: 600ms;     /* Page/modal transitions */
+  --duration-slower: 800ms;   /* Celebrations */
 
   /* Composite timing */
   --spring: var(--duration-normal) var(--ease-out-back);

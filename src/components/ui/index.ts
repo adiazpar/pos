@@ -18,8 +18,5 @@ export type { ModalProps } from './modal'
 
 export { StockStepper } from './stock-stepper'
 
-export { Stagger } from './stagger'
-export type { StaggerProps } from './stagger'
-
 export { SuccessFeedback } from './success-feedback'
 export type { SuccessFeedbackProps } from './success-feedback'

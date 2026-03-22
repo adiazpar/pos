@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ArrowLeftRight, Phone, Lock, Palette, Info } from 'lucide-react'
-import { Spinner, Modal, Stagger } from '@/components/ui'
+import { Spinner, Modal } from '@/components/ui'
 import { useHeader } from '@/contexts/header-context'
 import { useSettings } from '@/hooks'
 import { formatPhoneForDisplay } from '@/lib/countries'
@@ -86,8 +86,7 @@ export default function SettingsPage() {
   return (
     <>
       <main className="page-content space-y-6">
-        <Stagger delayMs={80} maxDelayMs={300}>
-          {/* Transfer Section - Owner Only */}
+        {/* Transfer Section - Owner Only */}
           {isOwner && (
             <div className="card p-4 space-y-4">
               <div className="flex items-center gap-3">
@@ -256,8 +255,7 @@ export default function SettingsPage() {
                 <span className="text-sm font-medium text-text-primary">Feria POS</span>
               </div>
             </div>
-          </div>
-        </Stagger>
+        </div>
       </main>
 
       {/* Transfer Modal */}

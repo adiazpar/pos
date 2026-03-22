@@ -1,7 +1,7 @@
 'use client'
 
 import { Plus, Van } from 'lucide-react'
-import { Spinner, Stagger } from '@/components/ui'
+import { Spinner } from '@/components/ui'
 import { useHeader } from '@/contexts/header-context'
 import { useProviderManagement } from '@/hooks'
 import { ProviderListItem, ProviderModal } from '@/components/proveedores'
@@ -61,8 +61,7 @@ export default function ProveedoresPage() {
   return (
     <>
       <main className="page-content space-y-6">
-        <Stagger delayMs={80} maxDelayMs={300}>
-          {error && !isModalOpen && (
+        {error && !isModalOpen && (
             <div className="p-4 bg-error-subtle text-error rounded-lg">
               {error}
             </div>
@@ -121,7 +120,6 @@ export default function ProveedoresPage() {
               )}
             </div>
           )}
-        </Stagger>
       </main>
 
       {/* Provider Modal */}

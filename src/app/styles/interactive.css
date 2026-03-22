@@ -270,7 +270,7 @@
   padding-bottom: env(safe-area-inset-bottom, 0);
   /* Animation properties for hide/show */
   transform: translateY(0);
-  transition: transform var(--duration-normal) var(--ease-out-expo);
+  transition: transform var(--duration-slow) var(--ease-out-expo);
 }
 
 .mobile-nav--hidden {

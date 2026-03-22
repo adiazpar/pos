@@ -1,7 +1,6 @@
 'use client'
 
 import { Search, X, Plus, ArrowUp, Package, Warehouse, ChevronRight } from 'lucide-react'
-import { Stagger } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Product } from '@/types'
 import type { ExpandedOrder, OrderStatusFilter } from '@/lib/products'
@@ -62,8 +61,7 @@ export function OrdersTab({
 
   return (
     <div className="page-body space-y-4">
-      <Stagger delayMs={80} maxDelayMs={300}>
-        {error && !isModalOpen && (
+      {error && !isModalOpen && (
           <div className="p-4 bg-error-subtle text-error rounded-lg">
             {error}
           </div>
@@ -247,7 +245,6 @@ export function OrdersTab({
             )}
           </>
         )}
-      </Stagger>
     </div>
   )
 }
