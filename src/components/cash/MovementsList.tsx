@@ -93,9 +93,7 @@ export function MovementsList({
                 {CATEGORY_LABELS[mov.category]}
               </span>
               <span className="text-xs text-text-tertiary truncate">
-                {(mov.category === 'employee_loan' || mov.category === 'loan_repayment') && mov.employee
-                  ? mov.employee.name
-                  : mov.note || '-'}
+                {mov.note || '-'}
               </span>
             </div>
             <div className="text-right h-10 flex flex-col justify-between flex-shrink-0">
