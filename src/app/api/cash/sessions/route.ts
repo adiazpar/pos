@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, cashSessions, users } from '@/db'
-import { eq, desc, isNull, and } from 'drizzle-orm'
+import { db, cashSessions, cashMovements, users } from '@/db'
+import { eq, desc, isNull, and, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/simple-auth'
@@ -21,6 +21,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Subquery to count movements per session
+    const movementCountSubquery = db
+      .select({
+        sessionId: cashMovements.sessionId,
+        count: sql<number>`count(*)`.as('movement_count'),
+      })
+      .from(cashMovements)
+      .groupBy(cashMovements.sessionId)
+      .as('movement_counts')
+
     const sessionsList = await db
       .select({
         id: cashSessions.id,
@@ -37,9 +47,11 @@ export async function GET() {
         createdAt: cashSessions.createdAt,
         updatedAt: cashSessions.updatedAt,
         openerName: users.name,
+        movementCount: movementCountSubquery.count,
       })
       .from(cashSessions)
       .leftJoin(users, eq(cashSessions.openedBy, users.id))
+      .leftJoin(movementCountSubquery, eq(cashSessions.id, movementCountSubquery.sessionId))
       .where(eq(cashSessions.businessId, session.businessId))
       .orderBy(desc(cashSessions.openedAt))
 
@@ -47,6 +59,7 @@ export async function GET() {
       success: true,
       sessions: sessionsList.map(s => ({
         ...s,
+        movementCount: s.movementCount ?? 0,
         opener: s.openerName ? { name: s.openerName } : null,
       })),
     })

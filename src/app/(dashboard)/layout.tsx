@@ -1,6 +1,6 @@
 'use client'
 
-import { MobileNav, Sidebar, TransferBanner, PageHeader } from '@/components/layout'
+import { MobileNav, Sidebar, PageHeader } from '@/components/layout'
 import { ContentGuard } from '@/components/auth'
 import { NavbarProvider } from '@/contexts/navbar-context'
 
@@ -15,7 +15,6 @@ export default function DashboardLayout({
         <Sidebar />
         <PageHeader />
         <div className="with-sidebar flex flex-col h-full overflow-y-auto">
-          <TransferBanner />
           <ContentGuard>
             {children}
           </ContentGuard>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { isPartnerOrOwner } from '@/lib/auth'
+import { fetchDeduped } from '@/lib/fetch'
 import type { Provider } from '@/types'
 
 export interface UseProviderManagementReturn {
@@ -77,7 +78,7 @@ export function useProviderManagement(): UseProviderManagementReturn {
 
     async function loadData() {
       try {
-        const response = await fetch('/api/providers')
+        const response = await fetchDeduped('/api/providers')
         const data = await response.json()
 
         if (cancelled) return

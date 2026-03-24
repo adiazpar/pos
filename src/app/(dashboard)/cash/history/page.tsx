@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { fetchDeduped } from '@/lib/fetch'
 import { Spinner, Modal } from '@/components/ui'
 import { CheckCircle2, Clock, ChevronRight, ArrowDownCircle, ArrowUpCircle, ArrowUp } from 'lucide-react'
 import { useNavbar } from '@/contexts/navbar-context'
@@ -28,8 +29,7 @@ export default function HistoryPage() {
   const { hide, show } = useNavbar()
 
   // Data state
-  const [sessions, setSessions] = useState<CashSession[]>([])
-  const [movementCounts, setMovementCounts] = useState<Record<string, number>>({})
+  const [sessions, setSessions] = useState<(CashSession & { movementCount: number })[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   // Session detail state
@@ -51,24 +51,15 @@ export default function HistoryPage() {
     return () => show()
   }, [hide, show])
 
-  // Load sessions and movement counts
+  // Load sessions (includes movement counts)
   useEffect(() => {
     async function loadSessions() {
       try {
-        // Load sessions
-        const sessionsRes = await fetch('/api/cash/sessions')
-        const sessionsData = await sessionsRes.json()
+        const response = await fetchDeduped('/api/cash/sessions')
+        const data = await response.json()
 
-        if (sessionsRes.ok && sessionsData.success) {
-          setSessions(sessionsData.sessions)
-        }
-
-        // Load movement counts per session
-        const countsRes = await fetch('/api/cash/movements/counts')
-        const countsData = await countsRes.json()
-
-        if (countsRes.ok && countsData.success) {
-          setMovementCounts(countsData.counts)
+        if (response.ok && data.success) {
+          setSessions(data.sessions)
         }
       } catch (err) {
         console.error('Error loading sessions:', err)
@@ -87,7 +78,7 @@ export default function HistoryPage() {
     setIsLoadingSessionDetail(true)
 
     try {
-      const response = await fetch(`/api/cash/movements?sessionId=${session.id}`)
+      const response = await fetchDeduped(`/api/cash/movements?sessionId=${session.id}`)
       const data = await response.json()
 
       if (response.ok && data.success) {
@@ -171,7 +162,7 @@ export default function HistoryPage() {
             <div className="space-y-3">
               {sessions.map((session) => {
                 const netChange = getNetChange(session)
-                const moveCount = movementCounts[session.id] || 0
+                const moveCount = session.movementCount
 
                 return (
                   <div

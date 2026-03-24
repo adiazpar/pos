@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import QRCode from 'qrcode'
 import { useAuth } from '@/contexts/auth-context'
+import { fetchDeduped } from '@/lib/fetch'
 import {
   generateInviteCode,
   getInviteCodeExpiration,
@@ -95,7 +96,7 @@ export function useTeamManagement(): UseTeamManagementReturn {
   useEffect(() => {
     const loadTeamData = async () => {
       try {
-        const response = await fetch('/api/team')
+        const response = await fetchDeduped('/api/team')
         if (!response.ok) {
           throw new Error('Failed to load team data')
         }

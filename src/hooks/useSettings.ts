@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { useTransfer } from '@/contexts/transfer-context'
 
 // ============================================
 // TYPES
@@ -122,21 +123,21 @@ export function useSettings(): UseSettingsReturn {
   const { user } = useAuth()
   const isOwner = user?.role === 'owner'
 
+  // Get transfer data from shared context (fetched once in layout)
+  const {
+    pendingTransfer,
+    incomingTransfer,
+    isLoading: isLoadingTransfer,
+    setPendingTransfer,
+    setIncomingTransfer,
+  } = useTransfer()
+
   // Theme state
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
   const isInitialMount = useRef(true)
 
-  // Transfer state (for owner)
-  const [pendingTransfer, setPendingTransfer] = useState<PendingTransfer | null>(null)
-  const [isLoadingTransfer, setIsLoadingTransfer] = useState(false)
-
-  // Incoming transfer state (for non-owner recipients)
-  // TODO: Implement loading incoming transfers for non-owner users
-  const [incomingTransfer, _setIncomingTransfer] = useState<IncomingTransfer | null>(null)
-  const [isLoadingIncoming, setIsLoadingIncoming] = useState(false)
+  // Local transfer UI state
   const [acceptingTransfer, setAcceptingTransfer] = useState(false)
-
-  // Transfer modal state
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
   const [transferStep, setTransferStep] = useState(0)
   const [transferEmail, setTransferEmail] = useState('')
@@ -148,58 +149,6 @@ export function useSettings(): UseSettingsReturn {
   // ============================================
   // EFFECTS
   // ============================================
-
-  // Fetch pending transfer on mount (owner only)
-  useEffect(() => {
-    if (!isOwner) return
-
-    async function fetchPendingTransfer() {
-      setIsLoadingTransfer(true)
-      try {
-        const response = await fetch('/api/transfer/pending')
-        const data = await response.json()
-
-        if (response.ok && data.success && data.transfer) {
-          setPendingTransfer(data.transfer)
-        } else {
-          setPendingTransfer(null)
-        }
-      } catch (err) {
-        console.error('Error fetching pending transfer:', err)
-        setPendingTransfer(null)
-      } finally {
-        setIsLoadingTransfer(false)
-      }
-    }
-
-    fetchPendingTransfer()
-  }, [isOwner])
-
-  // Fetch incoming transfer for non-owners
-  useEffect(() => {
-    if (isOwner) return
-
-    async function fetchIncomingTransfer() {
-      setIsLoadingIncoming(true)
-      try {
-        const response = await fetch('/api/transfer/incoming')
-        const data = await response.json()
-
-        if (response.ok && data.success && data.transfer) {
-          _setIncomingTransfer(data.transfer)
-        } else {
-          _setIncomingTransfer(null)
-        }
-      } catch (err) {
-        console.error('Error fetching incoming transfer:', err)
-        _setIncomingTransfer(null)
-      } finally {
-        setIsLoadingIncoming(false)
-      }
-    }
-
-    fetchIncomingTransfer()
-  }, [isOwner])
 
   // Apply theme changes only when user changes theme (not on mount)
   useEffect(() => {
@@ -434,7 +383,7 @@ export function useSettings(): UseSettingsReturn {
 
     // Incoming transfer state (non-owner)
     incomingTransfer,
-    isLoadingIncoming,
+    isLoadingIncoming: isLoadingTransfer, // Same loading state from context
     acceptingTransfer,
 
     // Transfer modal state

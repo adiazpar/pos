@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { fetchDeduped } from '@/lib/fetch'
 import type { CashMovement, CashMovementType, CashMovementCategory, CashSession } from '@/types'
 
 export interface UseCashMovementsReturn {
@@ -45,7 +46,7 @@ export function useCashMovements(): UseCashMovementsReturn {
   const loadMovements = useCallback(async (sessionId: string): Promise<void> => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/cash/movements?sessionId=${sessionId}`)
+      const response = await fetchDeduped(`/api/cash/movements?sessionId=${sessionId}`)
       const data = await response.json()
 
       if (response.ok && data.success) {

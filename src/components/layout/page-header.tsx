@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { getRouteConfig } from '@/lib/navigation'
 import { UserMenu } from './user-menu'
 
@@ -37,7 +37,7 @@ export function PageHeader() {
             className="page-header__back"
             aria-label="Go back"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
         )}
         <div className="page-header__titles">

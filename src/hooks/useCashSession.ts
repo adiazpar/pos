@@ -4,7 +4,40 @@ import { useState, useCallback, useMemo } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { transitionModals } from '@/lib/modal-utils'
 import { calculateExpectedBalance } from '@/lib/cash'
+import { fetchDeduped } from '@/lib/fetch'
 import type { CashSession, CashMovement } from '@/types'
+
+// ============================================
+// SESSION CACHE
+// ============================================
+
+const CACHE_KEY = 'cash_session_cache'
+
+function getCachedSession(): CashSession | null | 'unknown' {
+  if (typeof window === 'undefined') return 'unknown'
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY)
+    if (cached === null) return 'unknown' // Never cached
+    if (cached === 'null') return null // Cached as no session
+    return JSON.parse(cached) as CashSession
+  } catch {
+    return 'unknown'
+  }
+}
+
+function setCachedSession(session: CashSession | null): void {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.setItem(CACHE_KEY, session ? JSON.stringify(session) : 'null')
+  } catch {
+    // Storage error, ignore
+  }
+}
+
+export function clearSessionCache(): void {
+  if (typeof window === 'undefined') return
+  sessionStorage.removeItem(CACHE_KEY)
+}
 
 export interface UseCashSessionReturn {
   // State
@@ -39,9 +72,17 @@ export interface UseCashSessionOptions {
 export function useCashSession({ movements }: UseCashSessionOptions): UseCashSessionReturn {
   const { user } = useAuth()
 
-  const [currentSession, setCurrentSession] = useState<CashSession | null>(null)
+  // Initialize from cache if available
+  const [currentSession, setCurrentSession] = useState<CashSession | null>(() => {
+    const cached = getCachedSession()
+    return cached !== 'unknown' ? cached : null
+  })
   const [sessions, setSessions] = useState<CashSession[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  // If we have cached data, don't show loading
+  const [isLoading, setIsLoading] = useState(() => {
+    const cached = getCachedSession()
+    return cached === 'unknown'
+  })
   const [error, setError] = useState('')
 
   // Calculated values
@@ -53,18 +94,29 @@ export function useCashSession({ movements }: UseCashSessionOptions): UseCashSes
     return sessions.find(s => s.closedAt != null) || null
   }, [sessions])
 
-  // Load current open session
-  // TODO: Implement with Drizzle API routes
+  // Load current open session with caching
   const loadCurrentSession = useCallback(async (): Promise<string | null> => {
+    // Check cache first - if we have cached data, use it without API call
+    const cached = getCachedSession()
+
+    if (cached !== 'unknown') {
+      // Trust the cache - no API call needed
+      setCurrentSession(cached)
+      return cached?.id || null
+    }
+
+    // No cache - must fetch from server
     try {
-      const response = await fetch('/api/cash/sessions/current')
+      const response = await fetchDeduped('/api/cash/sessions/current')
       const data = await response.json()
 
       if (response.ok && data.success && data.session) {
         setCurrentSession(data.session)
+        setCachedSession(data.session)
         return data.session.id
       } else {
         setCurrentSession(null)
+        setCachedSession(null)
         return null
       }
     } catch (err) {
@@ -77,7 +129,7 @@ export function useCashSession({ movements }: UseCashSessionOptions): UseCashSes
   // TODO: Implement with Drizzle API routes
   const loadSessions = useCallback(async (): Promise<void> => {
     try {
-      const response = await fetch('/api/cash/sessions')
+      const response = await fetchDeduped('/api/cash/sessions')
       const data = await response.json()
 
       if (response.ok && data.success) {
@@ -113,6 +165,9 @@ export function useCashSession({ movements }: UseCashSessionOptions): UseCashSes
 
       const session: CashSession = data.session
 
+      // Update cache
+      setCachedSession(session)
+
       // Transition from open drawer modal to opening animation
       transitionModals(
         closeModal,
@@ -133,6 +188,7 @@ export function useCashSession({ movements }: UseCashSessionOptions): UseCashSes
   // Handle successful drawer close
   const handleCloseDrawerSuccess = useCallback(async (): Promise<void> => {
     setCurrentSession(null)
+    setCachedSession(null)
     await loadSessions()
   }, [loadSessions])
 

@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { User } from '@/types'
+import { fetchDeduped } from '@/lib/fetch'
 
 // ============================================
 // TYPES
@@ -31,6 +32,8 @@ interface AuthContextType {
 // ============================================
 
 const AUTH_CACHE_KEY = 'auth_user_cache'
+const AUTH_VALIDATED_KEY = 'auth_last_validated'
+const VALIDATION_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 
 function getCachedUser(): User | null {
   if (typeof window === 'undefined') return null
@@ -52,7 +55,29 @@ function setCachedUser(user: User | null): void {
       localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(user))
     } else {
       localStorage.removeItem(AUTH_CACHE_KEY)
+      localStorage.removeItem(AUTH_VALIDATED_KEY)
     }
+  } catch {
+    // Storage error, ignore
+  }
+}
+
+function shouldRevalidate(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    const lastValidated = localStorage.getItem(AUTH_VALIDATED_KEY)
+    if (!lastValidated) return true
+    const elapsed = Date.now() - parseInt(lastValidated, 10)
+    return elapsed > VALIDATION_INTERVAL_MS
+  } catch {
+    return true
+  }
+}
+
+function setValidatedNow(): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(AUTH_VALIDATED_KEY, Date.now().toString())
   } catch {
     // Storage error, ignore
   }
@@ -72,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Load cached user and validate auth on mount
+  // Load cached user and validate auth on mount (if needed)
   useEffect(() => {
     const cachedUser = getCachedUser()
 
@@ -80,17 +105,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (cachedUser) {
       setUser(cachedUser)
       setIsLoading(false)
+
+      // Skip API call if validated recently (within 5 minutes)
+      if (!shouldRevalidate()) {
+        return
+      }
     }
 
-    // Validate auth with server (background if cached)
+    // Validate auth with server
     const validateAuth = async () => {
       try {
-        const response = await fetch('/api/auth/me')
+        const response = await fetchDeduped('/api/auth/me')
         if (response.ok) {
           const data = await response.json()
           if (data.user) {
             setUser(data.user)
             setCachedUser(data.user)
+            setValidatedNow()
           } else {
             // Server says no user, clear cache
             setUser(null)
@@ -132,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(data.user)
       setCachedUser(data.user)
+      setValidatedNow()
       return { success: true }
     } catch {
       return { success: false, error: 'Connection error' }
@@ -150,12 +182,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const response = await fetch('/api/auth/me')
+      const response = await fetchDeduped('/api/auth/me')
       if (response.ok) {
         const data = await response.json()
         if (data.user) {
           setUser(data.user)
           setCachedUser(data.user)
+          setValidatedNow()
         }
       }
     } catch {
