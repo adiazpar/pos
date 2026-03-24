@@ -78,7 +78,6 @@ export function useCashMovements(): UseCashMovementsReturn {
         category,
         amount,
         note: note.trim() || null,
-        employeeId: (category === 'employee_loan' || category === 'loan_repayment') ? user.id : null,
       }),
     })
 
@@ -122,7 +121,6 @@ export function useCashMovements(): UseCashMovementsReturn {
         category,
         amount,
         note: note.trim() || null,
-        employeeId: (category === 'employee_loan' || category === 'loan_repayment') ? user.id : null,
       }),
     })
 
