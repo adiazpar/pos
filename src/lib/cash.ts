@@ -10,21 +10,17 @@ import type { CashMovementCategory, CashMovementType, CashMovement, CashSession 
 
 export const CATEGORY_LABELS: Record<CashMovementCategory, string> = {
   sale: 'Sale',
-  employee_loan: 'Employee Loan',
   bank_withdrawal: 'Bank Withdrawal',
-  loan_repayment: 'Loan Repayment',
   bank_deposit: 'Bank Deposit',
   other: 'Other',
 }
 
 export const DEPOSIT_CATEGORIES: CashMovementCategory[] = [
-  'employee_loan',
   'bank_withdrawal',
   'other'
 ]
 
 export const WITHDRAWAL_CATEGORIES: CashMovementCategory[] = [
-  'loan_repayment',
   'bank_deposit',
   'other'
 ]
@@ -53,44 +49,6 @@ export function calculateExpectedBalance(
   }
 
   return balance
-}
-
-/**
- * Calculate outstanding employee loans from movements
- */
-export function calculateOutstandingLoans(
-  movements: CashMovement[]
-): Map<string, { name: string; amount: number }> {
-  const loans = new Map<string, { name: string; amount: number }>()
-
-  for (const mov of movements) {
-    if (mov.category === 'employee_loan' && mov.employeeId) {
-      const employeeName = mov.employee?.name || 'Employee'
-      const current = loans.get(mov.employeeId) || { name: employeeName, amount: 0 }
-      if (mov.employee?.name) {
-        current.name = mov.employee.name
-      }
-      current.amount += mov.amount
-      loans.set(mov.employeeId, current)
-    } else if (mov.category === 'loan_repayment' && mov.employeeId) {
-      const employeeName = mov.employee?.name || 'Employee'
-      const current = loans.get(mov.employeeId) || { name: employeeName, amount: 0 }
-      if (mov.employee?.name) {
-        current.name = mov.employee.name
-      }
-      current.amount -= mov.amount
-      loans.set(mov.employeeId, current)
-    }
-  }
-
-  // Filter out zero balances
-  for (const [key, value] of loans) {
-    if (value.amount <= 0) {
-      loans.delete(key)
-    }
-  }
-
-  return loans
 }
 
 /**
