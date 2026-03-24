@@ -1,50 +1,39 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { UserMenu } from './user-menu'
+import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import { useHeaderContext } from '@/contexts/header-context'
+import { getRouteConfig } from '@/lib/navigation'
+import { UserMenu } from './user-menu'
 
 /**
- * Fixed page header component that reads its configuration from HeaderContext.
- * Place this in the dashboard layout - pages use the useHeader() hook to set content.
+ * Simple page header that reads title/subtitle from route config.
+ * No context or hooks needed - just reads the current pathname.
  */
 export function PageHeader() {
-  const { config } = useHeaderContext()
-  const { title, subtitle, actions, showBackButton, onBack, isReturning } = config
+  const pathname = usePathname()
+  const router = useRouter()
+  const config = getRouteConfig(pathname)
 
-  // Clear returning state after animation completes
-  const [showReturnAnimation, setShowReturnAnimation] = useState(isReturning)
+  const { title, subtitle, backTo } = config
 
-  useEffect(() => {
-    if (isReturning) {
-      setShowReturnAnimation(true)
-      // Clear after animation duration
-      const timer = setTimeout(() => setShowReturnAnimation(false), 300)
-      return () => clearTimeout(timer)
-    } else {
-      setShowReturnAnimation(false)
+  const handleBack = () => {
+    if (backTo) {
+      router.push(backTo)
     }
-  }, [isReturning])
-
-  const getContentClass = () => {
-    if (showBackButton) return 'page-header__content--with-back'
-    if (showReturnAnimation) return 'page-header__content--returning'
-    return ''
   }
 
-  // Don't render if no title is set (initial state)
+  // Don't render if no title
   if (!title) {
     return <header className="page-header page-header--fixed" />
   }
 
   return (
     <header className="page-header page-header--fixed">
-      <div className={`page-header__content ${getContentClass()}`}>
-        {showBackButton && (
+      <div className={`page-header__content ${backTo ? 'page-header__content--with-back' : ''}`}>
+        {backTo && (
           <button
             type="button"
-            onClick={onBack}
+            onClick={handleBack}
             className="page-header__back"
             aria-label="Go back"
           >
@@ -57,7 +46,6 @@ export function PageHeader() {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        {actions}
         <div className="lg:hidden">
           <UserMenu variant="mobile" />
         </div>

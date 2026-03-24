@@ -1,12 +1,7 @@
 'use client'
 
-import { useHeader } from '@/contexts/header-context'
-
 export default function ReportesPage() {
-  useHeader({
-    title: 'Reports',
-    subtitle: 'Sales analytics',
-  })
+  // Header is set optimistically by nav component
 
   return (
     <main className="page-content">

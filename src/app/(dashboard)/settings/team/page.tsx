@@ -3,7 +3,6 @@
 import { Trash2, Plus, Check, Copy } from 'lucide-react'
 import { Spinner, Modal } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
-import { useHeader } from '@/contexts/header-context'
 import { useAuth } from '@/contexts/auth-context'
 import { useTeamManagement } from '@/hooks'
 import {
@@ -21,11 +20,6 @@ import {
 
 export default function TeamPage() {
   const { user } = useAuth()
-
-  useHeader({
-    title: 'Team',
-    subtitle: 'Manage your team',
-  })
 
   const {
     // Data

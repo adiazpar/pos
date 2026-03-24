@@ -104,7 +104,6 @@ export async function PATCH(
         amount: cashMovements.amount,
         note: cashMovements.note,
         saleId: cashMovements.saleId,
-        employeeId: cashMovements.employeeId,
         createdBy: cashMovements.createdBy,
         editedBy: cashMovements.editedBy,
         createdAt: cashMovements.createdAt,

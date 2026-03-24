@@ -2,16 +2,10 @@
 
 import { Plus, Van } from 'lucide-react'
 import { Spinner } from '@/components/ui'
-import { useHeader } from '@/contexts/header-context'
 import { useProviderManagement } from '@/hooks'
 import { ProviderListItem, ProviderModal } from '@/components/providers'
 
 export default function ProveedoresPage() {
-  useHeader({
-    title: 'Providers',
-    subtitle: 'Manage your providers',
-  })
-
   const {
     // Data
     providers,

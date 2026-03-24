@@ -27,6 +27,38 @@ interface AuthContextType {
 }
 
 // ============================================
+// LOCAL STORAGE CACHE
+// ============================================
+
+const AUTH_CACHE_KEY = 'auth_user_cache'
+
+function getCachedUser(): User | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const cached = localStorage.getItem(AUTH_CACHE_KEY)
+    if (cached) {
+      return JSON.parse(cached) as User
+    }
+  } catch {
+    // Invalid cache, ignore
+  }
+  return null
+}
+
+function setCachedUser(user: User | null): void {
+  if (typeof window === 'undefined') return
+  try {
+    if (user) {
+      localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(user))
+    } else {
+      localStorage.removeItem(AUTH_CACHE_KEY)
+    }
+  } catch {
+    // Storage error, ignore
+  }
+}
+
+// ============================================
 // CONTEXT
 // ============================================
 
@@ -40,25 +72,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Fetch current user on mount
+  // Load cached user and validate auth on mount
   useEffect(() => {
-    const fetchUser = async () => {
+    const cachedUser = getCachedUser()
+
+    // If we have cached data, use it immediately
+    if (cachedUser) {
+      setUser(cachedUser)
+      setIsLoading(false)
+    }
+
+    // Validate auth with server (background if cached)
+    const validateAuth = async () => {
       try {
         const response = await fetch('/api/auth/me')
         if (response.ok) {
           const data = await response.json()
           if (data.user) {
             setUser(data.user)
+            setCachedUser(data.user)
+          } else {
+            // Server says no user, clear cache
+            setUser(null)
+            setCachedUser(null)
           }
+        } else {
+          // Auth failed, clear cache
+          setUser(null)
+          setCachedUser(null)
         }
       } catch (error) {
-        console.error('Failed to fetch user:', error)
+        console.error('Failed to validate auth:', error)
+        // On network error, keep cached user (offline support)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchUser()
+    validateAuth()
   }, [])
 
   // ============================================
@@ -80,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(data.user)
+      setCachedUser(data.user)
       return { success: true }
     } catch {
       return { success: false, error: 'Connection error' }
@@ -93,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ignore errors
     }
     setUser(null)
+    setCachedUser(null)
   }, [])
 
   const refreshUser = useCallback(async () => {
@@ -102,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json()
         if (data.user) {
           setUser(data.user)
+          setCachedUser(data.user)
         }
       }
     } catch {

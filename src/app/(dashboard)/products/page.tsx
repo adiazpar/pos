@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAuth } from '@/contexts/auth-context'
-import { useHeader } from '@/contexts/header-context'
 import { useProductFilters } from '@/hooks'
 import { Spinner } from '@/components/ui'
 import {
@@ -17,7 +16,6 @@ import {
   type ExpandedOrder,
   type OrderFormItem,
   type OrderStatusFilter,
-  TAB_SUBTITLES,
 } from '@/lib/products'
 import { getProductIconUrl, formatDate } from '@/lib/utils'
 import { useAiProductPipeline, useImageCompression } from '@/hooks'
@@ -672,12 +670,6 @@ export default function ProductosPage() {
     // For now, return the receipt field directly if it's a URL
     return order.receipt
   }, [])
-
-  // Set header
-  useHeader({
-    title: 'Products',
-    subtitle: TAB_SUBTITLES[activeTab],
-  })
 
   if (isLoading) {
     return (

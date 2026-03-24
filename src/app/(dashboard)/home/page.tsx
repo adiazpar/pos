@@ -1,12 +1,7 @@
 'use client'
 
-import { useHeader } from '@/contexts/header-context'
-
 export default function InicioPage() {
-  useHeader({
-    title: 'Home',
-    subtitle: 'Main dashboard',
-  })
+  // Header is set optimistically by nav component
 
   return (
     <main className="page-content">

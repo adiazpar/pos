@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { Spinner, Modal } from '@/components/ui'
 import { CheckCircle2, Clock, ChevronRight, ArrowDownCircle, ArrowUpCircle, ArrowUp } from 'lucide-react'
 import { useNavbar } from '@/contexts/navbar-context'
@@ -26,21 +25,7 @@ const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'F
 // ============================================
 
 export default function HistoryPage() {
-  const router = useRouter()
-  const { hide, show, setReturning } = useNavbar()
-
-  // Handle back navigation
-  const handleBack = useCallback(() => {
-    setReturning(true)
-    router.push('/cash')
-  }, [router, setReturning])
-
-  useHeader({
-    title: 'History',
-    subtitle: 'Cash drawer sessions',
-    showBackButton: true,
-    onBack: handleBack,
-  })
+  const { hide, show } = useNavbar()
 
   // Data state
   const [sessions, setSessions] = useState<CashSession[]>([])

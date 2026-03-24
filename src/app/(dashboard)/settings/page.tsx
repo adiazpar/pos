@@ -2,7 +2,6 @@
 
 import { ArrowLeftRight, Mail, Palette, Info } from 'lucide-react'
 import { Spinner, Modal } from '@/components/ui'
-import { useHeader } from '@/contexts/header-context'
 import { useSettings } from '@/hooks'
 import {
   PendingTransferCard,
@@ -16,11 +15,6 @@ import {
 } from '@/components/settings'
 
 export default function SettingsPage() {
-  useHeader({
-    title: 'Settings',
-    subtitle: 'Customize your experience',
-  })
-
   const {
     // User
     user,

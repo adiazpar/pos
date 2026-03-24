@@ -1,13 +1,36 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { NAV_ITEMS } from '@/lib/navigation'
 import { UserMenu } from './user-menu'
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+
+  // Optimistic active state for instant feedback
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
+
+  // Prefetch all routes on mount for instant navigation
+  useEffect(() => {
+    NAV_ITEMS.forEach((item) => {
+      router.prefetch(item.href)
+    })
+  }, [router])
+
+  // Clear pending state when pathname changes
+  useEffect(() => {
+    setPendingHref(null)
+  }, [pathname])
+
+  const handleClick = (href: string) => {
+    if (href !== pathname) {
+      setPendingHref(href)
+    }
+  }
 
   return (
     <aside className="sidebar">
@@ -26,13 +49,17 @@ export function Sidebar() {
 
       <nav className="sidebar-nav">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+          const isCurrentPath = pathname === item.href || pathname.startsWith(`${item.href}/`)
+          const isPending = pendingHref === item.href
+          // Only show current path as active if there's no pending navigation
+          const isActive = isPending || (isCurrentPath && !pendingHref)
           const Icon = item.icon
 
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => handleClick(item.href)}
               className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
             >
               <Icon className="sidebar-nav-icon" />
