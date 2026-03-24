@@ -36,3 +36,14 @@ yarn-error.log*
 
 # Testing
 coverage/
+
+# Vercel
+.vercel/
+
+# Database (local)
+*.db
+*.sqlite
+drizzle/
+
+# Certificates
+*.pem
