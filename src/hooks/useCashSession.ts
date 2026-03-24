@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { transitionModals } from '@/lib/modal-utils'
-import { calculateExpectedBalance, calculateOutstandingLoans } from '@/lib/cash'
+import { calculateExpectedBalance } from '@/lib/cash'
 import type { CashSession, CashMovement } from '@/types'
 
 export interface UseCashSessionReturn {
@@ -15,7 +15,6 @@ export interface UseCashSessionReturn {
 
   // Derived values
   expectedBalance: number
-  outstandingLoans: Map<string, { name: string; amount: number }>
   lastClosedSession: CashSession | null
 
   // Actions
@@ -49,10 +48,6 @@ export function useCashSession({ movements }: UseCashSessionOptions): UseCashSes
   const expectedBalance = useMemo(() => {
     return calculateExpectedBalance(currentSession, movements)
   }, [currentSession, movements])
-
-  const outstandingLoans = useMemo(() => {
-    return calculateOutstandingLoans(movements)
-  }, [movements])
 
   const lastClosedSession = useMemo(() => {
     return sessions.find(s => s.closedAt != null) || null
@@ -147,7 +142,6 @@ export function useCashSession({ movements }: UseCashSessionOptions): UseCashSes
     isLoading,
     error,
     expectedBalance,
-    outstandingLoans,
     lastClosedSession,
     loadCurrentSession,
     loadSessions,
