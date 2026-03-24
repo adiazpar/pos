@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Spinner } from '@/components/ui'
-import { Plus, PackageOpen, Receipt, History } from 'lucide-react'
+import { Plus, PackageOpen, Receipt, History, ChevronRight } from 'lucide-react'
 import {
   BalanceHero,
   CloseDrawerModal,
@@ -181,21 +181,24 @@ export default function CajaPage() {
               )}
               <button
                 type="button"
-                onClick={() => router.push('/cash/history')}
-                className="caja-action-btn"
-              >
-                <History className="caja-action-btn__icon" />
-                History
-              </button>
-              {/* Row 2: Movements, Loans */}
-              <button
-                type="button"
                 onClick={() => setIsMovementModalOpen(true)}
                 className="caja-action-btn"
                 disabled={!sessionHook.currentSession}
               >
                 <Receipt className="caja-action-btn__icon text-brand" />
                 Activity ({movementsHook.movements.length})
+              </button>
+              {/* Row 2: History */}
+              <button
+                type="button"
+                onClick={() => router.push('/cash/history')}
+                className="caja-action-btn"
+              >
+                <History className="caja-action-btn__icon" />
+                <span className="inline-flex items-center">
+                  History
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </span>
               </button>
             </div>
 
