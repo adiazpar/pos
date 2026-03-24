@@ -142,7 +142,7 @@ export default function CajaPage() {
           </div>
         )}
 
-        <div className="flex flex-col flex-1 gap-4">
+        <div className="flex flex-col flex-1" style={{ gap: 'var(--space-4)' }}>
           {/* Balance Hero with status */}
             <BalanceHero
               balance={sessionHook.expectedBalance}
@@ -201,7 +201,7 @@ export default function CajaPage() {
 
             {/* Movements Section (only when session is open) */}
             {sessionHook.currentSession && (
-              <div className="mt-2">
+              <div style={{ marginTop: 'var(--space-2)' }}>
                 <MovementsList
                   movements={movementsHook.movements}
                   newMovementId={movementsHook.newMovementId}
