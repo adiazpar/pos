@@ -11,6 +11,8 @@
     "db:push": "npx drizzle-kit push --force",
     "db:push:prod": "DRIZZLE_ENV=production npx drizzle-kit push",
     "db:studio": "npx drizzle-kit studio",
+    "db:migrate:remove-loans": "npx tsx scripts/migrate-remove-loans.ts",
+    "db:migrate:remove-loans:prod": "npx tsx scripts/migrate-remove-loans.ts --prod",
     "test": "vitest",
     "test:run": "vitest run"
   },
