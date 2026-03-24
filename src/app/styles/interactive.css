@@ -2260,7 +2260,7 @@ gap: var(--space-2);
 
 /* Stacked variant - full width buttons stacked vertically */
 .caja-actions--stacked {
-grid-template-columns: 1fr;
+flex-direction: column;
 gap: var(--space-3);
 }
 

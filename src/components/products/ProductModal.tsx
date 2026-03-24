@@ -203,6 +203,14 @@ export function ProductModal({
 }: ProductModalProps) {
   const isFormValid = name.trim() && price && parseFloat(price) >= 0
 
+  // Check if form has changes from the original product (for edit mode)
+  const hasChanges = !editingProduct || (
+    name.trim() !== editingProduct.name ||
+    parseFloat(price) !== editingProduct.price ||
+    (category || null) !== (editingProduct.category || null) ||
+    active !== (editingProduct.active ?? true)
+  )
+
   return (
     <Modal
       isOpen={isOpen}
@@ -409,7 +417,7 @@ export function ProductModal({
               </Modal.GoToStepButton>
             </>
           )}
-          <SaveProductButton onSubmit={onSubmit} isSaving={isSaving} disabled={isSaving || !isFormValid} />
+          <SaveProductButton onSubmit={onSubmit} isSaving={isSaving} disabled={isSaving || !isFormValid || !hasChanges} />
         </Modal.Footer>
       </Modal.Step>
 
@@ -552,7 +560,7 @@ export function ProductModal({
           >
             Back
           </Modal.BackButton>
-          <SaveProductButton onSubmit={onSubmit} isSaving={isSaving} disabled={isSaving || !isFormValid} />
+          <SaveProductButton onSubmit={onSubmit} isSaving={isSaving} disabled={isSaving || !isFormValid || !hasChanges} />
         </Modal.Footer>
       </Modal.Step>
 
