@@ -4,13 +4,13 @@ A mobile-first point-of-sale system for small businesses selling at ferias (mark
 
 ## Features
 
-- **Sales Register** - Record transactions with Cash, Yape, or Plin payments
+- **Sales Register** - Record transactions with cash, card, or other payments
 - **Product Catalog** - Manage products with prices and cost tracking
 - **Cash Drawer** - Opening/closing balance and reconciliation
 - **Inventory** - Track stock levels and supplier orders
 - **Dashboard** - Daily summaries and business insights
 - **Team Management** - Invite partners/employees with role-based access
-- **Email/PIN Auth** - Email login with fast 4-digit PIN for daily access
+- **Email Auth** - Simple email/password authentication
 - **PWA** - Works offline, installable on mobile
 
 ## Tech Stack
@@ -55,7 +55,7 @@ cp .env.example .env.local
 Required variables:
 - `TURSO_DATABASE_URL` - Turso database URL
 - `TURSO_AUTH_TOKEN` - Turso auth token
-- `JWT_SECRET` - Secret for JWT signing
+- `AUTH_SECRET` - Secret for JWT signing (min 32 chars)
 
 ## Project Structure
 
@@ -64,18 +64,18 @@ src/
 ├── app/           # Next.js App Router
 ├── components/    # React components
 ├── contexts/      # React contexts
+├── db/            # Drizzle schema & client
 ├── hooks/         # Custom hooks
 ├── lib/           # Utilities
-│   └── db/        # Drizzle schema & client
 └── types/         # TypeScript types
 ```
 
 ## Development Guidelines
 
-- **Language**: All UI in Spanish (es-PE)
-- **Currency**: Peruvian Sol (S/)
-- **Date**: DD/MM/YYYY
-- **Timezone**: America/Lima
+- **Language**: All UI in English
+- **Currency**: US Dollar ($)
+- **Date**: MM/DD/YYYY
+- **Timezone**: America/New_York
 
 See [.claude/CLAUDE.md](.claude/CLAUDE.md) for full documentation.
 

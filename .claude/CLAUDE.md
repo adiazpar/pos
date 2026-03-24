@@ -47,19 +47,22 @@ src/
 ├── app/                   # Next.js App Router
 │   ├── (auth)/           # Login, registration, invite flows
 │   ├── (dashboard)/      # Main app routes (protected)
-│   │   ├── inicio/       # Dashboard home
-│   │   ├── ventas/       # Sales register
-│   │   ├── productos/    # Product catalog
-│   │   ├── caja/         # Cash drawer
-│   │   ├── reportes/     # Reports
-│   │   └── ajustes/      # Settings
+│   │   ├── home/         # Dashboard home
+│   │   ├── sales/        # Sales register
+│   │   ├── products/     # Product catalog
+│   │   ├── cash/         # Cash drawer
+│   │   ├── reports/      # Reports
+│   │   └── settings/     # Settings (team, providers)
 │   └── api/              # API routes
 ├── components/
 │   ├── ui/               # Base UI components
 │   ├── auth/             # Auth components (AuthGuard)
 │   ├── layout/           # Layout components
-│   ├── caja/             # Cash drawer components
-│   └── ajustes/          # Settings components
+│   ├── cash/             # Cash drawer components
+│   ├── products/         # Product components
+│   ├── providers/        # Provider components
+│   ├── settings/         # Settings components
+│   └── team/             # Team management components
 ├── contexts/             # React contexts
 ├── db/                   # Database (Drizzle schema + client)
 ├── hooks/                # Custom hooks
@@ -233,7 +236,7 @@ When creating multi-step modals, `Modal.Footer` **MUST be a direct child** of `M
 2. If footer buttons need `useMorphingModal()`, create separate button components
 3. Place `Modal.Footer` as direct child of `Modal.Step`
 
-See `src/components/ui/modal/Modal.tsx` header comments and `src/app/(dashboard)/ajustes/equipo/page.tsx` for examples.
+See `src/components/ui/modal/Modal.tsx` header comments and `src/app/(dashboard)/settings/team/page.tsx` for examples.
 
 ### Multi-Step Modals with Variable Footers
 
