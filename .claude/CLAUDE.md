@@ -1,5 +1,11 @@
 # POS System
 
+## Documentation
+
+All project documentation and plans live in `.claude/docs/`:
+- **Plans**: `.claude/docs/plans/` - Implementation plans and architecture docs
+- **Specs**: `.claude/docs/` - Technical documentation and guides
+
 ## Project Overview
 
 A **mobile-first point-of-sale system** for small businesses. Built for speed, simplicity, and offline capability.
@@ -118,7 +124,6 @@ Schema defined in `src/db/schema.ts`. All tables use `businessId` for multi-tena
 - Use TypeScript strict mode
 - Validate inputs with Zod
 - Use React Server Components where possible
-- Plans go in `docs/plans/` directory
 
 ### Time Formatting
 ```typescript
