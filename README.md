@@ -1,6 +1,6 @@
-# Feria POS
+# POS System
 
-A mobile-first point-of-sale system for small businesses selling at ferias (market fairs).
+A mobile-first point-of-sale system for small businesses.
 
 ## Features
 
@@ -72,10 +72,9 @@ src/
 
 ## Development Guidelines
 
-- **Language**: All UI in English
-- **Currency**: US Dollar ($)
+- **Language**: English
+- **Currency**: USD ($)
 - **Date**: MM/DD/YYYY
-- **Timezone**: America/New_York
 
 See [.claude/CLAUDE.md](.claude/CLAUDE.md) for full documentation.
 

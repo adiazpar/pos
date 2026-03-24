@@ -1,10 +1,10 @@
-# Feria POS
+# POS System
 
 ## Project Overview
 
-A **mobile-first point-of-sale system** for small businesses selling at ferias (market fairs). Built for speed, simplicity, and offline capability.
+A **mobile-first point-of-sale system** for small businesses. Built for speed, simplicity, and offline capability.
 
-**Target users**: Small vendors at Peruvian ferias - food sellers, artisans, resellers.
+**Target users**: Small business owners - food vendors, artisans, retailers.
 
 ### Design Philosophy
 
@@ -107,11 +107,10 @@ Schema defined in `src/db/schema.ts`. All tables use `businessId` for multi-tena
 
 ## Development Guidelines
 
-### Localization
-- **Language**: All UI text in English
-- **Currency**: US Dollar ($) with 2 decimal places
-- **Date Format**: MM/DD/YYYY (US format)
-- **Time Zone**: America/New_York (default, will be configurable)
+### Formatting Defaults
+- **Language**: English
+- **Currency**: USD ($) with 2 decimal places
+- **Date Format**: MM/DD/YYYY
 - **Number Format**: Comma for thousands, period for decimals (1,234.56)
 
 ### Code Standards
@@ -126,7 +125,6 @@ Schema defined in `src/db/schema.ts`. All tables use `businessId` for multi-tena
 const time = now.toLocaleTimeString('en-US', {
   hour: '2-digit',
   minute: '2-digit',
-  timeZone: 'America/New_York',
 })
 ```
 
