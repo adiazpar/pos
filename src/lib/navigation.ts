@@ -17,9 +17,9 @@ export interface NavItem {
  * Navigation items for sidebar (desktop) and mobile bottom nav
  */
 export const NAV_ITEMS: NavItem[] = [
-  { href: '/home', label: 'Inicio', icon: Home },
-  { href: '/sales', label: 'Ventas', icon: ShoppingCart },
-  { href: '/cash', label: 'Caja', icon: Banknote },
-  { href: '/products', label: 'Productos', icon: Package },
-  { href: '/reports', label: 'Reportes', icon: BarChart3 },
+  { href: '/home', label: 'Home', icon: Home },
+  { href: '/sales', label: 'Sales', icon: ShoppingCart },
+  { href: '/cash', label: 'Cash', icon: Banknote },
+  { href: '/products', label: 'Products', icon: Package },
+  { href: '/reports', label: 'Reports', icon: BarChart3 },
 ]

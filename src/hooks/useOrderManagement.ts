@@ -261,7 +261,7 @@ export function useOrderManagement({
 
     const totalNum = parseFloat(orderTotal)
     if (isNaN(totalNum) || totalNum <= 0) {
-      setError('Ingresa el total pagado')
+      setError('Enter the total amount paid')
       return false
     }
 
@@ -333,7 +333,7 @@ export function useOrderManagement({
 
     const totalNum = parseFloat(orderTotal)
     if (isNaN(totalNum) || totalNum <= 0) {
-      setError('Ingresa el total pagado')
+      setError('Enter the total amount paid')
       return false
     }
 

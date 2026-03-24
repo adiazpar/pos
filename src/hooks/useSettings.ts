@@ -29,16 +29,16 @@ export interface IncomingTransfer {
 
 export const THEME_CONFIG = {
   light: {
-    label: 'Claro',
-    description: 'Modo claro activado',
+    label: 'Light',
+    description: 'Light mode enabled',
   },
   dark: {
-    label: 'Oscuro',
-    description: 'Modo oscuro activado',
+    label: 'Dark',
+    description: 'Dark mode enabled',
   },
   system: {
-    label: 'Sistema',
-    description: 'Se ajusta automaticamente segun tu dispositivo',
+    label: 'System',
+    description: 'Automatically adjusts based on your device',
   },
 } as const
 
@@ -57,15 +57,15 @@ export function formatTimeRemaining(expiresAt: string): string {
   const expiry = new Date(expiresAt)
   const diff = expiry.getTime() - now.getTime()
 
-  if (diff <= 0) return 'Expirado'
+  if (diff <= 0) return 'Expired'
 
   const hours = Math.floor(diff / (1000 * 60 * 60))
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m restantes`
+    return `${hours}h ${minutes}m remaining`
   }
-  return `${minutes}m restantes`
+  return `${minutes}m remaining`
 }
 
 // ============================================
@@ -262,7 +262,7 @@ export function useSettings(): UseSettingsReturn {
 
     // Validate email
     if (!transferEmail || !transferEmail.includes('@')) {
-      setTransferError('Ingresa un email valido')
+      setTransferError('Enter a valid email')
       return
     }
 
@@ -300,7 +300,7 @@ export function useSettings(): UseSettingsReturn {
       setTransferStep(1) // Go to link step
     } catch (err) {
       console.error('Transfer initiate error:', err)
-      setTransferError('Error de conexion')
+      setTransferError('Connection error')
     } finally {
       setTransferLoading(false)
     }
@@ -376,7 +376,7 @@ export function useSettings(): UseSettingsReturn {
       window.location.reload()
     } catch (err) {
       console.error('Confirm transfer error:', err)
-      setTransferError('Error de conexion')
+      setTransferError('Connection error')
     } finally {
       setTransferLoading(false)
     }

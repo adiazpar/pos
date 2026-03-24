@@ -1,1 +1,1 @@
-export { AuthGuard, AuthContent } from './auth-guard'
+export { AuthGuard } from './auth-guard'

@@ -153,7 +153,7 @@ export function useProviderManagement(): UseProviderManagementReturn {
   // TODO: Implement with Drizzle API routes
   const handleSubmit = useCallback(async (): Promise<boolean> => {
     if (!name.trim()) {
-      setError('El nombre es obligatorio')
+      setError('Name is required')
       return false
     }
 

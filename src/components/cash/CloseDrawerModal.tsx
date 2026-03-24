@@ -206,7 +206,7 @@ function CloseDrawerForm({
       </Modal.Item>
 
       <Modal.Item>
-        <label htmlFor="closing-balance" className="label">Actual balance (S/) <span className="text-error">*</span></label>
+        <label htmlFor="closing-balance" className="label">Actual balance ($) <span className="text-error">*</span></label>
         <input
           id="closing-balance"
           type="number"

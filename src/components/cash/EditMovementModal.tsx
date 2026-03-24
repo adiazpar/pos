@@ -145,7 +145,7 @@ export function EditMovementModal({
         </Modal.Item>
 
         <Modal.Item>
-          <label htmlFor="edit-amount" className="label">Amount (S/) <span className="text-error">*</span></label>
+          <label htmlFor="edit-amount" className="label">Amount ($) <span className="text-error">*</span></label>
           <input
             id="edit-amount"
             type="number"

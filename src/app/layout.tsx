@@ -19,7 +19,7 @@ const ibmPlexSans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: 'Feria POS',
-  description: 'Sistema de punto de venta para ferias',
+  description: 'Point of sale system for fairs',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -51,7 +51,7 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="es"
+      lang="en"
       className={`${dmSans.variable} ${ibmPlexSans.variable}`}
       suppressHydrationWarning
       data-scroll-behavior="smooth"

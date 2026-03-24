@@ -62,7 +62,6 @@ export function useHeaderContext() {
 export function useHeader(config: HeaderConfig) {
   const { setHeader, resetHeader } = useHeaderContext()
 
-  // Extract stable values - these rarely change and trigger the effect
   const { title, subtitle, showBackButton, isReturning, actions, onBack } = config
 
   useEffect(() => {

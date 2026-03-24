@@ -62,7 +62,7 @@ export function useImageCompression(): UseImageCompressionReturn {
     if (file.size > MAX_FILE_SIZE) {
       setState({
         isProcessing: false,
-        error: 'La imagen debe ser menor a 20MB',
+        error: 'Image must be less than 20MB',
       })
       return null
     }

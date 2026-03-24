@@ -423,7 +423,7 @@ export function OrderDetailModal({
         <Modal.Item>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="editOrderTotal" className="label">Total paid (S/) <span className="text-error">*</span></label>
+              <label htmlFor="editOrderTotal" className="label">Total paid ($) <span className="text-error">*</span></label>
               <div className="input-number-wrapper">
                 <input
                   id="editOrderTotal"

@@ -13,7 +13,7 @@ export default function AuthLayout({
             <span>Chifles</span>
           </h1>
           <p className="auth-logo-subtitle">
-            Sistema de Gestion de Ventas
+            Sales Management System
           </p>
         </div>
 

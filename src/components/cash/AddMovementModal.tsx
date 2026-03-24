@@ -126,7 +126,7 @@ export function AddMovementModal({
 
         {/* Amount */}
         <div>
-          <label htmlFor="movement-amount" className="label">Amount (S/) <span className="text-error">*</span></label>
+          <label htmlFor="movement-amount" className="label">Amount ($) <span className="text-error">*</span></label>
           <input
             id="movement-amount"
             type="number"

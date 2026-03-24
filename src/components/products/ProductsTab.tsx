@@ -222,10 +222,10 @@ export function ProductsTab({
                         {/* Price and Stock */}
                         <div className="text-right">
                           <span className={`font-medium block ${!product.active ? 'text-text-tertiary' : 'text-text-primary'}`}>
-                            S/ {product.price.toFixed(2)}
+                            ${product.price.toFixed(2)}
                           </span>
                           <span className={`text-xs mt-0.5 block ${isLowStock && product.active ? 'text-error' : 'text-text-tertiary'}`}>
-                            {stockValue} uds
+                            {stockValue} units
                           </span>
                         </div>
 

@@ -78,7 +78,7 @@ export default function TeamPage() {
 
   if (isLoading) {
     return (
-      <main className="page-content flex items-center justify-center">
+      <main className="page-loading">
         <Spinner className="spinner-lg" />
       </main>
     )

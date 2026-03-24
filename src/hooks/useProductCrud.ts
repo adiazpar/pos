@@ -215,7 +215,7 @@ export function useProductCrud({
   const handleRegenerateIcon = useCallback(async () => {
     const cachedBgRemoved = pipeline.state.result?.cachedBgRemoved
     if (!cachedBgRemoved) {
-      setError('No hay imagen procesada para regenerar')
+      setError('No processed image to regenerate')
       return
     }
 
@@ -238,13 +238,13 @@ export function useProductCrud({
   // TODO: Implement with Drizzle API routes
   const handleSubmit = useCallback(async (): Promise<boolean> => {
     if (!name.trim()) {
-      setError('El nombre es requerido')
+      setError('Name is required')
       return false
     }
 
     const priceNum = parseFloat(price)
     if (isNaN(priceNum) || priceNum < 0) {
-      setError('Ingresa un precio valido')
+      setError('Enter a valid price')
       return false
     }
 

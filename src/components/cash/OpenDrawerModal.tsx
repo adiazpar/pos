@@ -64,7 +64,7 @@ export function OpenDrawerModal({
           </div>
         )}
         <div>
-          <label htmlFor="opening-balance" className="label">Opening balance (S/) <span className="text-error">*</span></label>
+          <label htmlFor="opening-balance" className="label">Opening balance ($) <span className="text-error">*</span></label>
           <input
             id="opening-balance"
             type="number"

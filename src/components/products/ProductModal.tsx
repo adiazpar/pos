@@ -316,7 +316,7 @@ export function ProductModal({
         <Modal.Item>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label htmlFor="price" className="label">Price (S/) <span className="text-error">*</span></label>
+              <label htmlFor="price" className="label">Price ($) <span className="text-error">*</span></label>
               <div className="input-number-wrapper">
                 <input
                   id="price"
@@ -477,7 +477,7 @@ export function ProductModal({
           <div className="grid grid-cols-2 gap-3">
             {/* Price */}
             <div>
-              <label htmlFor="ai-price" className="label">Price (S/) <span className="text-error">*</span></label>
+              <label htmlFor="ai-price" className="label">Price ($) <span className="text-error">*</span></label>
               <div className="input-number-wrapper">
                 <input
                   id="ai-price"

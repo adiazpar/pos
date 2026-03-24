@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { Spinner, LoadingPage } from '@/components/ui'
+import { LoadingPage } from '@/components/ui'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -12,8 +12,8 @@ interface AuthGuardProps {
 }
 
 /**
- * AuthGuard - For auth pages (login, register, invite)
- * Blocks entire page while checking auth, used when layout shell isn't needed
+ * AuthGuard - Protects routes based on authentication state.
+ * Shows a loading spinner while checking auth, then renders children or redirects.
  */
 export function AuthGuard({
   children,
@@ -33,54 +33,18 @@ export function AuthGuard({
     }
   }, [user, isLoading, requireAuth, redirectTo, router])
 
+  // Show loading while checking auth
   if (isLoading) {
     return <LoadingPage />
   }
 
+  // Waiting for redirect
   if (requireAuth && !user) {
     return <LoadingPage />
   }
 
   if (!requireAuth && user) {
     return <LoadingPage />
-  }
-
-  return <>{children}</>
-}
-
-interface AuthContentProps {
-  children: React.ReactNode
-  requireAuth?: boolean
-  redirectTo?: string
-}
-
-/**
- * AuthContent - For dashboard pages
- * Only protects content area, allows layout shell (header, navbar) to render immediately
- */
-export function AuthContent({
-  children,
-  requireAuth = true,
-  redirectTo,
-}: AuthContentProps) {
-  const router = useRouter()
-  const { user, isLoading } = useAuth()
-
-  useEffect(() => {
-    if (isLoading) return
-
-    if (requireAuth && !user) {
-      router.replace(redirectTo || '/login')
-    }
-  }, [user, isLoading, requireAuth, redirectTo, router])
-
-  // Show loading spinner in content area while checking auth
-  if (isLoading || (requireAuth && !user)) {
-    return (
-      <main className="page-loading">
-        <Spinner className="spinner-lg" />
-      </main>
-    )
   }
 
   return <>{children}</>

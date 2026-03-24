@@ -25,7 +25,7 @@ export function ModalBackButton({ children, className = '', disabled, onClick }:
       onClick={handleClick}
       disabled={disabled || isLocked || isTransitioning || isFirstStep}
     >
-      {children || 'Atras'}
+      {children || 'Back'}
     </button>
   )
 }
@@ -45,7 +45,7 @@ export function ModalNextButton({ children, className = '', disabled, onClick }:
       onClick={handleClick}
       disabled={disabled || isLocked || isTransitioning || isLastStep}
     >
-      {children || 'Siguiente'}
+      {children || 'Next'}
     </button>
   )
 }
@@ -119,7 +119,7 @@ export function ModalCancelBackButton({
       onClick={handleClick}
       disabled={disabled || isLocked || isTransitioning}
     >
-      {children || (isFirstStep ? 'Cancelar' : 'Atras')}
+      {children || (isFirstStep ? 'Cancel' : 'Back')}
     </button>
   )
 }

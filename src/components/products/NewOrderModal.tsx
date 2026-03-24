@@ -190,7 +190,7 @@ export function NewOrderModal({
                       {product.name}
                     </span>
                     <span className={`text-xs ${isOutOfStock ? 'text-error' : 'text-text-tertiary'}`}>
-                      {stockValue} uds
+                      {stockValue} units
                     </span>
                   </div>
                   {/* Selection indicator */}
@@ -351,7 +351,7 @@ export function NewOrderModal({
         <Modal.Item>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="orderTotal" className="label">Total paid (S/) <span className="text-error">*</span></label>
+              <label htmlFor="orderTotal" className="label">Total paid ($) <span className="text-error">*</span></label>
               <div className="input-number-wrapper">
                 <input
                   id="orderTotal"
@@ -556,7 +556,7 @@ export function NewOrderModal({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-text-tertiary">Total</span>
-              <span className="font-semibold">{orderTotal ? `S/ ${parseFloat(orderTotal).toFixed(2)}` : '-'}</span>
+              <span className="font-semibold">{orderTotal ? `$${parseFloat(orderTotal).toFixed(2)}` : '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-tertiary">Provider</span>
