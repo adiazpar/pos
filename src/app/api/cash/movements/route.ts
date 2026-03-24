@@ -8,15 +8,13 @@ import { getCurrentUser } from '@/lib/simple-auth'
 
 // Alias users table for multiple joins
 const creators = alias(users, 'creators')
-const employees = alias(users, 'employees')
 
 const createMovementSchema = z.object({
   sessionId: z.string().min(1),
   type: z.enum(['deposit', 'withdrawal']),
-  category: z.enum(['sale', 'employee_loan', 'bank_withdrawal', 'loan_repayment', 'bank_deposit', 'other']),
+  category: z.enum(['sale', 'bank_withdrawal', 'bank_deposit', 'other']),
   amount: z.number().positive('Amount must be greater than 0'),
   note: z.string().nullable().optional(),
-  employeeId: z.string().nullable().optional(),
 })
 
 /**
@@ -69,17 +67,14 @@ export async function GET(request: NextRequest) {
         amount: cashMovements.amount,
         note: cashMovements.note,
         saleId: cashMovements.saleId,
-        employeeId: cashMovements.employeeId,
         createdBy: cashMovements.createdBy,
         editedBy: cashMovements.editedBy,
         createdAt: cashMovements.createdAt,
         updatedAt: cashMovements.updatedAt,
         creatorName: creators.name,
-        employeeName: employees.name,
       })
       .from(cashMovements)
       .leftJoin(creators, eq(cashMovements.createdBy, creators.id))
-      .leftJoin(employees, eq(cashMovements.employeeId, employees.id))
       .where(eq(cashMovements.sessionId, sessionId))
 
     return NextResponse.json({
@@ -87,7 +82,6 @@ export async function GET(request: NextRequest) {
       movements: movementsList.map(m => ({
         ...m,
         creator: m.creatorName ? { name: m.creatorName } : null,
-        employee: m.employeeName ? { name: m.employeeName } : null,
       })),
     })
   } catch (error) {
@@ -121,7 +115,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { sessionId, type, category, amount, note, employeeId } = validation.data
+    const { sessionId, type, category, amount, note } = validation.data
 
     // Verify session belongs to business and is open
     const [cashSession] = await db
@@ -159,7 +153,6 @@ export async function POST(request: NextRequest) {
       category,
       amount,
       note: note || null,
-      employeeId: employeeId || null,
       createdBy: session.userId,
       createdAt: now,
       updatedAt: now,
@@ -174,17 +167,14 @@ export async function POST(request: NextRequest) {
         amount: cashMovements.amount,
         note: cashMovements.note,
         saleId: cashMovements.saleId,
-        employeeId: cashMovements.employeeId,
         createdBy: cashMovements.createdBy,
         editedBy: cashMovements.editedBy,
         createdAt: cashMovements.createdAt,
         updatedAt: cashMovements.updatedAt,
         creatorName: creators.name,
-        employeeName: employees.name,
       })
       .from(cashMovements)
       .leftJoin(creators, eq(cashMovements.createdBy, creators.id))
-      .leftJoin(employees, eq(cashMovements.employeeId, employees.id))
       .where(eq(cashMovements.id, movementId))
       .limit(1)
 
@@ -193,7 +183,6 @@ export async function POST(request: NextRequest) {
       movement: {
         ...newMovement,
         creator: newMovement.creatorName ? { name: newMovement.creatorName } : null,
-        employee: newMovement.employeeName ? { name: newMovement.employeeName } : null,
       },
     })
   } catch (error) {

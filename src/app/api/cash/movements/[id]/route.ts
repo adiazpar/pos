@@ -6,10 +6,9 @@ import { getCurrentUser } from '@/lib/simple-auth'
 
 const updateMovementSchema = z.object({
   type: z.enum(['deposit', 'withdrawal']).optional(),
-  category: z.enum(['sale', 'employee_loan', 'bank_withdrawal', 'loan_repayment', 'bank_deposit', 'other']).optional(),
+  category: z.enum(['sale', 'bank_withdrawal', 'bank_deposit', 'other']).optional(),
   amount: z.number().positive('Amount must be greater than 0').optional(),
   note: z.string().nullable().optional(),
-  employeeId: z.string().nullable().optional(),
 })
 
 /**
@@ -79,9 +78,6 @@ export async function PATCH(
     }
     if (validation.data.note !== undefined) {
       updateData.note = validation.data.note
-    }
-    if (validation.data.employeeId !== undefined) {
-      updateData.employeeId = validation.data.employeeId
     }
 
     if (Object.keys(updateData).length === 0) {
