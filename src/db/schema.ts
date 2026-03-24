@@ -153,12 +153,11 @@ export const cashMovements = sqliteTable('cash_movements', {
   sessionId: text('session_id').references(() => cashSessions.id, { onDelete: 'cascade' }).notNull(),
   type: text('type', { enum: ['deposit', 'withdrawal'] }).notNull(),
   category: text('category', {
-    enum: ['sale', 'employee_loan', 'bank_withdrawal', 'loan_repayment', 'bank_deposit', 'other']
+    enum: ['sale', 'bank_withdrawal', 'bank_deposit', 'other']
   }).notNull(),
   amount: real('amount').notNull(),
   note: text('note'),
   saleId: text('sale_id').references(() => sales.id, { onDelete: 'set null' }),
-  employeeId: text('employee_id').references(() => users.id),
   createdBy: text('created_by').references(() => users.id).notNull(),
   editedBy: text('edited_by').references(() => users.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
@@ -330,10 +329,6 @@ export const cashMovementsRelations = relations(cashMovements, ({ one }) => ({
   sale: one(sales, {
     fields: [cashMovements.saleId],
     references: [sales.id],
-  }),
-  employee: one(users, {
-    fields: [cashMovements.employeeId],
-    references: [users.id],
   }),
   creator: one(users, {
     fields: [cashMovements.createdBy],
