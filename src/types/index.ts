@@ -192,9 +192,7 @@ export type CashMovementType = 'deposit' | 'withdrawal'
 
 export type CashMovementCategory =
   | 'sale'            // Cash sale (deposit)
-  | 'employee_loan'   // Employee loan to drawer (deposit)
   | 'bank_withdrawal' // Bank withdrawal (deposit)
-  | 'loan_repayment'  // Repaying employee loan (withdrawal)
   | 'bank_deposit'    // Bank deposit (withdrawal)
   | 'other'           // Other
 
@@ -224,11 +222,9 @@ export interface CashMovement {
   amount: number
   note?: string | null
   saleId?: string | null
-  employeeId?: string | null
   createdBy: string
   editedBy?: string | null
   createdAt: Date | string
   updatedAt: Date | string
   creator?: { name: string } | null
-  employee?: { name: string } | null
 }
