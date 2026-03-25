@@ -3,7 +3,7 @@ import { db, products } from '@/db'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/simple-auth'
-import { uploadProductIcon, deleteProductIcon } from '@/lib/storage'
+import { uploadProductIcon, deleteProductIcon, validateIconSize, fileToBase64 } from '@/lib/storage'
 
 /**
  * PATCH /api/products/[id]
@@ -104,11 +104,20 @@ export async function PATCH(
     // Upload new icon if provided
     if (iconFile && iconFile.size > 0) {
       try {
-        // Delete old icon if exists
-        if (existingProduct.icon) {
-          await deleteProductIcon(existingProduct.icon)
+        // Validate size first using base64 conversion
+        const base64ForValidation = await fileToBase64(iconFile)
+        const { valid } = validateIconSize(base64ForValidation)
+        if (!valid) {
+          return NextResponse.json(
+            { error: 'Icon is too large. Maximum size is 100KB.' },
+            { status: 400 }
+          )
         }
-        // Upload new icon
+        // Delete old icon if exists (only deletes files in dev, no-op in prod)
+        if (existingProduct.icon) {
+          await deleteProductIcon(existingProduct.icon, id)
+        }
+        // Upload new icon (saves to file in dev, returns base64 in prod)
         updateData.icon = await uploadProductIcon(iconFile, id)
       } catch (err) {
         console.error('Error uploading icon:', err)
@@ -185,10 +194,10 @@ export async function DELETE(
       )
     }
 
-    // Delete icon from storage if exists
+    // Delete icon from storage if exists (only deletes files in dev, no-op in prod)
     if (existingProduct.icon) {
       try {
-        await deleteProductIcon(existingProduct.icon)
+        await deleteProductIcon(existingProduct.icon, id)
       } catch (err) {
         console.error('Error deleting icon:', err)
         // Continue with product deletion even if icon delete fails

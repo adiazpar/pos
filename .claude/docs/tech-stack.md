@@ -26,14 +26,14 @@ Kasero is a multi-business management system optimized for:
 │                    Drizzle ORM (libSQL)                     │
 └─────────────────────────────────────────────────────────────┘
                               │
-          ┌───────────────────┼───────────────────┐
-          ▼                   ▼                   ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│     TURSO       │ │      AUTH       │ │    STORAGE      │
-│    Database     │ │   Simple JWT    │ │  Cloudflare R2  │
-│    (libSQL)     │ │  (jose+bcrypt)  │ │   (10GB free)   │
-│    $0/month     │ │  Email+Password │ │    $0/month     │
-└─────────────────┘ └─────────────────┘ └─────────────────┘
+          ┌───────────────────┴───────────────────┐
+          ▼                                       ▼
+┌─────────────────┐                     ┌─────────────────┐
+│     TURSO       │                     │      AUTH       │
+│    Database     │                     │   Simple JWT    │
+│    (libSQL)     │                     │  (jose+bcrypt)  │
+│    $0/month     │                     │  Email+Password │
+└─────────────────┘                     └─────────────────┘
 ```
 
 ## Stack Components
@@ -47,7 +47,7 @@ Kasero is a multi-business management system optimized for:
 | **Auth** | Simple JWT (jose + bcryptjs) | $0 |
 | **Icons** | Lucide React | $0 |
 | **Hosting** | Vercel (free tier) | $0 |
-| **File Storage** | Cloudflare R2 (when needed) | $0 (10GB free) |
+| **File Storage** | Local files (dev) / Base64 in DB (prod) | $0 |
 
 **Total monthly cost: $0**
 
@@ -289,11 +289,19 @@ FAL_KEY=...
 
 ## Future Considerations
 
-### File Storage (Cloudflare R2)
-When product images need to be stored (not just emoji icons), Cloudflare R2 provides:
-- 10GB free storage
-- S3-compatible API
-- No egress fees
+### Product Icon Storage
+Product icons are stored differently per environment:
+
+**Development:** Files saved to `public/media/products/` (gitignored)
+- Faster iteration, no database overhead
+- Icons served directly from file system
+
+**Production:** Base64 data URLs stored in Turso database
+- No external storage service needed
+- Icons included in database row (max 100KB per icon)
+- Turso free tier (500M row reads, 10M writes, 5GB storage) supports ~1,000-2,000 businesses
+
+If larger images are needed in the future, consider Cloudflare R2 (10GB free, S3-compatible).
 
 ### Offline Sync (Turso Embedded Replicas)
 For true offline capability:

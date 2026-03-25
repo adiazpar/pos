@@ -71,7 +71,7 @@ export const products = sqliteTable('products', {
   categoryId: text('category_id').references(() => productCategories.id, { onDelete: 'set null' }),
   stock: integer('stock').default(0),
   lowStockThreshold: integer('low_stock_threshold').default(10),
-  icon: text('icon'), // R2 URL for product icon
+  icon: text('icon'), // Base64-encoded image data
   active: integer('active', { mode: 'boolean' }).default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),

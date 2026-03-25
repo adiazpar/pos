@@ -60,14 +60,11 @@ export function cn(...classes: (string | undefined | false)[]): string {
 // ============================================
 
 /**
- * Get product icon - either a URL or emoji
- * In the new system, icon is stored as either:
- * - A full URL (R2, external, etc.)
- * - An emoji string
- * - Null/undefined
+ * Get product icon from a product
+ * The icon is stored as a base64 data URL (data:image/png;base64,...)
  *
  * @param product - Product with optional icon
- * @returns The icon string (URL or emoji) or null
+ * @returns The icon data URL or null
  */
 export function getProductIconUrl(
   product: { icon?: string | null },
@@ -77,9 +74,8 @@ export function getProductIconUrl(
 }
 
 /**
- * Check if a string is an emoji (vs a URL)
+ * Check if a string is a base64 data URL
  */
-export function isEmoji(str: string): boolean {
-  // Simple check: URLs start with http or /, emojis don't
-  return !str.startsWith('http') && !str.startsWith('/')
+export function isBase64DataUrl(str: string): boolean {
+  return str.startsWith('data:image/')
 }

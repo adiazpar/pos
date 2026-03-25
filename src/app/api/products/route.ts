@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/simple-auth'
-import { uploadProductIcon } from '@/lib/storage'
+import { uploadProductIcon, validateIconSize, fileToBase64 } from '@/lib/storage'
 
 const createProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -85,13 +85,23 @@ export async function POST(request: NextRequest) {
 
     const productId = nanoid()
 
-    // Upload icon if provided
-    let iconUrl: string | null = null
+    // Upload icon if provided (file system in dev, base64 in prod)
+    let iconData: string | null = null
     if (iconFile && iconFile.size > 0) {
       try {
-        iconUrl = await uploadProductIcon(iconFile, productId)
+        // Validate size first using base64 conversion
+        const base64ForValidation = await fileToBase64(iconFile)
+        const { valid } = validateIconSize(base64ForValidation)
+        if (!valid) {
+          return NextResponse.json(
+            { error: 'Icon is too large. Maximum size is 100KB.' },
+            { status: 400 }
+          )
+        }
+        // Upload (saves to file in dev, returns base64 in prod)
+        iconData = await uploadProductIcon(iconFile, productId)
       } catch (err) {
-        console.error('Error uploading icon:', err)
+        console.error('Error processing icon:', err)
         // Continue without icon rather than failing the whole request
       }
     }
@@ -104,7 +114,7 @@ export async function POST(request: NextRequest) {
       price: validPrice,
       category: validCategory,
       categoryId: validCategoryId || null,
-      icon: iconUrl,
+      icon: iconData,
       active: validActive,
       stock: 0,
       createdAt: now,
