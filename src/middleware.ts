@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { getTokenFromRequest, verifyToken } from '@/lib/simple-auth'
 
 /**
- * Middleware for Feria POS
+ * Middleware for Kasero
  *
  * Protects dashboard routes - redirects to login if not authenticated.
  * Public routes (login, register, etc.) are accessible without auth.

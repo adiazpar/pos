@@ -31,6 +31,30 @@ export const users = sqliteTable('users', {
 })
 
 // ===========================================
+// PRODUCT CATEGORIES
+// ===========================================
+export const productCategories = sqliteTable('product_categories', {
+  id: text('id').primaryKey(),
+  businessId: text('business_id').references(() => businesses.id).notNull(),
+  name: text('name').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
+// ===========================================
+// PRODUCT SETTINGS
+// ===========================================
+export const productSettings = sqliteTable('product_settings', {
+  id: text('id').primaryKey(),
+  businessId: text('business_id').references(() => businesses.id).notNull().unique(),
+  defaultCategoryId: text('default_category_id').references(() => productCategories.id, { onDelete: 'set null' }),
+  sortPreference: text('sort_preference').default('name_asc'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
+// ===========================================
 // PRODUCTS
 // ===========================================
 export const products = sqliteTable('products', {
@@ -39,9 +63,12 @@ export const products = sqliteTable('products', {
   name: text('name').notNull(),
   price: real('price').notNull(),
   costPrice: real('cost_price'),
+  // Legacy category field (kept for backwards compatibility during migration)
   category: text('category', {
     enum: ['food', 'beverage', 'snack', 'dessert', 'other']
   }),
+  // New foreign key to product_categories
+  categoryId: text('category_id').references(() => productCategories.id, { onDelete: 'set null' }),
   stock: integer('stock').default(0),
   lowStockThreshold: integer('low_stock_threshold').default(10),
   icon: text('icon'), // R2 URL for product icon
@@ -215,9 +242,11 @@ export const appConfig = sqliteTable('app_config', {
 // RELATIONS
 // ===========================================
 
-export const businessesRelations = relations(businesses, ({ many }) => ({
+export const businessesRelations = relations(businesses, ({ one, many }) => ({
   users: many(users),
   products: many(products),
+  productCategories: many(productCategories),
+  productSettings: one(productSettings),
   sales: many(sales),
   providers: many(providers),
   orders: many(orders),
@@ -246,8 +275,32 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     fields: [products.businessId],
     references: [businesses.id],
   }),
+  productCategory: one(productCategories, {
+    fields: [products.categoryId],
+    references: [productCategories.id],
+  }),
   saleItems: many(saleItems),
   orderItems: many(orderItems),
+}))
+
+export const productCategoriesRelations = relations(productCategories, ({ one, many }) => ({
+  business: one(businesses, {
+    fields: [productCategories.businessId],
+    references: [businesses.id],
+  }),
+  products: many(products),
+  productSettingsDefault: many(productSettings),
+}))
+
+export const productSettingsRelations = relations(productSettings, ({ one }) => ({
+  business: one(businesses, {
+    fields: [productSettings.businessId],
+    references: [businesses.id],
+  }),
+  defaultCategory: one(productCategories, {
+    fields: [productSettings.defaultCategoryId],
+    references: [productCategories.id],
+  }),
 }))
 
 export const salesRelations = relations(sales, ({ one, many }) => ({

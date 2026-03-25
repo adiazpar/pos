@@ -1,6 +1,6 @@
-# POS System
+# Kasero
 
-A mobile-first point-of-sale system for small businesses.
+A multi-business management system for small businesses.
 
 ## Features
 

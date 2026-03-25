@@ -9,6 +9,9 @@ export type { OrdersTabProps } from './OrdersTab'
 export { ProductModal } from './ProductModal'
 export type { ProductModalProps } from './ProductModal'
 
+export { ProductSettingsModal } from './ProductSettingsModal'
+export type { ProductSettingsModalProps } from './ProductSettingsModal'
+
 export { NewOrderModal } from './NewOrderModal'
 export type { NewOrderModalProps } from './NewOrderModal'
 

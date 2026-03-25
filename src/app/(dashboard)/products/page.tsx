@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { fetchDeduped } from '@/lib/fetch'
 import { useAuth } from '@/contexts/auth-context'
-import { useProductFilters } from '@/hooks'
+import { useProductFilters, useProductSettings } from '@/hooks'
 import { Spinner } from '@/components/ui'
 import {
   ProductsTab,
   OrdersTab,
   ProductModal,
+  ProductSettingsModal,
   NewOrderModal,
   OrderDetailModal,
 } from '@/components/products'
@@ -17,10 +18,11 @@ import {
   type ExpandedOrder,
   type OrderFormItem,
   type OrderStatusFilter,
+  type SortOption,
 } from '@/lib/products'
 import { getProductIconUrl, formatDate } from '@/lib/utils'
 import { useAiProductPipeline, useImageCompression } from '@/hooks'
-import type { Product, ProductCategory, Provider } from '@/types'
+import type { Product, Provider, SortPreference } from '@/types'
 
 // ============================================
 // SESSION CACHE
@@ -125,6 +127,28 @@ export default function ProductosPage() {
     })
   }, [])
 
+  // Product settings
+  const productSettings = useProductSettings()
+  const {
+    categories,
+    settings,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    updateSettings,
+    isCreating: isCreatingCategory,
+    isUpdating: isUpdatingCategory,
+    isDeleting: isDeletingCategory,
+    isSavingSettings,
+    error: settingsError,
+    clearError: clearSettingsError,
+  } = productSettings
+
+  // Handler to update sort preference in settings
+  const handleSortChange = useCallback(async (sort: SortOption) => {
+    await updateSettings({ sortPreference: sort as SortPreference })
+  }, [updateSettings])
+
   // Product filters
   const {
     searchQuery,
@@ -135,10 +159,18 @@ export default function ProductosPage() {
     setSortBy,
     filteredProducts,
     availableFilters,
-  } = useProductFilters({ products })
+  } = useProductFilters({
+    products,
+    categories,
+    sortPreference: settings?.sortPreference,
+    onSortChange: handleSortChange,
+  })
 
   // Sort sheet state
   const [isSortSheetOpen, setIsSortSheetOpen] = useState(false)
+
+  // Product settings modal state
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
 
   // Product modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -147,7 +179,7 @@ export default function ProductosPage() {
   // Product form state
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
-  const [category, setCategory] = useState<ProductCategory | ''>('')
+  const [categoryId, setCategoryId] = useState('')
   const [active, setActive] = useState(true)
   const [iconPreview, setIconPreview] = useState<string | null>(null)
   const [generatedIconBlob, setGeneratedIconBlob] = useState<Blob | null>(null)
@@ -330,7 +362,8 @@ export default function ProductosPage() {
   const resetProductForm = useCallback(() => {
     setName('')
     setPrice('')
-    setCategory('')
+    // Use default category if one is set
+    setCategoryId(settings?.defaultCategoryId || '')
     setActive(true)
     setIconPreview(null)
     setGeneratedIconBlob(null)
@@ -344,7 +377,7 @@ export default function ProductosPage() {
     if (compression.state.isProcessing) {
       compression.cancel()
     }
-  }, [pipeline, compression])
+  }, [pipeline, compression, settings?.defaultCategoryId])
 
   const abortAiProcessing = useCallback(() => {
     if (pipeline.state.step !== 'idle') {
@@ -357,10 +390,10 @@ export default function ProductosPage() {
     setGeneratedIconBlob(null)
     setName('')
     setPrice('')
-    setCategory('')
+    setCategoryId(settings?.defaultCategoryId || '')
     setActive(true)
     setError('')
-  }, [pipeline, compression])
+  }, [pipeline, compression, settings?.defaultCategoryId])
 
   const handleOpenAdd = useCallback(() => {
     resetProductForm()
@@ -371,7 +404,7 @@ export default function ProductosPage() {
     setEditingProduct(product)
     setName(product.name)
     setPrice(product.price.toString())
-    setCategory(product.category || '')
+    setCategoryId(product.categoryId || '')
     setActive(product.active ?? true)
     setIconPreview(getProductIconUrl(product))
     setGeneratedIconBlob(null)
@@ -427,7 +460,7 @@ export default function ProductosPage() {
       const formData = new FormData()
       formData.append('name', name.trim())
       formData.append('price', priceNum.toString())
-      if (category) formData.append('category', category)
+      if (categoryId) formData.append('categoryId', categoryId)
       formData.append('active', active.toString())
       if (generatedIconBlob) {
         formData.append('icon', generatedIconBlob, 'icon.png')
@@ -462,7 +495,7 @@ export default function ProductosPage() {
     } finally {
       setIsSaving(false)
     }
-  }, [name, price, category, active, generatedIconBlob, editingProduct, setProducts])
+  }, [name, price, categoryId, active, generatedIconBlob, editingProduct, setProducts])
 
   // TODO: Implement with Drizzle API routes
   const handleDeleteProduct = useCallback(async (): Promise<boolean> => {
@@ -832,6 +865,7 @@ export default function ProductosPage() {
           <ProductsTab
             products={products}
             filteredProducts={filteredProducts}
+            categories={categories}
             availableFilters={availableFilters}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -843,6 +877,7 @@ export default function ProductosPage() {
             onSortSheetOpenChange={setIsSortSheetOpen}
             onAddProduct={handleOpenAdd}
             onEditProduct={handleOpenEdit}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
             error={error}
             isModalOpen={isModalOpen}
           />
@@ -877,12 +912,14 @@ export default function ProductosPage() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onExitComplete={resetProductForm}
+        categories={categories}
+        defaultCategoryId={settings?.defaultCategoryId}
         name={name}
         onNameChange={setName}
         price={price}
         onPriceChange={setPrice}
-        category={category}
-        onCategoryChange={setCategory}
+        categoryId={categoryId}
+        onCategoryIdChange={setCategoryId}
         active={active}
         onActiveChange={setActive}
         iconPreview={iconPreview}
@@ -910,6 +947,25 @@ export default function ProductosPage() {
         onSubmit={handleSubmitProduct}
         onDelete={handleDeleteProduct}
         canDelete={canDelete}
+      />
+
+      {/* Product Settings Modal */}
+      <ProductSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        categories={categories}
+        isCreatingCategory={isCreatingCategory}
+        isUpdatingCategory={isUpdatingCategory}
+        isDeletingCategory={isDeletingCategory}
+        onCreateCategory={createCategory}
+        onUpdateCategory={updateCategory}
+        onDeleteCategory={deleteCategory}
+        defaultCategoryId={settings?.defaultCategoryId || null}
+        sortPreference={settings?.sortPreference || 'name_asc'}
+        isSavingSettings={isSavingSettings}
+        onUpdateSettings={updateSettings}
+        error={settingsError}
+        onClearError={clearSettingsError}
       />
 
       {/* New Order Modal */}

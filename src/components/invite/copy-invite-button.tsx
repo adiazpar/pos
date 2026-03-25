@@ -40,7 +40,7 @@ export function CopyInviteButton({
     const textToCopy =
       variant === 'code'
         ? code
-        : `I invite you to Feria POS as ${roleLabel}.\n\nYour code: ${code}\n\nRegister here: ${appUrl}/invite?code=${code}`
+        : `I invite you to Kasero as ${roleLabel}.\n\nYour code: ${code}\n\nRegister here: ${appUrl}/invite?code=${code}`
 
     try {
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {

@@ -1,10 +1,10 @@
 # Tech Stack
 
-This document explains the technology choices for Feria POS and the reasoning behind each decision.
+This document explains the technology choices for Kasero and the reasoning behind each decision.
 
 ## Overview
 
-Feria POS is a mobile-first point-of-sale system optimized for:
+Kasero is a multi-business management system optimized for:
 - **Zero monthly cost** - Free tier services only
 - **Edge performance** - Fast globally via edge computing
 - **Offline capability** - Works without internet (PWA)

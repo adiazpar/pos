@@ -1,4 +1,4 @@
-# POS System
+# Kasero
 
 ## Documentation
 
@@ -8,7 +8,7 @@ All project documentation and plans live in `.claude/docs/`:
 
 ## Project Overview
 
-A **mobile-first point-of-sale system** for small businesses. Built for speed, simplicity, and offline capability.
+A **multi-business management system** for small businesses. Built for speed, simplicity, and offline capability.
 
 **Target users**: Small business owners - food vendors, artisans, retailers.
 

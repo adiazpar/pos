@@ -2,39 +2,12 @@
  * Hook for managing product filtering, searching, and sorting
  */
 
-import { useState, useEffect, useMemo } from 'react'
-
-const PRODUCT_FILTERS_KEY = 'feria-pos-product-filters'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
-  CATEGORY_CONFIG,
-  FILTER_CONFIG,
   type FilterCategory,
   type SortOption,
-  type ProductFilters,
 } from '@/lib/products'
-import type { Product, ProductCategory } from '@/types'
-
-// ============================================
-// STORAGE FUNCTIONS
-// ============================================
-
-function loadProductFilters(): ProductFilters | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const stored = localStorage.getItem(PRODUCT_FILTERS_KEY)
-    if (stored) {
-      return JSON.parse(stored)
-    }
-  } catch {
-    // Invalid JSON, ignore
-  }
-  return null
-}
-
-function saveProductFilters(filters: ProductFilters): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(PRODUCT_FILTERS_KEY, JSON.stringify(filters))
-}
+import type { Product, ProductCategory as IProductCategory, SortPreference } from '@/types'
 
 // ============================================
 // HOOK INTERFACE
@@ -42,6 +15,11 @@ function saveProductFilters(filters: ProductFilters): void {
 
 export interface UseProductFiltersOptions {
   products: Product[]
+  categories: IProductCategory[]
+  /** Initial sort preference from settings */
+  sortPreference?: SortPreference
+  /** Callback when sort changes (to persist to settings) */
+  onSortChange?: (sort: SortOption) => void
 }
 
 export interface UseProductFiltersReturn {
@@ -59,53 +37,67 @@ export interface UseProductFiltersReturn {
 
   // Derived data
   filteredProducts: Product[]
-  availableFilters: Exclude<FilterCategory, 'all'>[]
+  availableFilters: string[]
 }
 
 // ============================================
 // HOOK IMPLEMENTATION
 // ============================================
 
-export function useProductFilters({ products }: UseProductFiltersOptions): UseProductFiltersReturn {
+export function useProductFilters({
+  products,
+  categories,
+  sortPreference,
+  onSortChange,
+}: UseProductFiltersOptions): UseProductFiltersReturn {
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Filter state - load from localStorage on mount
-  const [selectedFilter, setSelectedFilter] = useState<FilterCategory>(() => {
-    const saved = loadProductFilters()
-    return saved?.selectedFilter ?? 'all'
-  })
+  // Filter state
+  const [selectedFilter, setSelectedFilter] = useState<FilterCategory>('all')
 
-  // Sort state - load from localStorage on mount
-  const [sortBy, setSortBy] = useState<SortOption>(() => {
-    const saved = loadProductFilters()
-    return saved?.sortBy ?? 'name_asc'
-  })
+  // Sort state - initialize from settings if provided
+  const [sortBy, setSortByState] = useState<SortOption>(() => sortPreference || 'name_asc')
 
-  // Save filters to localStorage when they change
+  // Update sort when settings load
   useEffect(() => {
-    saveProductFilters({ selectedFilter, sortBy })
-  }, [selectedFilter, sortBy])
+    if (sortPreference) {
+      setSortByState(sortPreference)
+    }
+  }, [sortPreference])
+
+  // Wrap setSortBy to also call onSortChange
+  const setSortBy = useCallback((sort: SortOption) => {
+    setSortByState(sort)
+    onSortChange?.(sort)
+  }, [onSortChange])
+
+  // Build a map of category IDs to sort orders for efficient sorting
+  const categoryOrderMap = useMemo(() => {
+    const map = new Map<string, number>()
+    categories.forEach(c => map.set(c.id, c.sortOrder))
+    return map
+  }, [categories])
 
   // Get available filters based on products
   const availableFilters = useMemo(() => {
-    const productCategories = new Set<ProductCategory>()
+    const productCategoryIds = new Set<string>()
 
     products.forEach(p => {
-      if (p.category) productCategories.add(p.category)
+      if (p.categoryId) productCategoryIds.add(p.categoryId)
     })
 
     // Build filters array - always include low_stock first
-    const filters: Exclude<FilterCategory, 'all'>[] = ['low_stock']
+    const filters: string[] = ['low_stock']
 
-    // Add category filters
-    for (const [filter, config] of Object.entries(FILTER_CONFIG) as [Exclude<FilterCategory, 'all' | 'low_stock'>, typeof FILTER_CONFIG[keyof typeof FILTER_CONFIG]][]) {
-      if (config.categories.some(cat => productCategories.has(cat))) {
-        filters.push(filter)
-      }
-    }
+    // Add category filters for categories that have products
+    categories
+      .filter(c => productCategoryIds.has(c.id))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .forEach(c => filters.push(c.id))
+
     return filters
-  }, [products])
+  }, [products, categories])
 
   // Filter and search products
   const filteredProducts = useMemo(() => {
@@ -119,9 +111,8 @@ export function useProductFilters({ products }: UseProductFiltersOptions): UsePr
         return stock <= threshold
       })
     } else if (selectedFilter !== 'all') {
-      // Filter by category
-      const allowedCategories = FILTER_CONFIG[selectedFilter].categories
-      result = result.filter(p => p.category && allowedCategories.includes(p.category))
+      // Filter by category ID
+      result = result.filter(p => p.categoryId === selectedFilter)
     }
 
     // Filter by search query
@@ -156,8 +147,8 @@ export function useProductFilters({ products }: UseProductFiltersOptions): UsePr
           return a.name.localeCompare(b.name)
         }
         case 'category': {
-          const catA = a.category ? CATEGORY_CONFIG[a.category]?.order ?? 99 : 99
-          const catB = b.category ? CATEGORY_CONFIG[b.category]?.order ?? 99 : 99
+          const catA = a.categoryId ? (categoryOrderMap.get(a.categoryId) ?? 99) : 99
+          const catB = b.categoryId ? (categoryOrderMap.get(b.categoryId) ?? 99) : 99
           if (catA !== catB) return catA - catB
           return a.name.localeCompare(b.name)
         }
@@ -165,7 +156,7 @@ export function useProductFilters({ products }: UseProductFiltersOptions): UsePr
           return a.name.localeCompare(b.name)
       }
     })
-  }, [products, selectedFilter, searchQuery, sortBy])
+  }, [products, selectedFilter, searchQuery, sortBy, categoryOrderMap])
 
   return {
     searchQuery,

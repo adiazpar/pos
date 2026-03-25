@@ -45,6 +45,7 @@ export async function PATCH(
     const name = formData.get('name') as string | null
     const price = formData.get('price') as string | null
     const category = formData.get('category') as string | null
+    const categoryId = formData.get('categoryId') as string | null
     const active = formData.get('active') as string | null
     const iconFile = formData.get('icon') as File | null
 
@@ -84,6 +85,15 @@ export async function PATCH(
           )
         }
         updateData.category = categoryValidation.data
+      }
+    }
+
+    // Handle categoryId (new custom categories)
+    if (categoryId !== null) {
+      if (categoryId === '') {
+        updateData.categoryId = null
+      } else {
+        updateData.categoryId = categoryId
       }
     }
 

@@ -4,7 +4,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAiProductPipeline, useImageCompression } from '@/hooks'
-import type { Product, ProductCategory } from '@/types'
+import type { Product } from '@/types'
 
 // ============================================
 // HOOK INTERFACE
@@ -13,7 +13,7 @@ import type { Product, ProductCategory } from '@/types'
 export interface ProductFormState {
   name: string
   price: string
-  category: ProductCategory | ''
+  categoryId: string
   active: boolean
   iconPreview: string | null
   generatedIconBlob: Blob | null
@@ -22,6 +22,7 @@ export interface ProductFormState {
 export interface UseProductCrudOptions {
   onProductSaved?: (product: Product) => void
   onProductDeleted?: (productId: string) => void
+  defaultCategoryId?: string | null
 }
 
 export interface UseProductCrudReturn {
@@ -29,7 +30,7 @@ export interface UseProductCrudReturn {
   formState: ProductFormState
   setName: (name: string) => void
   setPrice: (price: string) => void
-  setCategory: (category: ProductCategory | '') => void
+  setCategoryId: (categoryId: string) => void
   setActive: (active: boolean) => void
   setIconPreview: (preview: string | null) => void
 
@@ -80,11 +81,12 @@ export interface UseProductCrudReturn {
 export function useProductCrud({
   onProductSaved,
   onProductDeleted,
+  defaultCategoryId,
 }: UseProductCrudOptions = {}): UseProductCrudReturn {
   // Form state
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
-  const [category, setCategory] = useState<ProductCategory | ''>('')
+  const [categoryId, setCategoryId] = useState(defaultCategoryId || '')
   const [active, setActive] = useState(true)
   const [iconPreview, setIconPreview] = useState<string | null>(null)
   const [generatedIconBlob, setGeneratedIconBlob] = useState<Blob | null>(null)
@@ -134,7 +136,7 @@ export function useProductCrud({
   const resetForm = useCallback(() => {
     setName('')
     setPrice('')
-    setCategory('')
+    setCategoryId(defaultCategoryId || '')
     setActive(true)
     setIconPreview(null)
     setGeneratedIconBlob(null)
@@ -149,7 +151,7 @@ export function useProductCrud({
     if (compression.state.isProcessing) {
       compression.cancel()
     }
-  }, [pipeline, compression])
+  }, [pipeline, compression, defaultCategoryId])
 
   // Abort AI processing
   const abortAiProcessing = useCallback(() => {
@@ -163,10 +165,10 @@ export function useProductCrud({
     setGeneratedIconBlob(null)
     setName('')
     setPrice('')
-    setCategory('')
+    setCategoryId(defaultCategoryId || '')
     setActive(true)
     setError('')
-  }, [pipeline, compression])
+  }, [pipeline, compression, defaultCategoryId])
 
   // Handle open add modal
   const handleOpenAdd = useCallback(() => {
@@ -178,7 +180,7 @@ export function useProductCrud({
     setEditingProduct(product)
     setName(product.name)
     setPrice(product.price.toString())
-    setCategory(product.category || '')
+    setCategoryId(product.categoryId || '')
     setActive(product.active ?? true)
     // Note: iconPreview should be set by caller using getProductIconUrl
     setGeneratedIconBlob(null)
@@ -255,8 +257,8 @@ export function useProductCrud({
       const formData = new FormData()
       formData.append('name', name.trim())
       formData.append('price', priceNum.toString())
-      if (category) {
-        formData.append('category', category)
+      if (categoryId) {
+        formData.append('categoryId', categoryId)
       }
       formData.append('active', active.toString())
 
@@ -291,7 +293,7 @@ export function useProductCrud({
     } finally {
       setIsSaving(false)
     }
-  }, [name, price, category, active, generatedIconBlob, editingProduct, onProductSaved])
+  }, [name, price, categoryId, active, generatedIconBlob, editingProduct, onProductSaved])
 
   // Save stock adjustment
   // TODO: Implement with Drizzle API routes
@@ -363,14 +365,14 @@ export function useProductCrud({
     formState: {
       name,
       price,
-      category,
+      categoryId,
       active,
       iconPreview,
       generatedIconBlob,
     },
     setName,
     setPrice,
-    setCategory,
+    setCategoryId,
     setActive,
     setIconPreview,
     editingProduct,

@@ -2,13 +2,13 @@
  * Product-related constants and types for the productos page
  */
 
-import type { ProductCategory, Product, Order, OrderItem, Provider } from '@/types'
+import type { LegacyProductCategory, ProductCategory, Product, Order, OrderItem, Provider } from '@/types'
 
 // ============================================
-// CATEGORY CONFIGURATION
+// LEGACY CATEGORY CONFIGURATION (for migration)
 // ============================================
 
-export const CATEGORY_CONFIG: Record<ProductCategory, { label: string; order: number }> = {
+export const LEGACY_CATEGORY_CONFIG: Record<LegacyProductCategory, { label: string; order: number }> = {
   food: { label: 'Food', order: 1 },
   beverage: { label: 'Beverage', order: 2 },
   snack: { label: 'Snack', order: 3 },
@@ -16,19 +16,31 @@ export const CATEGORY_CONFIG: Record<ProductCategory, { label: string; order: nu
   other: { label: 'Other', order: 5 },
 }
 
+/** Default categories to seed for new businesses */
+export const DEFAULT_CATEGORIES = [
+  { name: 'Food', sortOrder: 1 },
+  { name: 'Beverage', sortOrder: 2 },
+  { name: 'Snack', sortOrder: 3 },
+  { name: 'Dessert', sortOrder: 4 },
+  { name: 'Other', sortOrder: 5 },
+]
+
 // ============================================
 // FILTER CONFIGURATION
 // ============================================
 
-/** Filter category type */
-export type FilterCategory = 'all' | 'low_stock' | ProductCategory
+/** Filter category type - now uses category IDs or special filters */
+export type FilterCategory = 'all' | 'low_stock' | string
 
-export const FILTER_CONFIG: Record<Exclude<FilterCategory, 'all' | 'low_stock'>, { label: string; categories: ProductCategory[] }> = {
-  food: { label: 'Food', categories: ['food'] },
-  beverage: { label: 'Beverage', categories: ['beverage'] },
-  snack: { label: 'Snack', categories: ['snack'] },
-  dessert: { label: 'Dessert', categories: ['dessert'] },
-  other: { label: 'Other', categories: ['other'] },
+/**
+ * Get filter config for a category
+ * Now dynamically builds filter options based on actual categories
+ */
+export function getFilterLabel(filter: FilterCategory, categories: ProductCategory[]): string {
+  if (filter === 'all') return 'All'
+  if (filter === 'low_stock') return 'Low Stock'
+  const category = categories.find(c => c.id === filter)
+  return category?.name || 'Unknown'
 }
 
 // ============================================

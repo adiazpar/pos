@@ -9,7 +9,10 @@ import { uploadProductIcon } from '@/lib/storage'
 const createProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   price: z.coerce.number().min(0, 'Price must be 0 or greater'),
+  // Legacy category field (kept for backwards compatibility)
   category: z.enum(['food', 'beverage', 'snack', 'dessert', 'other']).optional(),
+  // New categoryId field for custom categories
+  categoryId: z.string().optional(),
   active: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(true),
 })
 
@@ -59,6 +62,7 @@ export async function POST(request: NextRequest) {
     const name = formData.get('name') as string
     const price = formData.get('price') as string
     const category = formData.get('category') as string | null
+    const categoryId = formData.get('categoryId') as string | null
     const active = formData.get('active') as string
     const iconFile = formData.get('icon') as File | null
 
@@ -66,6 +70,7 @@ export async function POST(request: NextRequest) {
       name,
       price,
       category: category || undefined,
+      categoryId: categoryId || undefined,
       active,
     })
 
@@ -76,7 +81,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name: validName, price: validPrice, category: validCategory, active: validActive } = validation.data
+    const { name: validName, price: validPrice, category: validCategory, categoryId: validCategoryId, active: validActive } = validation.data
 
     const productId = nanoid()
 
@@ -98,6 +103,7 @@ export async function POST(request: NextRequest) {
       name: validName,
       price: validPrice,
       category: validCategory,
+      categoryId: validCategoryId || null,
       icon: iconUrl,
       active: validActive,
       stock: 0,

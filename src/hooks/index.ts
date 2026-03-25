@@ -12,6 +12,9 @@ export type { UseResourceModalState, UseResourceModalActions, UseResourceModalRe
 export { useProductFilters } from './useProductFilters'
 export type { UseProductFiltersOptions, UseProductFiltersReturn } from './useProductFilters'
 
+export { useProductSettings } from './useProductSettings'
+export type { UseProductSettingsReturn } from './useProductSettings'
+
 export { useProductCrud } from './useProductCrud'
 export type { ProductFormState, UseProductCrudOptions, UseProductCrudReturn } from './useProductCrud'
 

@@ -1,17 +1,16 @@
 'use client'
 
 import Image from 'next/image'
-import { Search, X, Filter, Plus, ArrowUp, Package, ChevronRight, ImageIcon } from 'lucide-react'
+import { Search, X, Filter, Plus, ArrowUp, Package, ChevronRight, ImageIcon, Settings } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { getProductIconUrl } from '@/lib/utils'
 import {
-  CATEGORY_CONFIG,
-  FILTER_CONFIG,
   SORT_OPTIONS,
+  getFilterLabel,
   type FilterCategory,
   type SortOption,
 } from '@/lib/products'
-import type { Product } from '@/types'
+import type { Product, ProductCategory } from '@/types'
 
 // ============================================
 // PROPS INTERFACE
@@ -21,7 +20,8 @@ export interface ProductsTabProps {
   // Data
   products: Product[]
   filteredProducts: Product[]
-  availableFilters: Exclude<FilterCategory, 'all'>[]
+  categories: ProductCategory[]
+  availableFilters: string[]
 
   // Search state
   searchQuery: string
@@ -42,6 +42,7 @@ export interface ProductsTabProps {
   // Handlers
   onAddProduct: () => void
   onEditProduct: (product: Product) => void
+  onOpenSettings: () => void
 
   // Error state
   error?: string
@@ -55,6 +56,7 @@ export interface ProductsTabProps {
 export function ProductsTab({
   products,
   filteredProducts,
+  categories,
   availableFilters,
   searchQuery,
   onSearchChange,
@@ -66,9 +68,16 @@ export function ProductsTab({
   onSortSheetOpenChange,
   onAddProduct,
   onEditProduct,
+  onOpenSettings,
   error,
   isModalOpen,
 }: ProductsTabProps) {
+  // Helper to get category name by ID
+  const getCategoryName = (categoryId: string | null | undefined) => {
+    if (!categoryId) return '-'
+    const category = categories.find(c => c.id === categoryId)
+    return category?.name || '-'
+  }
   const scrollToTop = () => {
     const scrollContainer = document.querySelector('.with-sidebar')
     if (scrollContainer) {
@@ -136,7 +145,7 @@ export function ProductsTab({
                     onClick={() => onFilterChange(filter)}
                     className={`filter-tab ${selectedFilter === filter ? 'filter-tab-active' : ''}`}
                   >
-                    {filter === 'low_stock' ? 'Low Stock' : FILTER_CONFIG[filter].label}
+                    {getFilterLabel(filter, categories)}
                   </button>
                 ))}
               </div>
@@ -149,14 +158,24 @@ export function ProductsTab({
                 <span className="text-sm text-text-secondary">
                   {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
                 </span>
-                <button
-                  type="button"
-                  onClick={onAddProduct}
-                  className="btn btn-primary btn-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onOpenSettings}
+                    className="btn btn-secondary btn-sm btn-icon"
+                    aria-label="Product settings"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onAddProduct}
+                    className="btn btn-primary btn-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add
+                  </button>
+                </div>
               </div>
 
               <hr className="border-border" />
@@ -174,7 +193,7 @@ export function ProductsTab({
                 <div className="space-y-2">
                   {filteredProducts.map((product) => {
                     const iconUrl = getProductIconUrl(product)
-                    const categoryConfig = product.category ? CATEGORY_CONFIG[product.category] : null
+                    const categoryName = getCategoryName(product.categoryId)
                     const stockValue = product.stock ?? 0
                     const threshold = product.lowStockThreshold ?? 10
                     const isLowStock = stockValue <= threshold
@@ -215,7 +234,7 @@ export function ProductsTab({
                             {product.name}
                           </span>
                           <span className="text-xs text-text-tertiary mt-0.5 block">
-                            {categoryConfig ? categoryConfig.label : '-'}
+                            {categoryName}
                           </span>
                         </div>
 
@@ -262,14 +281,24 @@ export function ProductsTab({
             <p className="empty-state-description">
               Add your first product to get started
             </p>
-            <button
-              type="button"
-              onClick={onAddProduct}
-              className="btn btn-primary mt-4"
-            >
-              <Plus className="w-4 h-4" />
-              Add product
-            </button>
+            <div className="flex flex-col gap-2 mt-4">
+              <button
+                type="button"
+                onClick={onAddProduct}
+                className="btn btn-primary"
+              >
+                <Plus className="w-4 h-4" />
+                Add product
+              </button>
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="btn btn-secondary"
+              >
+                <Settings className="w-4 h-4" />
+                Product settings
+              </button>
+            </div>
           </div>
         )}
 

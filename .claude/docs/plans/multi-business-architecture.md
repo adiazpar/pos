@@ -2,7 +2,7 @@
 
 ## Overview
 
-Refactor Feria POS from single-business to multi-business architecture, allowing users to own multiple businesses and/or work at multiple businesses with different roles.
+Refactor Kasero from single-business to multi-business architecture, allowing users to own multiple businesses and/or work at multiple businesses with different roles.
 
 **Core Principle:** Account and Business are separate entities. Users have *memberships* to businesses, not a single business identity.
 

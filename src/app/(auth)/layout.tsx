@@ -9,11 +9,10 @@ export default function AuthLayout({
         {/* Logo */}
         <div className="auth-logo">
           <h1 className="auth-logo-title">
-            <span className="text-brand">Mr.</span>
-            <span>Chifles</span>
+            <span className="text-brand">Kasero</span>
           </h1>
           <p className="auth-logo-subtitle">
-            Sales Management System
+            Multi-Business Management
           </p>
         </div>
 

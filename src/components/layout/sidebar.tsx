@@ -35,12 +35,12 @@ export function Sidebar() {
         <Link href="/home" className="sidebar-brand">
           <Image
             src="/logo.png"
-            alt="Feria POS"
+            alt="Kasero"
             width={40}
             height={40}
             className="rounded-lg"
           />
-          <span className="sidebar-brand-text">Feria POS</span>
+          <span className="sidebar-brand-text">Kasero</span>
         </Link>
       </div>
 

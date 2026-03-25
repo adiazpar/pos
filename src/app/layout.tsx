@@ -18,13 +18,13 @@ const ibmPlexSans = IBM_Plex_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Feria POS',
-  description: 'Point of sale system for fairs',
+  title: 'Kasero',
+  description: 'Multi-business management system',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Feria POS',
+    title: 'Kasero',
   },
   icons: {
     icon: '/favicon.ico',

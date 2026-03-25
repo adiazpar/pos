@@ -4,7 +4,7 @@ This document describes the AI-powered product creation flow that allows busines
 
 ## Overview
 
-The pipeline extracts product information from a photo and generates an emoji-style icon with transparent background for visual recognition in the POS system.
+The pipeline extracts product information from a photo and generates an emoji-style icon with transparent background for visual recognition in Kasero.
 
 ```
 ┌─────────────────┐     ┌─────────────────────────────────┐     ┌─────────────────┐

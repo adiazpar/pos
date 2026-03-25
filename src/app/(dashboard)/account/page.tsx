@@ -197,7 +197,7 @@ export default function AccountSettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-text-secondary">Developed by</span>
-                <span className="text-sm font-medium text-text-primary">Feria POS</span>
+                <span className="text-sm font-medium text-text-primary">Kasero</span>
               </div>
             </div>
         </div>

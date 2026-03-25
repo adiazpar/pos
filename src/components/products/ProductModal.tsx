@@ -6,7 +6,6 @@ import { Trash2, ImageIcon, ArrowUp, ArrowDown, Pencil, SlidersHorizontal, Focus
 import { Spinner, Modal, useMorphingModal, StockStepper } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
 import { getProductIconUrl } from '@/lib/utils'
-import { CATEGORY_CONFIG } from '@/lib/products'
 import type { Product, ProductCategory } from '@/types'
 import type { PipelineStep } from '@/hooks'
 
@@ -56,13 +55,17 @@ export interface ProductModalProps {
   onClose: () => void
   onExitComplete: () => void
 
+  // Categories
+  categories: ProductCategory[]
+  defaultCategoryId?: string | null
+
   // Form state
   name: string
   onNameChange: (name: string) => void
   price: string
   onPriceChange: (price: string) => void
-  category: ProductCategory | ''
-  onCategoryChange: (category: ProductCategory | '') => void
+  categoryId: string
+  onCategoryIdChange: (categoryId: string) => void
   active: boolean
   onActiveChange: (active: boolean) => void
   iconPreview: string | null
@@ -170,12 +173,14 @@ export function ProductModal({
   isOpen,
   onClose,
   onExitComplete,
+  categories,
+  defaultCategoryId: _defaultCategoryId,
   name,
   onNameChange,
   price,
   onPriceChange,
-  category,
-  onCategoryChange,
+  categoryId,
+  onCategoryIdChange,
   active,
   onActiveChange,
   iconPreview,
@@ -207,7 +212,7 @@ export function ProductModal({
   const hasChanges = !editingProduct || (
     name.trim() !== editingProduct.name ||
     parseFloat(price) !== editingProduct.price ||
-    (category || null) !== (editingProduct.category || null) ||
+    (categoryId || null) !== (editingProduct.categoryId || null) ||
     active !== (editingProduct.active ?? true)
   )
 
@@ -369,16 +374,16 @@ export function ProductModal({
               <label htmlFor="category" className="label">Category</label>
               <select
                 id="category"
-                value={category}
-                onChange={e => onCategoryChange(e.target.value as ProductCategory | '')}
-                className={`input ${category === '' ? 'select-placeholder' : ''}`}
+                value={categoryId}
+                onChange={e => onCategoryIdChange(e.target.value)}
+                className={`input ${categoryId === '' ? 'select-placeholder' : ''}`}
               >
                 <option value="">N/A</option>
-                {Object.entries(CATEGORY_CONFIG)
-                  .sort(([, a], [, b]) => a.order - b.order)
-                  .map(([key, config]) => (
-                    <option key={key} value={key}>
-                      {config.label}
+                {categories
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
                     </option>
                   ))}
               </select>
@@ -532,16 +537,16 @@ export function ProductModal({
               <label htmlFor="ai-category" className="label">Category</label>
               <select
                 id="ai-category"
-                value={category}
-                onChange={e => onCategoryChange(e.target.value as ProductCategory | '')}
-                className={`input ${category === '' ? 'select-placeholder' : ''}`}
+                value={categoryId}
+                onChange={e => onCategoryIdChange(e.target.value)}
+                className={`input ${categoryId === '' ? 'select-placeholder' : ''}`}
               >
                 <option value="">N/A</option>
-                {Object.entries(CATEGORY_CONFIG)
-                  .sort(([, a], [, b]) => a.order - b.order)
-                  .map(([key, config]) => (
-                    <option key={key} value={key}>
-                      {config.label}
+                {categories
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
                     </option>
                   ))}
               </select>

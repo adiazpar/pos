@@ -40,10 +40,41 @@ export interface InviteCode {
 }
 
 // ============================================
-// PRODUCT TYPES
+// PRODUCT CATEGORY TYPES
 // ============================================
 
-export type ProductCategory = 'food' | 'beverage' | 'snack' | 'dessert' | 'other'
+/** Legacy enum category - kept for backwards compatibility */
+export type LegacyProductCategory = 'food' | 'beverage' | 'snack' | 'dessert' | 'other'
+
+/** Custom product category */
+export interface ProductCategory {
+  id: string
+  businessId: string
+  name: string
+  sortOrder: number
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+// ============================================
+// PRODUCT SETTINGS TYPES
+// ============================================
+
+export type SortPreference = 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc' | 'category' | 'stock_asc' | 'stock_desc'
+
+export interface ProductSettings {
+  id: string
+  businessId: string
+  defaultCategoryId?: string | null
+  sortPreference: SortPreference
+  createdAt: Date | string
+  updatedAt: Date | string
+  defaultCategory?: ProductCategory | null
+}
+
+// ============================================
+// PRODUCT TYPES
+// ============================================
 
 export interface Product {
   id: string
@@ -52,7 +83,10 @@ export interface Product {
   price: number
   costPrice?: number | null
   active: boolean | null
-  category?: ProductCategory | null
+  /** @deprecated Use categoryId instead */
+  category?: LegacyProductCategory | null
+  categoryId?: string | null
+  productCategory?: ProductCategory | null
   icon?: string | null
   stock?: number | null
   lowStockThreshold?: number | null
