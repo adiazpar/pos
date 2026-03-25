@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/simple-auth'
+import { uploadProductIcon } from '@/lib/storage'
 
 const createProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -77,13 +78,18 @@ export async function POST(request: NextRequest) {
 
     const { name: validName, price: validPrice, category: validCategory, active: validActive } = validation.data
 
-    // TODO: Upload icon to R2 if provided
-    const iconUrl: string | null = null
-    if (iconFile && iconFile.size > 0) {
-      // Will implement R2 upload later
-    }
-
     const productId = nanoid()
+
+    // Upload icon if provided
+    let iconUrl: string | null = null
+    if (iconFile && iconFile.size > 0) {
+      try {
+        iconUrl = await uploadProductIcon(iconFile, productId)
+      } catch (err) {
+        console.error('Error uploading icon:', err)
+        // Continue without icon rather than failing the whole request
+      }
+    }
     const now = new Date()
 
     await db.insert(products).values({

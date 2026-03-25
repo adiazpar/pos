@@ -3,6 +3,7 @@ import { db, products } from '@/db'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/simple-auth'
+import { uploadProductIcon, deleteProductIcon } from '@/lib/storage'
 
 /**
  * PATCH /api/products/[id]
@@ -90,12 +91,22 @@ export async function PATCH(
       updateData.active = active === 'true'
     }
 
-    // TODO: Upload icon to R2 if provided
+    // Upload new icon if provided
     if (iconFile && iconFile.size > 0) {
-      // Will implement R2 upload later
+      try {
+        // Delete old icon if exists
+        if (existingProduct.icon) {
+          await deleteProductIcon(existingProduct.icon)
+        }
+        // Upload new icon
+        updateData.icon = await uploadProductIcon(iconFile, id)
+      } catch (err) {
+        console.error('Error uploading icon:', err)
+        // Continue without updating icon rather than failing
+      }
     }
 
-    if (Object.keys(updateData).length === 0 && !iconFile) {
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: 'No data to update' },
         { status: 400 }
@@ -164,9 +175,14 @@ export async function DELETE(
       )
     }
 
-    // TODO: Delete icon from R2 if exists
+    // Delete icon from storage if exists
     if (existingProduct.icon) {
-      // Will implement R2 delete later
+      try {
+        await deleteProductIcon(existingProduct.icon)
+      } catch (err) {
+        console.error('Error deleting icon:', err)
+        // Continue with product deletion even if icon delete fails
+      }
     }
 
     await db

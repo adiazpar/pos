@@ -47,3 +47,6 @@ drizzle/
 
 # Certificates
 *.pem
+
+# Local media uploads (dev only)
+public/media/
