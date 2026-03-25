@@ -25,6 +25,16 @@ export const NAV_ITEMS: NavItem[] = [
 ]
 
 /**
+ * Additional routes to prefetch for instant navigation
+ */
+export const PREFETCH_ROUTES: string[] = [
+  '/settings',
+  '/team',
+  '/providers',
+  '/cash/history',
+]
+
+/**
  * Route config for page headers
  * Maps pathname patterns to header content
  */
@@ -42,8 +52,8 @@ export const ROUTE_CONFIG: Record<string, RouteConfig> = {
   '/products': { title: 'Products', subtitle: 'Manage your catalog' },
   '/reports': { title: 'Reports', subtitle: 'Sales analytics' },
   '/settings': { title: 'Settings', subtitle: 'Customize your experience' },
-  '/settings/team': { title: 'Team', subtitle: 'Manage your team', backTo: '/settings' },
-  '/settings/providers': { title: 'Providers', subtitle: 'Manage your providers', backTo: '/settings' },
+  '/team': { title: 'Team', subtitle: 'Manage your team' },
+  '/providers': { title: 'Providers', subtitle: 'Manage your providers' },
 }
 
 /**

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
+import { useNavbar } from '@/contexts/navbar-context'
 import { getUserInitials, getRoleLabel, isPartnerOrOwner } from '@/lib/auth'
 import { Users, LogOut, ChevronRight, Settings, Van } from 'lucide-react'
 
@@ -15,12 +16,18 @@ interface UserMenuContentProps {
 export function UserMenuContent({ onAction, showHeader = true }: UserMenuContentProps) {
   const router = useRouter()
   const { user, logout } = useAuth()
+  const { setPendingHref } = useNavbar()
 
   const handleLogout = useCallback(() => {
     onAction?.()
     logout()
     router.push('/login')
   }, [logout, router, onAction])
+
+  const handleLinkClick = useCallback((href: string) => {
+    setPendingHref(href)
+    onAction?.()
+  }, [setPendingHref, onAction])
 
   if (!user) return null
 
@@ -46,9 +53,9 @@ export function UserMenuContent({ onAction, showHeader = true }: UserMenuContent
         {/* Team Management (owner/partner only) */}
         {canManageTeam && (
           <Link
-            href="/settings/team"
+            href="/team"
             className="user-menu-item"
-            onClick={onAction}
+            onClick={() => handleLinkClick('/team')}
           >
             <Users size={20} />
             <span>Team</span>
@@ -59,9 +66,9 @@ export function UserMenuContent({ onAction, showHeader = true }: UserMenuContent
         {/* Providers (owner/partner only) */}
         {canManageTeam && (
           <Link
-            href="/settings/providers"
+            href="/providers"
             className="user-menu-item"
-            onClick={onAction}
+            onClick={() => handleLinkClick('/providers')}
           >
             <Van size={20} />
             <span>Providers</span>
@@ -73,7 +80,7 @@ export function UserMenuContent({ onAction, showHeader = true }: UserMenuContent
         <Link
           href="/settings"
           className="user-menu-item"
-          onClick={onAction}
+          onClick={() => handleLinkClick('/settings')}
         >
           <Settings size={20} />
           <span>Settings</span>

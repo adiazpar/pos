@@ -22,7 +22,7 @@ import type { CashMovement } from '@/types'
 export default function CajaPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { isReturning, setReturning } = useNavbar()
+  const { isReturning, setReturning, setPendingHref } = useNavbar()
 
   // Header is set optimistically by nav component
 
@@ -191,7 +191,10 @@ export default function CajaPage() {
               {/* Row 2: History */}
               <button
                 type="button"
-                onClick={() => router.push('/cash/history')}
+                onClick={() => {
+                  setPendingHref('/cash/history')
+                  router.push('/cash/history')
+                }}
                 className="caja-action-btn"
               >
                 <History className="caja-action-btn__icon" />

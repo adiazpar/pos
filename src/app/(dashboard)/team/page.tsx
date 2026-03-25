@@ -203,9 +203,6 @@ export default function TeamPage() {
         <Modal.Step title="Delete code" backStep={1}>
           <Modal.Item>
             <div className="text-center py-4">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-error-subtle flex items-center justify-center">
-                <Trash2 className="w-8 h-8 text-error" />
-              </div>
               <h3 className="text-lg font-semibold text-text-primary mb-2">
                 Delete invite code
               </h3>

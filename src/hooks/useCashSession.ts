@@ -78,11 +78,8 @@ export function useCashSession({ movements }: UseCashSessionOptions): UseCashSes
     return cached !== 'unknown' ? cached : null
   })
   const [sessions, setSessions] = useState<CashSession[]>([])
-  // If we have cached data, don't show loading
-  const [isLoading, setIsLoading] = useState(() => {
-    const cached = getCachedSession()
-    return cached === 'unknown'
-  })
+  // Always start loading - page will set to false when ready
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
   // Calculated values

@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { NAV_ITEMS } from '@/lib/navigation'
+import { NAV_ITEMS, PREFETCH_ROUTES } from '@/lib/navigation'
 import { UserMenu } from './user-menu'
 import { useNavbar } from '@/contexts/navbar-context'
 
@@ -17,6 +17,9 @@ export function Sidebar() {
   useEffect(() => {
     NAV_ITEMS.forEach((item) => {
       router.prefetch(item.href)
+    })
+    PREFETCH_ROUTES.forEach((route) => {
+      router.prefetch(route)
     })
   }, [router])
 
