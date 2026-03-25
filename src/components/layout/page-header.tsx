@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { getRouteConfig } from '@/lib/navigation'
@@ -14,6 +15,23 @@ export function PageHeader() {
   const pathname = usePathname()
   const router = useRouter()
   const { pendingHref } = useNavbar()
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // Track scroll position to show shadow
+  useEffect(() => {
+    const scrollContainer = document.querySelector('.with-sidebar')
+    if (!scrollContainer) return
+
+    const handleScroll = () => {
+      setIsScrolled(scrollContainer.scrollTop > 0)
+    }
+
+    // Check initial scroll position
+    handleScroll()
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+    return () => scrollContainer.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Use pending route config if navigating, otherwise current pathname
   const config = getRouteConfig(pendingHref || pathname)
@@ -28,11 +46,11 @@ export function PageHeader() {
 
   // Don't render if no title
   if (!title) {
-    return <header className="page-header page-header--fixed" />
+    return <header className={`page-header page-header--fixed ${isScrolled ? 'page-header--scrolled' : ''}`} />
   }
 
   return (
-    <header className="page-header page-header--fixed">
+    <header className={`page-header page-header--fixed ${isScrolled ? 'page-header--scrolled' : ''}`}>
       <div className={`page-header__content ${backTo ? 'page-header__content--with-back' : ''}`}>
         {backTo && (
           <button
