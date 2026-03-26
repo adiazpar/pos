@@ -37,23 +37,27 @@ export const PREFETCH_ROUTES: string[] = [
 /**
  * Route config for page headers
  * Maps pathname patterns to header content
+ *
+ * In the multi-business architecture:
+ * - Header title = Business name (from BusinessContext)
+ * - Header subtitle = Page name (from this config)
+ * - backTo = Parent route for nested pages (back button goes here instead of hub)
  */
 export interface RouteConfig {
-  title: string
-  subtitle: string
-  backTo?: string // If set, shows back button that navigates here
+  pageTitle: string // Displays as subtitle under business name
+  backTo?: string   // If set, back button goes here instead of hub
 }
 
 export const ROUTE_CONFIG: Record<string, RouteConfig> = {
-  '/home': { title: 'Home', subtitle: 'Main dashboard' },
-  '/sales': { title: 'Sales', subtitle: 'Record sales' },
-  '/cash': { title: 'Cash Drawer', subtitle: 'Cash control' },
-  '/cash/history': { title: 'History', subtitle: 'Cash drawer sessions', backTo: '/cash' },
-  '/products': { title: 'Products', subtitle: 'Manage your catalog' },
-  '/reports': { title: 'Reports', subtitle: 'Sales analytics' },
-  '/account': { title: 'Account Settings', subtitle: 'Customize your experience' },
-  '/team': { title: 'Team', subtitle: 'Manage your team' },
-  '/providers': { title: 'Providers', subtitle: 'Manage your providers' },
+  '/home': { pageTitle: 'Home' },
+  '/sales': { pageTitle: 'Sales' },
+  '/cash': { pageTitle: 'Cash Drawer' },
+  '/cash/history': { pageTitle: 'History', backTo: '/cash' },
+  '/products': { pageTitle: 'Products' },
+  '/reports': { pageTitle: 'Reports' },
+  '/account': { pageTitle: 'Account Settings' },
+  '/team': { pageTitle: 'Team' },
+  '/providers': { pageTitle: 'Providers' },
 }
 
 /**
@@ -76,5 +80,5 @@ export function getRouteConfig(pathname: string): RouteConfig {
     }
   }
 
-  return { title: '', subtitle: '' }
+  return { pageTitle: '' }
 }
