@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, users, businesses, businessUsers } from '@/db'
+import { db, users } from '@/db'
 import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
@@ -9,13 +9,13 @@ const registerSchema = z.object({
   email: z.string().email('Invalid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  businessName: z.string().min(2, 'Business name must be at least 2 characters').optional(),
 })
 
 /**
  * POST /api/auth/register
  *
- * Register a new user (owner). Creates user and business.
+ * Register a new user account.
+ * Creates user only - no business. User creates/joins business from hub.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,14 +29,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email, password, name, businessName } = validation.data
+    const { email, password, name } = validation.data
 
     // Check if email already exists
-    const [existingUser] = await db
-      .select()
+    const existingUser = await db
+      .select({ id: users.id })
       .from(users)
       .where(eq(users.email, email.toLowerCase()))
-      .limit(1)
+      .get()
 
     if (existingUser) {
       return NextResponse.json(
@@ -50,18 +50,8 @@ export async function POST(request: NextRequest) {
 
     const now = new Date()
     const userId = nanoid()
-    const businessId = nanoid()
 
-    // Create business first
-    await db.insert(businesses).values({
-      id: businessId,
-      name: businessName || `Negocio de ${name}`,
-      ownerId: userId,
-      createdAt: now,
-      updatedAt: now,
-    })
-
-    // Create user (with legacy fields for backwards compatibility)
+    // Create user account
     const [newUser] = await db
       .insert(users)
       .values({
@@ -69,27 +59,13 @@ export async function POST(request: NextRequest) {
         email: email.toLowerCase(),
         password: passwordHash,
         name,
-        role: 'owner',
         status: 'active',
-        businessId,
         createdAt: now,
         updatedAt: now,
       })
       .returning()
 
-    // Create business_users entry for multi-business support
-    await db.insert(businessUsers).values({
-      id: nanoid(),
-      userId,
-      businessId,
-      role: 'owner',
-      status: 'active',
-      joinedAt: now,
-      createdAt: now,
-      updatedAt: now,
-    })
-
-    // Create JWT token (simplified - only user identity)
+    // Create JWT token
     const token = await createToken({
       userId: newUser.id,
       email: newUser.email,

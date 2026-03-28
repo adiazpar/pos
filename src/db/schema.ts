@@ -21,12 +21,8 @@ export const users = sqliteTable('users', {
   email: text('email').unique().notNull(),
   password: text('password').notNull(), // bcrypt hash
   name: text('name').notNull(),
-  // Legacy fields - kept for migration, will be removed in Phase 9
-  role: text('role', { enum: ['owner', 'partner', 'employee'] }).notNull(),
-  status: text('status', { enum: ['active', 'pending', 'disabled'] }).default('active').notNull(),
-  businessId: text('business_id').references(() => businesses.id),
-  invitedBy: text('invited_by'),
-  avatar: text('avatar'), // File URL
+  status: text('status', { enum: ['active', 'disabled'] }).default('active').notNull(),
+  avatar: text('avatar'), // Base64 or URL
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })
@@ -273,15 +269,7 @@ export const businessesRelations = relations(businesses, ({ one, many }) => ({
   ownershipTransfers: many(ownershipTransfers),
 }))
 
-export const usersRelations = relations(users, ({ one, many }) => ({
-  business: one(businesses, {
-    fields: [users.businessId],
-    references: [businesses.id],
-  }),
-  inviter: one(users, {
-    fields: [users.invitedBy],
-    references: [users.id],
-  }),
+export const usersRelations = relations(users, ({ many }) => ({
   businessMemberships: many(businessUsers),
   sales: many(sales),
   cashSessionsOpened: many(cashSessions),

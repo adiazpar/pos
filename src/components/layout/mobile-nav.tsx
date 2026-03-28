@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Plus, UserPlus } from 'lucide-react'
+import { PlusIcon } from '@/components/icons'
+import { UserPlus } from 'lucide-react'
 import { getNavItems, getPrefetchRoutes } from '@/lib/navigation'
 import { useNavbar } from '@/contexts/navbar-context'
 import { useOptionalBusiness } from '@/contexts/business-context'
@@ -81,7 +82,7 @@ export function MobileNav() {
           className="btn btn-primary flex-1"
           onClick={handleCreateBusiness}
         >
-          <Plus className="w-5 h-5" />
+          <PlusIcon size={20} />
           Create
         </button>
         <button

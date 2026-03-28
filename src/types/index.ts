@@ -3,14 +3,14 @@
 // ============================================
 
 export type UserRole = 'owner' | 'partner' | 'employee'
-export type UserStatus = 'active' | 'pending' | 'disabled'
+export type UserStatus = 'active' | 'disabled'
+export type MembershipStatus = 'active' | 'pending' | 'disabled'
 
 export interface User {
   id: string
   email: string
   name: string
   status: UserStatus
-  invitedBy?: string | null
   avatar?: string | null
   createdAt: Date | string
   updatedAt: Date | string
