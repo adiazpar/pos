@@ -241,6 +241,18 @@ export const ownershipTransfers = sqliteTable('ownership_transfers', {
 })
 
 // ===========================================
+// BUSINESS ARCHIVES (Deleted business recovery)
+// ===========================================
+export const businessArchives = sqliteTable('business_archives', {
+  id: text('id').primaryKey(),
+  businessId: text('business_id').notNull(), // Original business ID (not FK since business is deleted)
+  businessName: text('business_name').notNull(),
+  deletedBy: text('deleted_by').references(() => users.id).notNull(),
+  archiveData: text('archive_data').notNull(), // JSON blob of all business data
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+// ===========================================
 // APP CONFIG (Single row for setup state)
 // ===========================================
 export const appConfig = sqliteTable('app_config', {
@@ -441,6 +453,13 @@ export const ownershipTransfersRelations = relations(ownershipTransfers, ({ one 
   }),
   toUserRelation: one(users, {
     fields: [ownershipTransfers.toUser],
+    references: [users.id],
+  }),
+}))
+
+export const businessArchivesRelations = relations(businessArchives, ({ one }) => ({
+  deletedByUser: one(users, {
+    fields: [businessArchives.deletedBy],
     references: [users.id],
   }),
 }))

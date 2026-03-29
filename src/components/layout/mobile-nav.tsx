@@ -82,7 +82,7 @@ export function MobileNav() {
           className="btn btn-primary flex-1"
           onClick={handleCreateBusiness}
         >
-          <PlusIcon size={20} />
+          <PlusIcon size={24} />
           Create
         </button>
         <button
@@ -90,7 +90,7 @@ export function MobileNav() {
           className="btn btn-secondary flex-1"
           onClick={handleJoinBusiness}
         >
-          <UserPlus className="w-5 h-5" />
+          <UserPlus className="w-6 h-6" />
           Join
         </button>
       </nav>

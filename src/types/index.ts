@@ -101,6 +101,7 @@ export type SalesChannel = 'in_store' | 'online'
 
 export interface Sale {
   id: string
+  businessId: string
   date: Date | string
   total: number
   paymentMethod: PaymentMethod
@@ -135,6 +136,7 @@ export interface SaleItem {
 
 export interface Provider {
   id: string
+  businessId: string
   name: string
   phone?: string | null
   email?: string | null
@@ -259,4 +261,17 @@ export interface CashMovement {
   createdAt: Date | string
   updatedAt: Date | string
   creator?: { name: string } | null
+}
+
+// ============================================
+// BUSINESS ARCHIVE TYPES
+// ============================================
+
+export interface BusinessArchive {
+  id: string
+  businessId: string
+  businessName: string
+  deletedBy: string
+  archiveData: string // JSON blob of all business data
+  createdAt: Date | string
 }
