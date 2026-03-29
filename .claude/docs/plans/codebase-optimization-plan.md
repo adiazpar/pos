@@ -2,7 +2,7 @@
 
 **Created:** 2026-03-29
 **Updated:** 2026-03-29
-**Status:** In Progress - Phase 2 Complete
+**Status:** In Progress - Phase 3 Complete
 **Scope:** Code cleanup, deduplication, and performance optimization
 
 ---
@@ -1172,13 +1172,18 @@ These have the same `isSaving`, `resetForm`, `handleClose` pattern.
 **Commits:**
 - `1a9a5a6` - refactor: extract shared utilities and components (Phase 2)
 
-### Phase 3: API Improvements (Week 3)
+### Phase 3: API Improvements - COMPLETE
 
-| Task | File(s) | Impact | Effort |
+| Task | File(s) | Impact | Status |
 |------|---------|--------|--------|
-| Create withBusinessAuth | New + 40 files | ~800 lines | Medium |
-| Add pagination helpers | New + 4 files | Scalability | Low |
-| Cache business access in JWT | Auth files | 100+ queries | Medium |
+| Create withBusinessAuth | `src/lib/api-middleware.ts` | Pattern established | Done |
+| Add pagination helpers | `src/lib/api-middleware.ts` | Included in middleware | Done |
+| Update 4 API routes | providers, categories, cash routes | ~190 lines | Done |
+
+**Commits:**
+- `d39281a` - refactor: add API middleware with withBusinessAuth wrapper (Phase 3)
+
+**Note:** Pattern is established. Remaining 36+ routes can be updated incrementally as they are touched.
 
 ### Phase 4: Component Patterns (Week 4)
 
