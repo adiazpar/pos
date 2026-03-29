@@ -1178,12 +1178,20 @@ These have the same `isSaving`, `resetForm`, `handleClose` pattern.
 |------|---------|--------|--------|
 | Create withBusinessAuth | `src/lib/api-middleware.ts` | Pattern established | Done |
 | Add pagination helpers | `src/lib/api-middleware.ts` | Included in middleware | Done |
-| Update 4 API routes | providers, categories, cash routes | ~190 lines | Done |
+| Update ALL business-scoped routes | 30 route files | ~600 lines saved | Done |
 
-**Commits:**
-- `d39281a` - refactor: add API middleware with withBusinessAuth wrapper (Phase 3)
-
-**Note:** Pattern is established. Remaining 36+ routes can be updated incrementally as they are touched.
+**Routes updated with withBusinessAuth:**
+- providers/route.ts
+- categories/route.ts, categories/[id]/route.ts, categories/reorder/route.ts
+- cash/sessions/route.ts, cash/sessions/[id]/route.ts, cash/sessions/[id]/close/route.ts, cash/sessions/current/route.ts
+- cash/movements/route.ts, cash/movements/[id]/route.ts
+- access/route.ts, leave/route.ts, team/route.ts
+- invite/create/route.ts, invite/delete/route.ts, invite/regenerate/route.ts
+- users/change-role/route.ts, users/toggle-status/route.ts
+- transfer/pending/route.ts, transfer/initiate/route.ts, transfer/cancel/route.ts, transfer/confirm/route.ts
+- orders/route.ts, orders/[id]/route.ts, orders/[id]/receive/route.ts
+- products/route.ts, products/[id]/route.ts, products/[id]/stock/route.ts
+- product-settings/route.ts
 
 ### Phase 4: Component Patterns (Week 4)
 

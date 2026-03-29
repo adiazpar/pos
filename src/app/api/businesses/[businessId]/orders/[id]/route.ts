@@ -1,16 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db, orders, orderItems } from '@/db'
 import { eq, and } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
-import { requireBusinessAccess } from '@/lib/business-auth'
-
-interface RouteParams {
-  params: Promise<{
-    businessId: string
-    id: string
-  }>
-}
+import { withBusinessAuth, HttpResponse } from '@/lib/api-middleware'
 
 const orderItemSchema = z.object({
   productId: z.string().min(1),
@@ -23,175 +16,135 @@ const orderItemSchema = z.object({
  *
  * Update an order and its items.
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: RouteParams
-) {
-  try {
-    const { businessId, id } = await params
-    const access = await requireBusinessAccess(businessId)
+export const PATCH = withBusinessAuth(async (request, access, routeParams) => {
+  const id = routeParams?.id
+  if (!id) {
+    return HttpResponse.badRequest('Order ID is required')
+  }
 
-    // Verify order exists and belongs to business
-    const [existingOrder] = await db
-      .select()
-      .from(orders)
-      .where(
-        and(
-          eq(orders.id, id),
-          eq(orders.businessId, access.businessId)
-        )
+  // Verify order exists and belongs to business
+  const [existingOrder] = await db
+    .select()
+    .from(orders)
+    .where(
+      and(
+        eq(orders.id, id),
+        eq(orders.businessId, access.businessId)
       )
-      .limit(1)
+    )
+    .limit(1)
 
-    if (!existingOrder) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      )
+  if (!existingOrder) {
+    return HttpResponse.notFound('Order not found')
+  }
+
+  if (existingOrder.status === 'received') {
+    return HttpResponse.badRequest('Cannot edit a received order')
+  }
+
+  const formData = await request.formData()
+  const totalStr = formData.get('total') as string | null
+  const notes = formData.get('notes') as string | null
+  const estimatedArrivalStr = formData.get('estimatedArrival') as string | null
+  const providerId = formData.get('providerId') as string | null
+  const itemsJson = formData.get('items') as string | null
+
+  const updateData: Record<string, unknown> = {}
+
+  if (totalStr !== null) {
+    const total = parseFloat(totalStr)
+    if (isNaN(total) || total <= 0) {
+      return HttpResponse.badRequest('Total must be greater than 0')
     }
+    updateData.total = total
+  }
 
-    if (existingOrder.status === 'received') {
-      return NextResponse.json(
-        { error: 'Cannot edit a received order' },
-        { status: 400 }
-      )
-    }
+  if (notes !== null) {
+    updateData.notes = notes || null
+  }
 
-    const formData = await request.formData()
-    const totalStr = formData.get('total') as string | null
-    const notes = formData.get('notes') as string | null
-    const estimatedArrivalStr = formData.get('estimatedArrival') as string | null
-    const providerId = formData.get('providerId') as string | null
-    const itemsJson = formData.get('items') as string | null
+  if (estimatedArrivalStr !== null) {
+    updateData.estimatedArrival = estimatedArrivalStr ? new Date(estimatedArrivalStr) : null
+  }
 
-    const updateData: Record<string, unknown> = {}
+  if (providerId !== null) {
+    updateData.providerId = providerId || null
+  }
 
-    if (totalStr !== null) {
-      const total = parseFloat(totalStr)
-      if (isNaN(total) || total <= 0) {
-        return NextResponse.json(
-          { error: 'Total must be greater than 0' },
-          { status: 400 }
-        )
+  updateData.updatedAt = new Date()
+
+  await db
+    .update(orders)
+    .set(updateData)
+    .where(eq(orders.id, id))
+
+  // Update items if provided
+  if (itemsJson) {
+    let items: Array<{ productId: string; productName: string; quantity: number }>
+    try {
+      items = JSON.parse(itemsJson)
+      const validation = z.array(orderItemSchema).safeParse(items)
+      if (!validation.success) {
+        return HttpResponse.badRequest('Invalid items')
       }
-      updateData.total = total
+    } catch {
+      return HttpResponse.badRequest('Invalid items')
     }
 
-    if (notes !== null) {
-      updateData.notes = notes || null
-    }
+    // Delete existing items and insert new ones
+    await db.delete(orderItems).where(eq(orderItems.orderId, id))
 
-    if (estimatedArrivalStr !== null) {
-      updateData.estimatedArrival = estimatedArrivalStr ? new Date(estimatedArrivalStr) : null
-    }
-
-    if (providerId !== null) {
-      updateData.providerId = providerId || null
-    }
-
-    updateData.updatedAt = new Date()
-
-    await db
-      .update(orders)
-      .set(updateData)
-      .where(eq(orders.id, id))
-
-    // Update items if provided
-    if (itemsJson) {
-      let items: Array<{ productId: string; productName: string; quantity: number }>
-      try {
-        items = JSON.parse(itemsJson)
-        const validation = z.array(orderItemSchema).safeParse(items)
-        if (!validation.success) {
-          return NextResponse.json(
-            { error: 'Invalid items' },
-            { status: 400 }
-          )
-        }
-      } catch {
-        return NextResponse.json(
-          { error: 'Invalid items' },
-          { status: 400 }
-        )
-      }
-
-      // Delete existing items and insert new ones
-      await db.delete(orderItems).where(eq(orderItems.orderId, id))
-
-      const now = new Date()
-      for (const item of items) {
-        await db.insert(orderItems).values({
+    const now = new Date()
+    if (items.length > 0) {
+      await db.insert(orderItems).values(
+        items.map(item => ({
           id: nanoid(),
           orderId: id,
           productId: item.productId,
           productName: item.productName,
           quantity: item.quantity,
           createdAt: now,
-        })
-      }
+        }))
+      )
     }
-
-    return NextResponse.json({
-      success: true,
-    })
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Unauthorized')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-    }
-    console.error('Update order error:', error)
-    return NextResponse.json(
-      { error: 'Failed to update order' },
-      { status: 500 }
-    )
   }
-}
+
+  return NextResponse.json({
+    success: true,
+  })
+})
 
 /**
  * DELETE /api/businesses/[businessId]/orders/[id]
  *
  * Delete an order and its items.
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: RouteParams
-) {
-  try {
-    const { businessId, id } = await params
-    const access = await requireBusinessAccess(businessId)
-
-    // Verify order exists and belongs to business
-    const [existingOrder] = await db
-      .select()
-      .from(orders)
-      .where(
-        and(
-          eq(orders.id, id),
-          eq(orders.businessId, access.businessId)
-        )
-      )
-      .limit(1)
-
-    if (!existingOrder) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      )
-    }
-
-    // Delete order (cascade will delete items)
-    await db.delete(orders).where(eq(orders.id, id))
-
-    return NextResponse.json({
-      success: true,
-    })
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Unauthorized')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-    }
-    console.error('Delete order error:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete order' },
-      { status: 500 }
-    )
+export const DELETE = withBusinessAuth(async (request, access, routeParams) => {
+  const id = routeParams?.id
+  if (!id) {
+    return HttpResponse.badRequest('Order ID is required')
   }
-}
+
+  // Verify order exists and belongs to business
+  const [existingOrder] = await db
+    .select()
+    .from(orders)
+    .where(
+      and(
+        eq(orders.id, id),
+        eq(orders.businessId, access.businessId)
+      )
+    )
+    .limit(1)
+
+  if (!existingOrder) {
+    return HttpResponse.notFound('Order not found')
+  }
+
+  // Delete order (cascade will delete items)
+  await db.delete(orders).where(eq(orders.id, id))
+
+  return NextResponse.json({
+    success: true,
+  })
+})

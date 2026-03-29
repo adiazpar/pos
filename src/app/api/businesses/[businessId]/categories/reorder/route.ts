@@ -1,14 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db, productCategories } from '@/db'
 import { eq, and, inArray } from 'drizzle-orm'
 import { z } from 'zod'
-import { requireBusinessAccess, canManageBusiness } from '@/lib/business-auth'
-
-interface RouteParams {
-  params: Promise<{
-    businessId: string
-  }>
-}
+import { canManageBusiness } from '@/lib/business-auth'
+import { withBusinessAuth, validationError, HttpResponse } from '@/lib/api-middleware'
 
 const reorderSchema = z.object({
   categoryIds: z.array(z.string()).min(1, 'At least one category is required'),
@@ -20,72 +15,49 @@ const reorderSchema = z.object({
  * Update the sort order of categories.
  * The order in the array determines the new sort order.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: RouteParams
-) {
-  try {
-    const { businessId } = await params
-    const access = await requireBusinessAccess(businessId)
-
-    // Only partners and owners can reorder categories
-    if (!canManageBusiness(access.role)) {
-      return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
-    }
-
-    const body = await request.json()
-    const validation = reorderSchema.safeParse(body)
-
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: validation.error.errors[0].message },
-        { status: 400 }
-      )
-    }
-
-    const { categoryIds } = validation.data
-
-    // Verify all categories belong to this business
-    const existingCategories = await db
-      .select({ id: productCategories.id })
-      .from(productCategories)
-      .where(and(
-        inArray(productCategories.id, categoryIds),
-        eq(productCategories.businessId, access.businessId)
-      ))
-
-    if (existingCategories.length !== categoryIds.length) {
-      return NextResponse.json(
-        { error: 'Some categories not found or do not belong to this business' },
-        { status: 400 }
-      )
-    }
-
-    // Update sort order for each category
-    const now = new Date()
-    await Promise.all(
-      categoryIds.map((id, index) =>
-        db
-          .update(productCategories)
-          .set({
-            sortOrder: index + 1,
-            updatedAt: now,
-          })
-          .where(eq(productCategories.id, id))
-      )
-    )
-
-    return NextResponse.json({
-      success: true,
-    })
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Unauthorized')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-    }
-    console.error('Reorder categories error:', error)
-    return NextResponse.json(
-      { error: 'Failed to reorder categories' },
-      { status: 500 }
-    )
+export const POST = withBusinessAuth(async (request, access) => {
+  // Only partners and owners can reorder categories
+  if (!canManageBusiness(access.role)) {
+    return HttpResponse.forbidden()
   }
-}
+
+  const body = await request.json()
+  const validation = reorderSchema.safeParse(body)
+
+  if (!validation.success) {
+    return validationError(validation)
+  }
+
+  const { categoryIds } = validation.data
+
+  // Verify all categories belong to this business
+  const existingCategories = await db
+    .select({ id: productCategories.id })
+    .from(productCategories)
+    .where(and(
+      inArray(productCategories.id, categoryIds),
+      eq(productCategories.businessId, access.businessId)
+    ))
+
+  if (existingCategories.length !== categoryIds.length) {
+    return HttpResponse.badRequest('Some categories not found or do not belong to this business')
+  }
+
+  // Update sort order for each category
+  const now = new Date()
+  await Promise.all(
+    categoryIds.map((id, index) =>
+      db
+        .update(productCategories)
+        .set({
+          sortOrder: index + 1,
+          updatedAt: now,
+        })
+        .where(eq(productCategories.id, id))
+    )
+  )
+
+  return NextResponse.json({
+    success: true,
+  })
+})
