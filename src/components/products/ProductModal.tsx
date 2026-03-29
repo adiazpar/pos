@@ -3,23 +3,18 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import Image from 'next/image'
 import { Trash2, ImageIcon, ArrowUp, ArrowDown, Pencil, SlidersHorizontal, Focus } from 'lucide-react'
-import { Spinner, Modal, useMorphingModal, StockStepper } from '@/components/ui'
+import { Spinner, Modal, useMorphingModal, StockStepper, DeleteConfirmationStep } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
-import { getProductIconUrl } from '@/lib/utils'
-import type { Product, ProductCategory } from '@/types'
-import type { PipelineStep } from '@/hooks'
+import { useProductForm, useProductFormValidation } from '@/contexts/product-form-context'
+import type { ProductCategory } from '@/types'
 
 // ============================================
 // AI PIPELINE NAVIGATOR
 // ============================================
 
-interface AiPipelineNavigatorProps {
-  pipelineStep: PipelineStep
-  isCompressing: boolean
-}
-
 /** Navigator for AI flow - watches pipeline state and handles step transitions */
-function AiPipelineNavigator({ pipelineStep, isCompressing }: AiPipelineNavigatorProps) {
+function AiPipelineNavigator() {
+  const { pipelineStep, isCompressing } = useProductForm()
   const { goToStep, currentStep } = useMorphingModal()
   const goToStepRef = useRef(goToStep)
 
@@ -46,7 +41,24 @@ function AiPipelineNavigator({ pipelineStep, isCompressing }: AiPipelineNavigato
 }
 
 // ============================================
-// PROPS INTERFACE
+// TYPES
+// ============================================
+
+export interface ProductFormData {
+  name: string
+  price: string
+  categoryId: string
+  active: boolean
+  generatedIconBlob: Blob | null
+}
+
+export interface StockAdjustmentData {
+  productId: string
+  newStockValue: number
+}
+
+// ============================================
+// PROPS INTERFACE (Reduced from 35+ to 11)
 // ============================================
 
 export interface ProductModalProps {
@@ -55,52 +67,16 @@ export interface ProductModalProps {
   onClose: () => void
   onExitComplete: () => void
 
-  // Categories
+  // Data from page
   categories: ProductCategory[]
-  defaultCategoryId?: string | null
 
-  // Form state
-  name: string
-  onNameChange: (name: string) => void
-  price: string
-  onPriceChange: (price: string) => void
-  categoryId: string
-  onCategoryIdChange: (categoryId: string) => void
-  active: boolean
-  onActiveChange: (active: boolean) => void
-  iconPreview: string | null
-  onClearIcon: () => void
-
-  // Editing state
-  editingProduct: Product | null
-
-  // Stock adjustment
-  newStockValue: number
-  onNewStockValueChange: (value: number) => void
-  onSaveAdjustment: () => Promise<void>
-  isAdjusting: boolean
-
-  // Operation states
-  isSaving: boolean
-  isDeleting: boolean
-  error: string
-
-  // Success states
-  productSaved: boolean
-  productDeleted: boolean
-
-  // AI Pipeline
-  pipelineStep: PipelineStep
-  isCompressing: boolean
-  aiProcessing: boolean
+  // Handlers receive data from context, letting page stay decoupled
+  onSubmit: (data: ProductFormData, editingProductId: string | null) => Promise<boolean>
+  onDelete: (productId: string) => Promise<boolean>
+  onSaveAdjustment: (data: StockAdjustmentData) => Promise<void>
   onAbortAiProcessing: () => void
   onPipelineReset: () => void
-  cameraInputRef: React.MutableRefObject<HTMLInputElement | null>
   onAiPhotoCapture: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
-
-  // Handlers
-  onSubmit: () => Promise<boolean>
-  onDelete: () => Promise<boolean>
 
   // Permissions
   canDelete: boolean
@@ -111,16 +87,19 @@ export interface ProductModalProps {
 // ============================================
 
 interface SaveProductButtonProps {
-  onSubmit: () => Promise<boolean>
-  isSaving: boolean
-  disabled: boolean
+  onSubmit: (data: ProductFormData, editingProductId: string | null) => Promise<boolean>
 }
 
-function SaveProductButton({ onSubmit, isSaving, disabled }: SaveProductButtonProps) {
+function SaveProductButton({ onSubmit }: SaveProductButtonProps) {
+  const { name, price, categoryId, active, generatedIconBlob, editingProduct, isSaving } = useProductForm()
+  const { isFormValid, hasChanges } = useProductFormValidation()
   const { goToStep } = useMorphingModal()
 
   const handleClick = async () => {
-    const success = await onSubmit()
+    const success = await onSubmit(
+      { name, price, categoryId, active, generatedIconBlob },
+      editingProduct?.id || null
+    )
     if (success) {
       goToStep(7) // Go to save success step
     }
@@ -131,36 +110,9 @@ function SaveProductButton({ onSubmit, isSaving, disabled }: SaveProductButtonPr
       type="button"
       onClick={handleClick}
       className="btn btn-primary flex-1"
-      disabled={disabled}
+      disabled={isSaving || !isFormValid || !hasChanges}
     >
       {isSaving ? <Spinner /> : 'Save'}
-    </button>
-  )
-}
-
-interface ConfirmDeleteProductButtonProps {
-  onDelete: () => Promise<boolean>
-  isDeleting: boolean
-}
-
-function ConfirmDeleteProductButton({ onDelete, isDeleting }: ConfirmDeleteProductButtonProps) {
-  const { goToStep } = useMorphingModal()
-
-  const handleClick = async () => {
-    const success = await onDelete()
-    if (success) {
-      goToStep(6) // Go to delete success step
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="btn btn-danger flex-1"
-      disabled={isDeleting}
-    >
-      {isDeleting ? <Spinner /> : 'Delete'}
     </button>
   )
 }
@@ -174,47 +126,49 @@ export function ProductModal({
   onClose,
   onExitComplete,
   categories,
-  defaultCategoryId: _defaultCategoryId,
-  name,
-  onNameChange,
-  price,
-  onPriceChange,
-  categoryId,
-  onCategoryIdChange,
-  active,
-  onActiveChange,
-  iconPreview,
-  onClearIcon,
-  editingProduct,
-  newStockValue,
-  onNewStockValueChange,
-  onSaveAdjustment,
-  isAdjusting,
-  isSaving,
-  isDeleting,
-  error,
-  productSaved,
-  productDeleted,
-  pipelineStep,
-  isCompressing,
-  aiProcessing,
-  onAbortAiProcessing,
-  onPipelineReset,
-  cameraInputRef,
-  onAiPhotoCapture,
   onSubmit,
   onDelete,
+  onSaveAdjustment,
+  onAbortAiProcessing,
+  onPipelineReset,
+  onAiPhotoCapture,
   canDelete,
 }: ProductModalProps) {
-  const isFormValid = name.trim() && price && parseFloat(price) >= 0
+  // Get all form state from context
+  const {
+    name,
+    setName,
+    price,
+    setPrice,
+    categoryId,
+    setCategoryId,
+    active,
+    setActive,
+    iconPreview,
+    clearIcon,
+    editingProduct,
+    newStockValue,
+    setNewStockValue,
+    isAdjusting,
+    isSaving,
+    isDeleting,
+    error,
+    productSaved,
+    productDeleted,
+    aiProcessing,
+    cameraInputRef,
+  } = useProductForm()
 
-  // Check if form has changes from the original product (for edit mode)
-  const hasChanges = !editingProduct || (
-    name.trim() !== editingProduct.name ||
-    parseFloat(price) !== editingProduct.price ||
-    (categoryId || null) !== (editingProduct.categoryId || null) ||
-    active !== (editingProduct.active ?? true)
-  )
+  // Wrap handlers to pass context data to page handlers
+  const handleDelete = async (): Promise<boolean> => {
+    if (!editingProduct) return false
+    return onDelete(editingProduct.id)
+  }
+
+  const handleSaveAdjustment = async (): Promise<void> => {
+    if (!editingProduct) return
+    return onSaveAdjustment({ productId: editingProduct.id, newStockValue })
+  }
 
   return (
     <Modal
@@ -227,7 +181,7 @@ export function ProductModal({
       {/* Step 0: Mode Selection (only for new products) */}
       <Modal.Step title="Add product">
         {/* AI Navigation Helper - handles step transitions for AI flow */}
-        <AiPipelineNavigator pipelineStep={pipelineStep} isCompressing={isCompressing} />
+        <AiPipelineNavigator />
 
         <Modal.Item>
           <div className="caja-actions caja-actions--stacked">
@@ -302,7 +256,7 @@ export function ProductModal({
               </div>
               <button
                 type="button"
-                onClick={onClearIcon}
+                onClick={clearIcon}
                 className="btn btn-secondary btn-sm"
               >
                 Delete
@@ -318,7 +272,7 @@ export function ProductModal({
             id="name"
             type="text"
             value={name}
-            onChange={e => onNameChange(e.target.value)}
+            onChange={e => setName(e.target.value)}
             className="input"
             placeholder="E.g.: Large Chips"
             autoComplete="off"
@@ -338,7 +292,7 @@ export function ProductModal({
                   step="0.01"
                   min="0"
                   value={price}
-                  onChange={e => onPriceChange(e.target.value)}
+                  onChange={e => setPrice(e.target.value)}
                   className="input"
                   placeholder="0.00"
                 />
@@ -348,7 +302,7 @@ export function ProductModal({
                     className="input-number-spinner"
                     onClick={() => {
                       const current = parseFloat(price) || 0
-                      onPriceChange((current + 1).toFixed(2))
+                      setPrice((current + 1).toFixed(2))
                     }}
                     tabIndex={-1}
                     aria-label="Increase price"
@@ -360,7 +314,7 @@ export function ProductModal({
                     className="input-number-spinner"
                     onClick={() => {
                       const current = parseFloat(price) || 0
-                      onPriceChange(Math.max(0, current - 1).toFixed(2))
+                      setPrice(Math.max(0, current - 1).toFixed(2))
                     }}
                     tabIndex={-1}
                     aria-label="Decrease price"
@@ -375,7 +329,7 @@ export function ProductModal({
               <select
                 id="category"
                 value={categoryId}
-                onChange={e => onCategoryIdChange(e.target.value)}
+                onChange={e => setCategoryId(e.target.value)}
                 className={`input ${categoryId === '' ? 'select-placeholder' : ''}`}
               >
                 <option value="">N/A</option>
@@ -403,7 +357,7 @@ export function ProductModal({
             <input
               type="checkbox"
               checked={active}
-              onChange={e => onActiveChange(e.target.checked)}
+              onChange={e => setActive(e.target.checked)}
               className="toggle"
             />
           </div>
@@ -422,7 +376,7 @@ export function ProductModal({
               </Modal.GoToStepButton>
             </>
           )}
-          <SaveProductButton onSubmit={onSubmit} isSaving={isSaving} disabled={isSaving || !isFormValid || !hasChanges} />
+          <SaveProductButton onSubmit={onSubmit} />
         </Modal.Footer>
       </Modal.Step>
 
@@ -478,7 +432,7 @@ export function ProductModal({
             id="ai-name"
             type="text"
             value={name}
-            onChange={e => onNameChange(e.target.value)}
+            onChange={e => setName(e.target.value)}
             className="input"
             placeholder="E.g.: Large Chips"
             autoComplete="off"
@@ -499,7 +453,7 @@ export function ProductModal({
                   step="0.01"
                   min="0"
                   value={price}
-                  onChange={e => onPriceChange(e.target.value)}
+                  onChange={e => setPrice(e.target.value)}
                   className="input"
                   placeholder="0.00"
                 />
@@ -509,7 +463,7 @@ export function ProductModal({
                     className="input-number-spinner"
                     onClick={() => {
                       const current = parseFloat(price) || 0
-                      onPriceChange((current + 1).toFixed(2))
+                      setPrice((current + 1).toFixed(2))
                     }}
                     tabIndex={-1}
                     aria-label="Increase price"
@@ -521,7 +475,7 @@ export function ProductModal({
                     className="input-number-spinner"
                     onClick={() => {
                       const current = parseFloat(price) || 0
-                      onPriceChange(Math.max(0, current - 1).toFixed(2))
+                      setPrice(Math.max(0, current - 1).toFixed(2))
                     }}
                     tabIndex={-1}
                     aria-label="Decrease price"
@@ -538,7 +492,7 @@ export function ProductModal({
               <select
                 id="ai-category"
                 value={categoryId}
-                onChange={e => onCategoryIdChange(e.target.value)}
+                onChange={e => setCategoryId(e.target.value)}
                 className={`input ${categoryId === '' ? 'select-placeholder' : ''}`}
               >
                 <option value="">N/A</option>
@@ -558,14 +512,14 @@ export function ProductModal({
           <Modal.BackButton
             onClick={() => {
               onPipelineReset()
-              onNameChange('')
-              onPriceChange('')
+              setName('')
+              setPrice('')
             }}
             disabled={isSaving || aiProcessing}
           >
             Back
           </Modal.BackButton>
-          <SaveProductButton onSubmit={onSubmit} isSaving={isSaving} disabled={isSaving || !isFormValid || !hasChanges} />
+          <SaveProductButton onSubmit={onSubmit} />
         </Modal.Footer>
       </Modal.Step>
 
@@ -577,7 +531,7 @@ export function ProductModal({
               <div className="w-56 h-56 rounded-3xl overflow-hidden flex items-center justify-center">
                 {editingProduct.icon ? (
                   <Image
-                    src={getProductIconUrl(editingProduct)!}
+                    src={iconPreview!}
                     alt={editingProduct.name}
                     width={224}
                     height={224}
@@ -604,7 +558,7 @@ export function ProductModal({
         <Modal.Item>
           <StockStepper
             value={newStockValue}
-            onChange={onNewStockValueChange}
+            onChange={setNewStockValue}
           />
         </Modal.Item>
 
@@ -614,7 +568,7 @@ export function ProductModal({
           </Modal.CancelBackButton>
           <button
             type="button"
-            onClick={onSaveAdjustment}
+            onClick={handleSaveAdjustment}
             className="btn btn-primary flex-1"
             disabled={isAdjusting || newStockValue === (editingProduct?.stock ?? 0)}
           >
@@ -624,20 +578,14 @@ export function ProductModal({
       </Modal.Step>
 
       {/* Step 5: Delete confirmation */}
-      <Modal.Step title="Delete product" backStep={1}>
-        <Modal.Item>
-          <p className="text-text-secondary">
-            Are you sure you want to delete <strong>{editingProduct?.name}</strong>? This action cannot be undone.
-          </p>
-        </Modal.Item>
-
-        <Modal.Footer>
-          <Modal.GoToStepButton step={1} className="btn btn-secondary flex-1" disabled={isDeleting}>
-            Cancel
-          </Modal.GoToStepButton>
-          <ConfirmDeleteProductButton onDelete={onDelete} isDeleting={isDeleting} />
-        </Modal.Footer>
-      </Modal.Step>
+      <DeleteConfirmationStep
+        title="Delete product"
+        itemName={editingProduct?.name || ''}
+        cancelStep={1}
+        onConfirm={handleDelete}
+        successStep={6}
+        isDeleting={isDeleting}
+      />
 
       {/* Step 6: Delete success */}
       <Modal.Step title="Product deleted" hideBackButton>

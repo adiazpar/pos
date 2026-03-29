@@ -13,7 +13,11 @@ import {
   ProductSettingsModal,
   NewOrderModal,
   OrderDetailModal,
+  type ProductFormData,
+  type StockAdjustmentData,
 } from '@/components/products'
+import { ProductFormProvider, useProductForm } from '@/contexts/product-form-context'
+import type { PipelineStep } from '@/hooks'
 import {
   type PageTab,
   type ExpandedOrder,
@@ -23,7 +27,7 @@ import {
 } from '@/lib/products'
 import { getProductIconUrl, formatDate } from '@/lib/utils'
 import { useAiProductPipeline, useImageCompression } from '@/hooks'
-import type { Product, Provider, SortPreference } from '@/types'
+import type { Product, Provider, SortPreference, ProductCategory } from '@/types'
 
 // ============================================
 // SESSION CACHE
@@ -32,6 +36,121 @@ import type { Product, Provider, SortPreference } from '@/types'
 const productsCache = createSessionCache<Product[]>(CACHE_KEYS.PRODUCTS)
 const providersCache = createSessionCache<Provider[]>(CACHE_KEYS.PROVIDERS)
 const ordersCache = createSessionCache<ExpandedOrder[]>(CACHE_KEYS.ORDERS)
+
+// ============================================
+// PRODUCT MODAL WRAPPER
+// Syncs pipeline state to context and populates form on edit
+// ============================================
+
+interface ProductModalWrapperProps {
+  isOpen: boolean
+  onClose: () => void
+  categories: ProductCategory[]
+  editingProduct: Product | null
+  pipelineState: {
+    step: PipelineStep
+    result?: { name: string; iconPreview: string; iconBlob: Blob } | null
+    error?: string | null
+  }
+  isCompressing: boolean
+  onSubmit: (data: ProductFormData, editingProductId: string | null) => Promise<boolean>
+  onDelete: (productId: string) => Promise<boolean>
+  onSaveAdjustment: (data: StockAdjustmentData) => Promise<void>
+  onAbortAiProcessing: () => void
+  onPipelineReset: () => void
+  onAiPhotoCapture: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
+  canDelete: boolean
+  defaultCategoryId?: string | null
+}
+
+function ProductModalWrapper({
+  isOpen,
+  onClose,
+  categories,
+  editingProduct,
+  pipelineState,
+  isCompressing,
+  onSubmit,
+  onDelete,
+  onSaveAdjustment,
+  onAbortAiProcessing,
+  onPipelineReset,
+  onAiPhotoCapture,
+  canDelete,
+  defaultCategoryId,
+}: ProductModalWrapperProps) {
+  const {
+    setPipelineStep,
+    setIsCompressing,
+    setName,
+    setIconPreview,
+    setGeneratedIconBlob,
+    setError,
+    populateFromProduct,
+    resetForm,
+  } = useProductForm()
+
+  // Sync pipeline step to context
+  useEffect(() => {
+    setPipelineStep(pipelineState.step)
+  }, [pipelineState.step, setPipelineStep])
+
+  // Sync compression state to context
+  useEffect(() => {
+    setIsCompressing(isCompressing)
+  }, [isCompressing, setIsCompressing])
+
+  // Sync pipeline results to form state
+  useEffect(() => {
+    if (pipelineState.step === 'complete' && pipelineState.result) {
+      const result = pipelineState.result
+      setName(result.name)
+      setIconPreview(result.iconPreview)
+      setGeneratedIconBlob(result.iconBlob)
+    }
+  }, [pipelineState.step, pipelineState.result, setName, setIconPreview, setGeneratedIconBlob])
+
+  // Show pipeline errors
+  useEffect(() => {
+    if (pipelineState.step === 'error' && pipelineState.error) {
+      setError(pipelineState.error)
+    }
+  }, [pipelineState.step, pipelineState.error, setError])
+
+  // Populate form when editing, reset when adding new
+  const prevEditingRef = useRef<Product | null>(null)
+  useEffect(() => {
+    if (!isOpen) return
+
+    if (editingProduct && editingProduct !== prevEditingRef.current) {
+      populateFromProduct(editingProduct, getProductIconUrl)
+    } else if (!editingProduct && prevEditingRef.current !== null) {
+      resetForm(defaultCategoryId)
+    }
+    prevEditingRef.current = editingProduct
+  }, [isOpen, editingProduct, populateFromProduct, resetForm, defaultCategoryId])
+
+  // Reset form on modal exit
+  const handleExitComplete = useCallback(() => {
+    resetForm(defaultCategoryId)
+  }, [resetForm, defaultCategoryId])
+
+  return (
+    <ProductModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onExitComplete={handleExitComplete}
+      categories={categories}
+      onSubmit={onSubmit}
+      onDelete={onDelete}
+      onSaveAdjustment={onSaveAdjustment}
+      onAbortAiProcessing={onAbortAiProcessing}
+      onPipelineReset={onPipelineReset}
+      onAiPhotoCapture={onAiPhotoCapture}
+      canDelete={canDelete}
+    />
+  )
+}
 
 export default function ProductosPage() {
   const { user } = useAuth()
@@ -119,31 +238,10 @@ export default function ProductosPage() {
 
   // Product modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
-  // Product form state
-  const [name, setName] = useState('')
-  const [price, setPrice] = useState('')
-  const [categoryId, setCategoryId] = useState('')
-  const [active, setActive] = useState(true)
-  const [iconPreview, setIconPreview] = useState<string | null>(null)
-  const [generatedIconBlob, setGeneratedIconBlob] = useState<Blob | null>(null)
-
-  // Product operation states
-  const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [productSaved, setProductSaved] = useState(false)
-  const [productDeleted, setProductDeleted] = useState(false)
-
-  // Stock adjustment
-  const [newStockValue, setNewStockValue] = useState(0)
-  const [isAdjusting, setIsAdjusting] = useState(false)
-
-  // AI Pipeline
+  // AI Pipeline (needed by page for photo capture handler)
   const pipeline = useAiProductPipeline()
   const compression = useImageCompression()
-  const cameraInputRef = useRef<HTMLInputElement | null>(null)
-  const aiProcessing = pipeline.state.step !== 'idle' && pipeline.state.step !== 'complete' && pipeline.state.step !== 'error'
 
   // Order modal states
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
@@ -260,22 +358,8 @@ export default function ProductosPage() {
     return () => { cancelled = true }
   }, [activeTab, businessId, ordersLoaded, setOrders])
 
-  // Sync pipeline results
-  useEffect(() => {
-    if (pipeline.state.step === 'complete' && pipeline.state.result) {
-      const result = pipeline.state.result
-      setName(result.name)
-      setIconPreview(result.iconPreview)
-      setGeneratedIconBlob(result.iconBlob)
-    }
-  }, [pipeline.state.step, pipeline.state.result])
-
-  // Show pipeline errors
-  useEffect(() => {
-    if (pipeline.state.step === 'error' && pipeline.state.error) {
-      setError(pipeline.state.error)
-    }
-  }, [pipeline.state.step, pipeline.state.error])
+  // Track which product is being edited (for passing to modal wrapper)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   // Filtered products for order selection
   const orderFilteredProducts = useMemo(() => {
@@ -304,207 +388,139 @@ export default function ProductosPage() {
     return result
   }, [orders, orderStatusFilter, orderSearchQuery])
 
-  // Product handlers
-  const resetProductForm = useCallback(() => {
-    setName('')
-    setPrice('')
-    // Use default category if one is set
-    setCategoryId(settings?.defaultCategoryId || '')
-    setActive(true)
-    setIconPreview(null)
-    setGeneratedIconBlob(null)
-    setEditingProduct(null)
-    setError('')
-    setProductDeleted(false)
-    setProductSaved(false)
-    if (pipeline.state.step !== 'idle') {
-      pipeline.reset()
+  // Product handlers - now receive data from modal context
+  const handleSubmitProduct = useCallback(async (
+    formData: ProductFormData,
+    editingProductId: string | null
+  ): Promise<boolean> => {
+    if (!formData.name.trim()) {
+      return false
     }
-    if (compression.state.isProcessing) {
-      compression.cancel()
-    }
-  }, [pipeline, compression, settings?.defaultCategoryId])
 
-  const abortAiProcessing = useCallback(() => {
+    const priceNum = parseFloat(formData.price)
+    if (isNaN(priceNum) || priceNum < 0) {
+      return false
+    }
+
+    try {
+      const data = new FormData()
+      data.append('name', formData.name.trim())
+      data.append('price', priceNum.toString())
+      if (formData.categoryId) data.append('categoryId', formData.categoryId)
+      data.append('active', formData.active.toString())
+      if (formData.generatedIconBlob) {
+        data.append('icon', formData.generatedIconBlob, 'icon.png')
+      }
+
+      const url = editingProductId
+        ? `/api/businesses/${businessId}/products/${editingProductId}`
+        : `/api/businesses/${businessId}/products`
+      const method = editingProductId ? 'PATCH' : 'POST'
+
+      const response = await fetch(url, { method, body: data })
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        return false
+      }
+
+      const record: Product = result.product
+      if (editingProductId) {
+        setProducts(prev => prev.map(p => p.id === record.id ? record : p))
+      } else {
+        setProducts(prev => [...prev, record].sort((a, b) => a.name.localeCompare(b.name)))
+      }
+
+      return true
+    } catch (err) {
+      console.error('Error saving product:', err)
+      return false
+    }
+  }, [businessId, setProducts])
+
+  const handleDeleteProduct = useCallback(async (productId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/businesses/${businessId}/products/${productId}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        return false
+      }
+
+      setProducts(prev => prev.filter(p => p.id !== productId))
+      return true
+    } catch (err) {
+      console.error('Error deleting product:', err)
+      return false
+    }
+  }, [businessId, setProducts])
+
+  const handleSaveAdjustment = useCallback(async (data: StockAdjustmentData) => {
+    try {
+      const response = await fetch(`/api/businesses/${businessId}/products/${data.productId}/stock`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stock: data.newStockValue }),
+      })
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        return
+      }
+
+      setProducts(prev => prev.map(p => p.id === data.productId ? { ...p, stock: data.newStockValue } : p))
+      setIsModalOpen(false)
+    } catch (err) {
+      console.error('Error adjusting stock:', err)
+    }
+  }, [businessId, setProducts])
+
+  const handleCloseModal = useCallback(() => {
     if (pipeline.state.step !== 'idle') {
       pipeline.cancel()
     }
     if (compression.state.isProcessing) {
       compression.cancel()
     }
-    setIconPreview(null)
-    setGeneratedIconBlob(null)
-    setName('')
-    setPrice('')
-    setCategoryId(settings?.defaultCategoryId || '')
-    setActive(true)
-    setError('')
-  }, [pipeline, compression, settings?.defaultCategoryId])
+    setIsModalOpen(false)
+  }, [pipeline, compression])
 
   const handleOpenAdd = useCallback(() => {
-    resetProductForm()
-    setIsModalOpen(true)
-  }, [resetProductForm])
-
-  const handleOpenEdit = useCallback((product: Product) => {
-    setEditingProduct(product)
-    setName(product.name)
-    setPrice(product.price.toString())
-    setCategoryId(product.categoryId || '')
-    setActive(product.active ?? true)
-    setIconPreview(getProductIconUrl(product))
-    setGeneratedIconBlob(null)
     if (pipeline.state.step !== 'idle') {
       pipeline.reset()
     }
     if (compression.state.isProcessing) {
       compression.cancel()
     }
-    setNewStockValue(product.stock ?? 0)
-    setError('')
+    setEditingProduct(null)
     setIsModalOpen(true)
   }, [pipeline, compression])
 
-  const handleCloseModal = useCallback(() => {
-    abortAiProcessing()
-    setIsModalOpen(false)
-  }, [abortAiProcessing])
+  const handleOpenEdit = useCallback((product: Product) => {
+    if (pipeline.state.step !== 'idle') {
+      pipeline.reset()
+    }
+    if (compression.state.isProcessing) {
+      compression.cancel()
+    }
+    setEditingProduct(product)
+    setIsModalOpen(true)
+  }, [pipeline, compression])
 
   const handleAiPhotoCapture = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setError('')
     const compressedBase64 = await compression.compressImage(file)
 
-    if (compression.state.error) {
-      setError(compression.state.error)
+    if (compression.state.error || !compressedBase64) {
       return
     }
 
-    if (!compressedBase64) return
     await pipeline.startPipeline(compressedBase64)
   }, [compression, pipeline])
-
-  const handleSubmitProduct = useCallback(async (): Promise<boolean> => {
-    if (!name.trim()) {
-      setError('Name is required')
-      return false
-    }
-
-    const priceNum = parseFloat(price)
-    if (isNaN(priceNum) || priceNum < 0) {
-      setError('Enter a valid price')
-      return false
-    }
-
-    setIsSaving(true)
-    setError('')
-
-    try {
-      const formData = new FormData()
-      formData.append('name', name.trim())
-      formData.append('price', priceNum.toString())
-      if (categoryId) formData.append('categoryId', categoryId)
-      formData.append('active', active.toString())
-      if (generatedIconBlob) {
-        formData.append('icon', generatedIconBlob, 'icon.png')
-      }
-
-      const url = editingProduct
-        ? `/api/businesses/${businessId}/products/${editingProduct.id}`
-        : `/api/businesses/${businessId}/products`
-      const method = editingProduct ? 'PATCH' : 'POST'
-
-      const response = await fetch(url, { method, body: formData })
-      const data = await response.json()
-
-      if (!response.ok || !data.success) {
-        setError(data.error || 'Failed to save product')
-        return false
-      }
-
-      const record: Product = data.product
-      if (editingProduct) {
-        setProducts(prev => prev.map(p => p.id === record.id ? record : p))
-      } else {
-        setProducts(prev => [...prev, record].sort((a, b) => a.name.localeCompare(b.name)))
-      }
-
-      setProductSaved(true)
-      return true
-    } catch (err) {
-      console.error('Error saving product:', err)
-      setError('Failed to save product')
-      return false
-    } finally {
-      setIsSaving(false)
-    }
-  }, [businessId, name, price, categoryId, active, generatedIconBlob, editingProduct, setProducts])
-
-  const handleDeleteProduct = useCallback(async (): Promise<boolean> => {
-    if (!editingProduct) return false
-
-    setIsDeleting(true)
-    setError('')
-
-    try {
-      const response = await fetch(`/api/businesses/${businessId}/products/${editingProduct.id}`, {
-        method: 'DELETE',
-      })
-      const data = await response.json()
-
-      if (!response.ok || !data.success) {
-        setError(data.error || 'Failed to delete product')
-        return false
-      }
-
-      setProducts(prev => prev.filter(p => p.id !== editingProduct.id))
-      setProductDeleted(true)
-      return true
-    } catch (err) {
-      console.error('Error deleting product:', err)
-      setError('Failed to delete product')
-      return false
-    } finally {
-      setIsDeleting(false)
-    }
-  }, [businessId, editingProduct, setProducts])
-
-  const handleSaveAdjustment = useCallback(async () => {
-    if (!editingProduct) return
-
-    const currentStock = editingProduct.stock ?? 0
-    if (newStockValue === currentStock) {
-      handleCloseModal()
-      return
-    }
-
-    setIsAdjusting(true)
-    setError('')
-
-    try {
-      const response = await fetch(`/api/businesses/${businessId}/products/${editingProduct.id}/stock`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stock: newStockValue }),
-      })
-      const data = await response.json()
-
-      if (!response.ok || !data.success) {
-        setError(data.error || 'Failed to adjust inventory')
-        return
-      }
-
-      setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, stock: newStockValue } : p))
-      handleCloseModal()
-    } catch (err) {
-      console.error('Error adjusting stock:', err)
-      setError('Failed to adjust inventory')
-    } finally {
-      setIsAdjusting(false)
-    }
-  }, [businessId, editingProduct, newStockValue, handleCloseModal, setProducts])
 
   // Order handlers
   const resetOrderForm = useCallback(() => {
@@ -845,47 +861,28 @@ export default function ProductosPage() {
         )}
       </main>
 
-      {/* Product Modal */}
-      <ProductModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onExitComplete={resetProductForm}
-        categories={categories}
-        defaultCategoryId={settings?.defaultCategoryId}
-        name={name}
-        onNameChange={setName}
-        price={price}
-        onPriceChange={setPrice}
-        categoryId={categoryId}
-        onCategoryIdChange={setCategoryId}
-        active={active}
-        onActiveChange={setActive}
-        iconPreview={iconPreview}
-        onClearIcon={() => {
-          setIconPreview(null)
-          setGeneratedIconBlob(null)
-        }}
-        editingProduct={editingProduct}
-        newStockValue={newStockValue}
-        onNewStockValueChange={setNewStockValue}
-        onSaveAdjustment={handleSaveAdjustment}
-        isAdjusting={isAdjusting}
-        isSaving={isSaving}
-        isDeleting={isDeleting}
-        error={error}
-        productSaved={productSaved}
-        productDeleted={productDeleted}
-        pipelineStep={pipeline.state.step}
-        isCompressing={compression.state.isProcessing}
-        aiProcessing={aiProcessing}
-        onAbortAiProcessing={abortAiProcessing}
-        onPipelineReset={() => pipeline.reset()}
-        cameraInputRef={cameraInputRef}
-        onAiPhotoCapture={handleAiPhotoCapture}
-        onSubmit={handleSubmitProduct}
-        onDelete={handleDeleteProduct}
-        canDelete={canDelete}
-      />
+      {/* Product Modal - wrapped in ProductFormProvider for context-based state */}
+      <ProductFormProvider defaultCategoryId={settings?.defaultCategoryId}>
+        <ProductModalWrapper
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          categories={categories}
+          editingProduct={editingProduct}
+          pipelineState={pipeline.state}
+          isCompressing={compression.state.isProcessing}
+          onSubmit={handleSubmitProduct}
+          onDelete={handleDeleteProduct}
+          onSaveAdjustment={handleSaveAdjustment}
+          onAbortAiProcessing={() => {
+            pipeline.cancel()
+            compression.cancel()
+          }}
+          onPipelineReset={() => pipeline.reset()}
+          onAiPhotoCapture={handleAiPhotoCapture}
+          canDelete={canDelete}
+          defaultCategoryId={settings?.defaultCategoryId}
+        />
+      </ProductFormProvider>
 
       {/* Product Settings Modal */}
       <ProductSettingsModal

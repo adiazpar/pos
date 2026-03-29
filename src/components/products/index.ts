@@ -7,7 +7,7 @@ export { OrdersTab } from './OrdersTab'
 export type { OrdersTabProps } from './OrdersTab'
 
 export { ProductModal } from './ProductModal'
-export type { ProductModalProps } from './ProductModal'
+export type { ProductModalProps, ProductFormData, StockAdjustmentData } from './ProductModal'
 
 export { ProductSettingsModal } from './ProductSettingsModal'
 export type { ProductSettingsModalProps } from './ProductSettingsModal'

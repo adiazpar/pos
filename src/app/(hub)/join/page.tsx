@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Spinner } from '@/components/ui'
 
@@ -13,7 +13,7 @@ import { Spinner } from '@/components/ui'
  * 2. This page redirects to /?code=ABC123
  * 3. Hub layout's JoinBusinessProvider detects the code and opens the modal
  */
-export default function JoinRedirectPage() {
+function JoinRedirectContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -33,5 +33,17 @@ export default function JoinRedirectPage() {
     <main className="page-loading">
       <Spinner className="spinner-lg" />
     </main>
+  )
+}
+
+export default function JoinRedirectPage() {
+  return (
+    <Suspense fallback={
+      <main className="page-loading">
+        <Spinner className="spinner-lg" />
+      </main>
+    }>
+      <JoinRedirectContent />
+    </Suspense>
   )
 }

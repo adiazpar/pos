@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useEffect, useRef, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, ReactNode, Suspense } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { useJoinBusiness, UseJoinBusinessReturn } from '@/hooks'
+import { useJoinBusiness } from '@/hooks'
 import { JoinBusinessModal } from '@/components/join'
 
 interface JoinBusinessContextValue {
@@ -25,13 +25,10 @@ interface JoinBusinessProviderProps {
 }
 
 /**
- * Provider for join business modal functionality.
- * Used in hub layout to allow MobileNav to open the join modal.
- *
- * Also handles QR code deep linking: if URL has ?code=ABC123,
- * automatically opens modal with pre-filled code and validates.
+ * Inner component that handles the actual search params logic.
+ * Must be wrapped in Suspense.
  */
-export function JoinBusinessProvider({ children }: JoinBusinessProviderProps) {
+function JoinBusinessProviderInner({ children }: JoinBusinessProviderProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -77,5 +74,20 @@ export function JoinBusinessProvider({ children }: JoinBusinessProviderProps) {
       {children}
       <JoinBusinessModal joinBusiness={joinBusiness} />
     </JoinBusinessContext.Provider>
+  )
+}
+
+/**
+ * Provider for join business modal functionality.
+ * Used in hub layout to allow MobileNav to open the join modal.
+ *
+ * Also handles QR code deep linking: if URL has ?code=ABC123,
+ * automatically opens modal with pre-filled code and validates.
+ */
+export function JoinBusinessProvider({ children }: JoinBusinessProviderProps) {
+  return (
+    <Suspense fallback={children}>
+      <JoinBusinessProviderInner>{children}</JoinBusinessProviderInner>
+    </Suspense>
   )
 }
