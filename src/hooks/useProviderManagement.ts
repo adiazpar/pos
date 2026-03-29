@@ -78,7 +78,6 @@ export function useProviderManagement({ businessId }: UseProviderManagementOptio
   const canManage = canManageBusiness(role)
 
   // Load providers
-  // TODO: Implement with Drizzle API routes
   useEffect(() => {
     let cancelled = false
 
@@ -157,7 +156,6 @@ export function useProviderManagement({ businessId }: UseProviderManagementOptio
     resetForm()
   }, [resetForm])
 
-  // TODO: Implement with Drizzle API routes
   const handleSubmit = useCallback(async (): Promise<boolean> => {
     if (!name.trim()) {
       setError('Name is required')
@@ -213,7 +211,6 @@ export function useProviderManagement({ businessId }: UseProviderManagementOptio
     }
   }, [businessId, name, phone, email, notes, active, editingProvider])
 
-  // TODO: Implement with Drizzle API routes
   const handleDelete = useCallback(async (): Promise<boolean> => {
     if (!editingProvider) return false
 

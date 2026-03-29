@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { PlusIcon } from '@/components/icons'
-import { UserPlus } from 'lucide-react'
+import { PlusIcon, JoinIcon } from '@/components/icons'
 import { getNavItems, getPrefetchRoutes } from '@/lib/navigation'
 import { useNavbar } from '@/contexts/navbar-context'
 import { useOptionalBusiness } from '@/contexts/business-context'
@@ -90,7 +89,7 @@ export function MobileNav() {
           className="btn btn-secondary flex-1"
           onClick={handleJoinBusiness}
         >
-          <UserPlus className="w-6 h-6" />
+          <JoinIcon size={24} />
           Join
         </button>
       </nav>

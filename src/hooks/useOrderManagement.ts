@@ -149,7 +149,6 @@ export function useOrderManagement({
   }, [onOrdersUpdated])
 
   // Get receipt URL
-  // TODO: Update for new file storage system
   const getOrderReceiptUrl = useCallback((order: ExpandedOrder): string | null => {
     if (!order.receipt) return null
     // When using Drizzle/Turso, receipts will be stored differently
@@ -254,7 +253,6 @@ export function useOrderManagement({
   }, [])
 
   // Save new order
-  // TODO: Implement with Drizzle API routes
   const handleSaveOrder = useCallback(async (): Promise<boolean> => {
     if (orderItems.length === 0) {
       setError('Add at least one product')
@@ -325,7 +323,6 @@ export function useOrderManagement({
   }, [businessId, orderItems, orderTotal, orderNotes, orderEstimatedArrival, orderReceiptFile, orderProvider, updateOrders])
 
   // Save edit order
-  // TODO: Implement with Drizzle API routes
   const handleSaveEditOrder = useCallback(async (): Promise<boolean> => {
     if (!editingOrder) return false
     if (orderItems.length === 0) {
@@ -391,7 +388,6 @@ export function useOrderManagement({
   }, [businessId, orderItems, orderTotal, orderNotes, orderEstimatedArrival, orderReceiptFile, orderProvider, editingOrder, updateOrders])
 
   // Receive order
-  // TODO: Implement with Drizzle API routes
   const handleReceiveOrder = useCallback(async (): Promise<boolean> => {
     if (!viewingOrder || !user) return false
 
@@ -442,7 +438,6 @@ export function useOrderManagement({
   }, [businessId, viewingOrder, user, receivedQuantities, onProductsUpdated, updateOrders])
 
   // Delete order
-  // TODO: Implement with Drizzle API routes
   const handleDeleteOrder = useCallback(async (): Promise<boolean> => {
     if (!viewingOrder) return false
 

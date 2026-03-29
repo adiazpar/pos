@@ -443,7 +443,6 @@ export default function ProductosPage() {
     await pipeline.startPipeline(compressedBase64)
   }, [compression, pipeline])
 
-  // TODO: Implement with Drizzle API routes
   const handleSubmitProduct = useCallback(async (): Promise<boolean> => {
     if (!name.trim()) {
       setError('Name is required')
@@ -500,7 +499,6 @@ export default function ProductosPage() {
     }
   }, [businessId, name, price, categoryId, active, generatedIconBlob, editingProduct, setProducts])
 
-  // TODO: Implement with Drizzle API routes
   const handleDeleteProduct = useCallback(async (): Promise<boolean> => {
     if (!editingProduct) return false
 
@@ -530,7 +528,6 @@ export default function ProductosPage() {
     }
   }, [businessId, editingProduct, setProducts])
 
-  // TODO: Implement with Drizzle API routes
   const handleSaveAdjustment = useCallback(async () => {
     if (!editingProduct) return
 
@@ -598,7 +595,6 @@ export default function ProductosPage() {
     ))
   }, [])
 
-  // TODO: Implement with Drizzle API routes
   const handleSaveOrder = useCallback(async (): Promise<boolean> => {
     if (orderItems.length === 0) {
       setError('Add at least one product')
@@ -659,7 +655,6 @@ export default function ProductosPage() {
     }
   }, [businessId, orderItems, orderTotal, orderNotes, orderEstimatedArrival, orderReceiptFile, orderProvider, setOrders])
 
-  // TODO: Implement with Drizzle API routes
   const handleSaveEditOrder = useCallback(async (): Promise<boolean> => {
     if (!viewingOrder) return false
     if (orderItems.length === 0) {
@@ -721,7 +716,6 @@ export default function ProductosPage() {
     }
   }, [businessId, orderItems, orderTotal, orderNotes, orderEstimatedArrival, orderReceiptFile, orderProvider, viewingOrder, setOrders])
 
-  // TODO: Implement with Drizzle API routes
   const handleReceiveOrder = useCallback(async (): Promise<boolean> => {
     if (!viewingOrder || !user) return false
 
@@ -770,7 +764,6 @@ export default function ProductosPage() {
     }
   }, [businessId, viewingOrder, user, receivedQuantities, setProducts, setOrders])
 
-  // TODO: Implement with Drizzle API routes
   const handleDeleteOrder = useCallback(async (): Promise<boolean> => {
     if (!viewingOrder) return false
 
@@ -827,7 +820,6 @@ export default function ProductosPage() {
     setEditOrderSaved(false)
   }, [])
 
-  // TODO: Update for new file storage system
   const getOrderReceiptUrl = useCallback((order: ExpandedOrder): string | null => {
     if (!order.receipt) return null
     // When using Drizzle/Turso, receipts will be stored differently

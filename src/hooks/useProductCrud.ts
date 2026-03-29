@@ -239,7 +239,6 @@ export function useProductCrud({
   }, [])
 
   // Submit product
-  // TODO: Implement with Drizzle API routes
   const handleSubmit = useCallback(async (): Promise<boolean> => {
     if (!name.trim()) {
       setError('Name is required')
@@ -298,7 +297,6 @@ export function useProductCrud({
   }, [businessId, name, price, categoryId, active, generatedIconBlob, editingProduct, onProductSaved])
 
   // Save stock adjustment
-  // TODO: Implement with Drizzle API routes
   const handleSaveAdjustment = useCallback(async () => {
     if (!editingProduct) return
 
@@ -332,7 +330,6 @@ export function useProductCrud({
   }, [businessId, editingProduct, newStockValue, onProductSaved])
 
   // Delete product
-  // TODO: Implement with Drizzle API routes
   const handleDelete = useCallback(async (): Promise<boolean> => {
     if (!editingProduct) return false
 
