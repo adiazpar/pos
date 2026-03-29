@@ -3,6 +3,7 @@
 import { ArrowDownCircle, ArrowUpCircle, ArrowUp, ChevronRight } from 'lucide-react'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
 import { formatCurrency } from '@/lib/utils'
+import { scrollToTop } from '@/lib/scroll'
 import { CATEGORY_LABELS, sortMovementsByDate, formatMovementTime } from '@/lib/cash'
 import type { CashMovement } from '@/types'
 
@@ -20,13 +21,6 @@ export function MovementsList({
   onAnimationComplete,
 }: MovementsListProps) {
   const sortedMovements = sortMovementsByDate(movements)
-
-  const scrollToTop = () => {
-    const scrollContainer = document.querySelector('.main-scroll-container')
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }
 
   if (movements.length === 0) {
     return (

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Modal, Spinner } from '@/components/ui'
+import { useFormModal } from '@/hooks'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { CashSession } from '@/types'
 
@@ -19,14 +20,15 @@ export function OpenDrawerModal({
   lastClosedSession,
 }: OpenDrawerModalProps) {
   const [openingBalance, setOpeningBalance] = useState('')
-  const [isOpening, setIsOpening] = useState(false)
 
-  const handleClose = () => {
-    if (!isOpening) {
-      setOpeningBalance('')
-      onClose()
-    }
-  }
+  const resetForm = useCallback(() => {
+    setOpeningBalance('')
+  }, [])
+
+  const { isSaving: isOpening, setIsSaving: setIsOpening, handleClose } = useFormModal({
+    onClose,
+    onReset: resetForm,
+  })
 
   const handleSubmit = async () => {
     const balance = parseFloat(openingBalance)

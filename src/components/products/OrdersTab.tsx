@@ -2,6 +2,7 @@
 
 import { Search, X, Plus, ArrowUp, Package, Warehouse, ChevronRight } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { scrollToTop } from '@/lib/scroll'
 import type { Product } from '@/types'
 import type { ExpandedOrder, OrderStatusFilter } from '@/lib/products'
 
@@ -52,13 +53,6 @@ export function OrdersTab({
   error,
   isModalOpen,
 }: OrdersTabProps) {
-  const scrollToTop = () => {
-    const scrollContainer = document.querySelector('.main-scroll-container')
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }
-
   return (
     <div className="page-body space-y-4">
       {error && !isModalOpen && (

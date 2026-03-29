@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Search, X, Filter, Plus, ArrowUp, Package, ChevronRight, ImageIcon, Settings } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { getProductIconUrl } from '@/lib/utils'
+import { scrollToTop } from '@/lib/scroll'
 import {
   SORT_OPTIONS,
   getFilterLabel,
@@ -77,12 +78,6 @@ export function ProductsTab({
     if (!categoryId) return '-'
     const category = categories.find(c => c.id === categoryId)
     return category?.name || '-'
-  }
-  const scrollToTop = () => {
-    const scrollContainer = document.querySelector('.main-scroll-container')
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
-    }
   }
 
   return (

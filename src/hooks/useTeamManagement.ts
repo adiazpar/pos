@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import QRCode from 'qrcode'
 import { useAuth } from '@/contexts/auth-context'
 import { useBusiness } from '@/contexts/business-context'
 import { fetchDeduped } from '@/lib/fetch'
@@ -9,6 +8,7 @@ import {
   generateInviteCode,
   getInviteCodeExpiration,
 } from '@/lib/auth'
+import { generateInviteQRCode } from '@/lib/qr'
 import { isOwner } from '@/lib/business-role'
 import type { User, InviteCode, InviteRole, UserRole } from '@/types'
 
@@ -172,12 +172,7 @@ export function useTeamManagement({ businessId }: UseTeamManagementOptions): Use
       setNewCode(code)
 
       // Generate QR code
-      const registrationUrl = `${window.location.origin}/invite?code=${code}`
-      const qr = await QRCode.toDataURL(registrationUrl, {
-        width: 160,
-        margin: 2,
-        color: { dark: '#0F172A', light: '#FFFFFF' }
-      })
+      const qr = await generateInviteQRCode(code)
       setQrDataUrl(qr)
 
       // Add new code to the list
@@ -264,12 +259,7 @@ export function useTeamManagement({ businessId }: UseTeamManagementOptions): Use
       setNewCode(code)
 
       // Generate new QR
-      const registrationUrl = `${window.location.origin}/invite?code=${code}`
-      const qr = await QRCode.toDataURL(registrationUrl, {
-        width: 160,
-        margin: 2,
-        color: { dark: '#0F172A', light: '#FFFFFF' }
-      })
+      const qr = await generateInviteQRCode(code)
       setQrDataUrl(qr)
 
       // Update invite codes list: remove old, add new
@@ -344,12 +334,7 @@ export function useTeamManagement({ businessId }: UseTeamManagementOptions): Use
 
     // Generate QR code for existing invite
     try {
-      const registrationUrl = `${window.location.origin}/invite?code=${code.code}`
-      const qr = await QRCode.toDataURL(registrationUrl, {
-        width: 160,
-        margin: 2,
-        color: { dark: '#0F172A', light: '#FFFFFF' }
-      })
+      const qr = await generateInviteQRCode(code.code)
       setQrDataUrl(qr)
     } catch (err) {
       console.error('Failed to generate QR code:', err)

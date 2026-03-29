@@ -1,8 +1,7 @@
 'use client'
 
 import { Trash2 } from 'lucide-react'
-import { Spinner, Modal, useMorphingModal } from '@/components/ui'
-import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
+import { Spinner, Modal, useMorphingModal, ConfirmationAnimation } from '@/components/ui'
 import type { Provider } from '@/types'
 
 // ============================================
@@ -253,31 +252,12 @@ export function ProviderModal({
       {/* Step 2: Save success */}
       <Modal.Step title={editingProvider ? 'Provider updated' : 'Provider added'} hideBackButton>
         <Modal.Item>
-          <div className="flex flex-col items-center text-center py-4">
-            <div style={{ width: 160, height: 160 }}>
-              {providerSaved && (
-                <LottiePlayer
-                  src="/animations/success.json"
-                  loop={false}
-                  autoplay={true}
-                  delay={500}
-                  style={{ width: 160, height: 160 }}
-                />
-              )}
-            </div>
-            <p
-              className="text-lg font-semibold text-text-primary mt-4 transition-opacity duration-500"
-              style={{ opacity: providerSaved ? 1 : 0 }}
-            >
-              {editingProvider ? 'Changes saved!' : 'Provider added!'}
-            </p>
-            <p
-              className="text-sm text-text-secondary mt-1 transition-opacity duration-500 delay-200"
-              style={{ opacity: providerSaved ? 1 : 0 }}
-            >
-              {editingProvider ? 'The provider has been updated' : 'The provider has been created successfully'}
-            </p>
-          </div>
+          <ConfirmationAnimation
+            type="success"
+            triggered={providerSaved}
+            title={editingProvider ? 'Changes saved!' : 'Provider added!'}
+            subtitle={editingProvider ? 'The provider has been updated' : 'The provider has been created successfully'}
+          />
         </Modal.Item>
 
         <Modal.Footer>
@@ -294,31 +274,12 @@ export function ProviderModal({
       {/* Step 3: Delete success */}
       <Modal.Step title="Provider deleted" hideBackButton>
         <Modal.Item>
-          <div className="flex flex-col items-center text-center py-4">
-            <div style={{ width: 160, height: 160 }}>
-              {providerDeleted && (
-                <LottiePlayer
-                  src="/animations/error.json"
-                  loop={false}
-                  autoplay={true}
-                  delay={500}
-                  style={{ width: 160, height: 160 }}
-                />
-              )}
-            </div>
-            <p
-              className="text-lg font-semibold text-text-primary mt-4 transition-opacity duration-500"
-              style={{ opacity: providerDeleted ? 1 : 0 }}
-            >
-              Provider deleted
-            </p>
-            <p
-              className="text-sm text-text-secondary mt-1 transition-opacity duration-500 delay-200"
-              style={{ opacity: providerDeleted ? 1 : 0 }}
-            >
-              The provider has been deleted successfully
-            </p>
-          </div>
+          <ConfirmationAnimation
+            type="error"
+            triggered={providerDeleted}
+            title="Provider deleted"
+            subtitle="The provider has been deleted successfully"
+          />
         </Modal.Item>
 
         <Modal.Footer>

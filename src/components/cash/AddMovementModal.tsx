@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import { Modal, Spinner } from '@/components/ui'
+import { useFormModal } from '@/hooks'
 import { CATEGORY_LABELS, getCategoriesForType } from '@/lib/cash'
 import type { CashMovementType, CashMovementCategory, CashSession } from '@/types'
 
@@ -28,21 +29,18 @@ export function AddMovementModal({
   const [category, setCategory] = useState<CashMovementCategory | ''>('')
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setType('deposit')
     setCategory('')
     setAmount('')
     setNote('')
-  }
+  }, [])
 
-  const handleClose = () => {
-    if (!isSaving) {
-      resetForm()
-      onClose()
-    }
-  }
+  const { isSaving, setIsSaving, handleClose } = useFormModal({
+    onClose,
+    onReset: resetForm,
+  })
 
   const handleSubmit = async () => {
     if (!currentSession || !category) return
