@@ -57,7 +57,8 @@ export function getPrefetchRoutes(businessId: string): string[] {
  * - backTo = Parent route for nested pages (relative path, businessId added dynamically)
  */
 export interface RouteConfig {
-  pageTitle: string // Displays as subtitle under business name
+  title?: string    // Main title (used for hub pages like Account)
+  pageTitle: string // Displays as subtitle under business name or title
   backTo?: string   // Relative path (e.g., '/cash'), businessId prefix added dynamically
 }
 
@@ -74,8 +75,9 @@ const ROUTE_CONFIGS: Record<string, RouteConfig> = {
 }
 
 // User-level routes (no businessId prefix)
+// For hub pages with titles, title shows as main header, pageTitle as subtitle
 const USER_ROUTE_CONFIGS: Record<string, RouteConfig> = {
-  '/account': { pageTitle: 'Account Settings' },
+  '/account': { title: 'Account', pageTitle: 'Settings' },
 }
 
 /**

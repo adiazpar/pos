@@ -56,7 +56,7 @@ export function PageHeader() {
   // Use pending route config if navigating, otherwise current pathname
   const config = getRouteConfig(pendingHref || pathname)
 
-  const { pageTitle, backTo } = config
+  const { title, pageTitle, backTo } = config
 
   // Determine back button behavior:
   // - Hub pages with back button: use browser back
@@ -98,7 +98,13 @@ export function PageHeader() {
 
       {/* Center column */}
       <div className="page-header__titles">
-        {isHubContext ? (
+        {isHubPageWithBackButton && title ? (
+          // Hub pages with back button show title instead of logo
+          <>
+            <h1 className="page-title">{title}</h1>
+            {pageTitle && <p className="page-subtitle">{pageTitle}</p>}
+          </>
+        ) : isHubContext ? (
           <div className="page-header__logo">
             <Image
               src="/kasero-logo-light.png"
