@@ -157,7 +157,7 @@ export async function POST(
     const movementId = nanoid()
     const now = new Date()
 
-    await db.insert(cashMovements).values({
+    const [newMovement] = await db.insert(cashMovements).values({
       id: movementId,
       sessionId,
       type,
@@ -167,33 +167,20 @@ export async function POST(
       createdBy: access.userId,
       createdAt: now,
       updatedAt: now,
-    })
+    }).returning()
 
-    const [newMovement] = await db
-      .select({
-        id: cashMovements.id,
-        sessionId: cashMovements.sessionId,
-        type: cashMovements.type,
-        category: cashMovements.category,
-        amount: cashMovements.amount,
-        note: cashMovements.note,
-        saleId: cashMovements.saleId,
-        createdBy: cashMovements.createdBy,
-        editedBy: cashMovements.editedBy,
-        createdAt: cashMovements.createdAt,
-        updatedAt: cashMovements.updatedAt,
-        creatorName: creators.name,
-      })
-      .from(cashMovements)
-      .leftJoin(creators, eq(cashMovements.createdBy, creators.id))
-      .where(eq(cashMovements.id, movementId))
+    // Fetch creator name separately
+    const [creator] = await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, access.userId))
       .limit(1)
 
     return NextResponse.json({
       success: true,
       movement: {
         ...newMovement,
-        creator: newMovement.creatorName ? { name: newMovement.creatorName } : null,
+        creator: creator ? { name: creator.name } : null,
       },
     })
   } catch (error) {

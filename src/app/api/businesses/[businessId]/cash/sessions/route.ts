@@ -129,7 +129,7 @@ export async function POST(
     const sessionId = nanoid()
     const now = new Date()
 
-    await db.insert(cashSessions).values({
+    const [newSession] = await db.insert(cashSessions).values({
       id: sessionId,
       businessId: access.businessId,
       openedBy: access.userId,
@@ -137,36 +137,20 @@ export async function POST(
       openingBalance,
       createdAt: now,
       updatedAt: now,
-    })
+    }).returning()
 
-    // Fetch the created session with opener info
-    const [newSession] = await db
-      .select({
-        id: cashSessions.id,
-        businessId: cashSessions.businessId,
-        openedBy: cashSessions.openedBy,
-        closedBy: cashSessions.closedBy,
-        openedAt: cashSessions.openedAt,
-        closedAt: cashSessions.closedAt,
-        openingBalance: cashSessions.openingBalance,
-        closingBalance: cashSessions.closingBalance,
-        expectedBalance: cashSessions.expectedBalance,
-        discrepancy: cashSessions.discrepancy,
-        discrepancyNote: cashSessions.discrepancyNote,
-        createdAt: cashSessions.createdAt,
-        updatedAt: cashSessions.updatedAt,
-        openerName: users.name,
-      })
-      .from(cashSessions)
-      .leftJoin(users, eq(cashSessions.openedBy, users.id))
-      .where(eq(cashSessions.id, sessionId))
+    // Fetch opener name separately
+    const [opener] = await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, access.userId))
       .limit(1)
 
     return NextResponse.json({
       success: true,
       session: {
         ...newSession,
-        opener: newSession.openerName ? { name: newSession.openerName } : null,
+        opener: opener ? { name: opener.name } : null,
       },
     })
   } catch (error) {

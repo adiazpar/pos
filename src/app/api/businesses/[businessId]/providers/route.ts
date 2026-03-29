@@ -97,7 +97,7 @@ export async function POST(
     const providerId = nanoid()
     const now = new Date()
 
-    await db.insert(providers).values({
+    const [newProvider] = await db.insert(providers).values({
       id: providerId,
       businessId: access.businessId,
       name,
@@ -107,13 +107,7 @@ export async function POST(
       active,
       createdAt: now,
       updatedAt: now,
-    })
-
-    const [newProvider] = await db
-      .select()
-      .from(providers)
-      .where(eq(providers.id, providerId))
-      .limit(1)
+    }).returning()
 
     return NextResponse.json({
       success: true,

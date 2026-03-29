@@ -118,20 +118,14 @@ export async function POST(
     const categoryId = nanoid()
     const now = new Date()
 
-    await db.insert(productCategories).values({
+    const [newCategory] = await db.insert(productCategories).values({
       id: categoryId,
       businessId: access.businessId,
       name: name.trim(),
       sortOrder: maxSortOrder + 1,
       createdAt: now,
       updatedAt: now,
-    })
-
-    const [newCategory] = await db
-      .select()
-      .from(productCategories)
-      .where(eq(productCategories.id, categoryId))
-      .limit(1)
+    }).returning()
 
     return NextResponse.json({
       success: true,

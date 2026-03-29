@@ -114,7 +114,7 @@ export async function POST(
 
     const now = new Date()
 
-    await db.insert(products).values({
+    const [newProduct] = await db.insert(products).values({
       id: productId,
       businessId: access.businessId,
       name: validName,
@@ -126,13 +126,7 @@ export async function POST(
       stock: 0,
       createdAt: now,
       updatedAt: now,
-    })
-
-    const [newProduct] = await db
-      .select()
-      .from(products)
-      .where(eq(products.id, productId))
-      .limit(1)
+    }).returning()
 
     return NextResponse.json({
       success: true,
