@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, orders, orderItems, providers, products } from '@/db'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, inArray } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { requireBusinessAccess } from '@/lib/business-auth'
@@ -30,52 +30,58 @@ export async function GET(
     const { businessId } = await params
     const access = await requireBusinessAccess(businessId)
 
-    // Get all orders
+    // Get all orders for this business
     const ordersList = await db
       .select()
       .from(orders)
       .where(eq(orders.businessId, access.businessId))
       .orderBy(desc(orders.date))
 
-    // Get all order items for these orders
     const orderIds = ordersList.map(o => o.id)
 
-    let allItems: Array<{
-      id: string
-      orderId: string
-      productId: string | null
-      productName: string
-      quantity: number
-      unitCost: number | null
-      subtotal: number | null
-    }> = []
-
-    if (orderIds.length > 0) {
-      // Get all items for the business's orders
-      const allItemsResult = await db
-        .select({
-          id: orderItems.id,
-          orderId: orderItems.orderId,
-          productId: orderItems.productId,
-          productName: orderItems.productName,
-          quantity: orderItems.quantity,
-          unitCost: orderItems.unitCost,
-          subtotal: orderItems.subtotal,
-        })
-        .from(orderItems)
-
-      allItems = allItemsResult.filter(item => orderIds.includes(item.orderId))
+    // Early return if no orders
+    if (orderIds.length === 0) {
+      return NextResponse.json({
+        success: true,
+        orders: [],
+      })
     }
 
-    // Get products for expanding items
-    const productsList = await db
-      .select()
-      .from(products)
-      .where(eq(products.businessId, access.businessId))
+    // Get order items only for these orders (not all items in DB)
+    const allItems = await db
+      .select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        productId: orderItems.productId,
+        productName: orderItems.productName,
+        quantity: orderItems.quantity,
+        unitCost: orderItems.unitCost,
+        subtotal: orderItems.subtotal,
+      })
+      .from(orderItems)
+      .where(inArray(orderItems.orderId, orderIds))
+
+    // Get unique product IDs from items
+    const productIds = [...new Set(allItems.map(i => i.productId).filter(Boolean))] as string[]
+
+    // Fetch only needed product fields (NO icons - major bandwidth savings)
+    const productsList = productIds.length > 0
+      ? await db
+          .select({
+            id: products.id,
+            name: products.name,
+            price: products.price,
+            costPrice: products.costPrice,
+            stock: products.stock,
+            active: products.active,
+          })
+          .from(products)
+          .where(inArray(products.id, productIds))
+      : []
 
     const productsMap = new Map(productsList.map(p => [p.id, p]))
 
-    // Get providers
+    // Get providers for this business
     const providersList = await db
       .select()
       .from(providers)
@@ -83,9 +89,17 @@ export async function GET(
 
     const providersMap = new Map(providersList.map(p => [p.id, p]))
 
+    // Group items by orderId for efficient lookup
+    const itemsByOrderId = new Map<string, typeof allItems>()
+    for (const item of allItems) {
+      const existing = itemsByOrderId.get(item.orderId) || []
+      existing.push(item)
+      itemsByOrderId.set(item.orderId, existing)
+    }
+
     // Build expanded orders
     const expandedOrders = ordersList.map(order => {
-      const items = allItems.filter(item => item.orderId === order.id)
+      const items = itemsByOrderId.get(order.id) || []
       return {
         ...order,
         providerId: order.providerId,
