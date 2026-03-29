@@ -34,6 +34,9 @@ export function PageHeader() {
   const business = businessContext?.business ?? null
   const businessId = businessContext?.businessId ?? null
 
+  // Some hub pages (like account) should show a back button
+  const isHubPageWithBackButton = isHubContext && pathname === '/account'
+
   // Track scroll position to show shadow
   useEffect(() => {
     const scrollContainer = document.querySelector('.main-scroll-container')
@@ -56,10 +59,14 @@ export function PageHeader() {
   const { pageTitle, backTo } = config
 
   // Determine back button behavior:
+  // - Hub pages with back button: use browser back
   // - If backTo is set (nested page), go to parent route within business
   // - Otherwise (top-level business page), go to hub
   const handleBack = () => {
-    if (backTo && businessId) {
+    if (isHubPageWithBackButton) {
+      // Hub pages like account: go back to previous page
+      router.back()
+    } else if (backTo && businessId) {
       // Build business-scoped URL for parent page
       router.push(buildBusinessUrl(businessId, backTo))
     } else {
@@ -77,12 +84,12 @@ export function PageHeader() {
     <header className={`page-header page-header--fixed ${isScrolled ? 'page-header--scrolled' : ''}`}>
       {/* Left column */}
       <div className="page-header__content">
-        {!isHubContext && (
+        {(!isHubContext || isHubPageWithBackButton) && (
           <button
             type="button"
             onClick={handleBack}
             className="page-header__back"
-            aria-label={backTo ? 'Go back' : 'Go to hub'}
+            aria-label={isHubPageWithBackButton ? 'Go back' : backTo ? 'Go back' : 'Go to hub'}
           >
             <ChevronLeft className="w-5 h-5" />
           </button>

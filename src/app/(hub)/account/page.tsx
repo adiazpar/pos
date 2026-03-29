@@ -1,14 +1,22 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation'
 import { Spinner } from '@/components/ui'
 import { getUserInitials } from '@/lib/auth'
-import { ChevronLeft } from 'lucide-react'
+import { useNavbar } from '@/contexts/navbar-context'
 
 export default function AccountPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const { hide, show } = useNavbar()
+
+  // Hide navbar on mount, show on unmount
+  useEffect(() => {
+    hide()
+    return () => show()
+  }, [hide, show])
 
   if (isLoading) {
     return (
@@ -24,17 +32,7 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="page-content space-y-6">
-      {/* Back button */}
-      <button
-        type="button"
-        onClick={() => router.back()}
-        className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
-      >
-        <ChevronLeft className="w-5 h-5" />
-        <span>Back</span>
-      </button>
-
+    <main className="page-content page-content--no-navbar space-y-6">
       {/* User Info Card */}
       <div className="card p-6">
         <div className="flex items-center gap-4">
