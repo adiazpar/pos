@@ -134,6 +134,7 @@ export function PageHeader() {
               width={160}
               height={56}
               className="logo-light"
+              style={{ height: 'auto' }}
               priority
             />
             <Image
@@ -142,6 +143,7 @@ export function PageHeader() {
               width={160}
               height={56}
               className="logo-dark"
+              style={{ height: 'auto' }}
               priority
             />
           </div>

@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronRight } from 'lucide-react'
-import { BusinessIcon } from '@/components/icons'
+import { ChevronRight, X } from 'lucide-react'
+import { BusinessIcon, SearchIcon } from '@/components/icons'
 import { useAuth } from '@/contexts/auth-context'
 import { useNavbar } from '@/contexts/navbar-context'
 import { Spinner } from '@/components/ui'
@@ -26,6 +26,7 @@ export default function HubPage() {
   const { setPendingHref, setCachedBusinesses } = useNavbar()
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (authLoading) return
@@ -68,9 +69,17 @@ export default function HubPage() {
     )
   }
 
-  const ownedBusinesses = businesses.filter((b) => b.isOwner)
-  const joinedBusinesses = businesses.filter((b) => !b.isOwner)
+  // Filter businesses based on search query
+  const filteredBusinesses = useMemo(() => {
+    if (!searchQuery.trim()) return businesses
+    const query = searchQuery.toLowerCase().trim()
+    return businesses.filter((b) => b.name.toLowerCase().includes(query))
+  }, [businesses, searchQuery])
+
+  const ownedBusinesses = filteredBusinesses.filter((b) => b.isOwner)
+  const joinedBusinesses = filteredBusinesses.filter((b) => !b.isOwner)
   const hasBusinesses = businesses.length > 0
+  const hasFilteredResults = filteredBusinesses.length > 0
 
   if (!hasBusinesses) {
     return (
@@ -122,6 +131,36 @@ export default function HubPage() {
 
   return (
     <main className="hub-content space-y-4">
+      {/* Search Bar */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+          <SearchIcon size={20} className="text-text-tertiary" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search businesses..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input pl-10 pr-10 w-full"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="absolute inset-y-0 right-3 flex items-center text-text-tertiary hover:text-text-secondary transition-colors"
+          >
+            <X size={18} />
+          </button>
+        )}
+      </div>
+
+      {/* No search results */}
+      {searchQuery && !hasFilteredResults && (
+        <div className="text-center py-8 text-text-secondary">
+          <p>No businesses found matching "{searchQuery}"</p>
+        </div>
+      )}
+
       {ownedBusinesses.length > 0 && (
         <div className="card p-4 space-y-4">
           <div className="flex items-center justify-between">
