@@ -1221,20 +1221,32 @@ These have the same `isSaving`, `resetForm`, `handleClose` pattern.
 | Task | File(s) | Impact | Status |
 |------|---------|--------|--------|
 | Remove duplicate `isBase64DataUrl` | 2 files | ~10 lines | Done |
-| Create centralized API client | `src/lib/api-client.ts` | Utility created | Done |
+| Adopt centralized API client | 11 hooks, 41 fetch calls | ~200 lines | Done |
 | Create validation response helper | 6 global routes | ~30 lines | Done |
-| Create shared Zod schemas | `src/lib/schemas.ts` | Utility created | Done |
+| Adopt shared Zod schemas | 21 API routes | ~150 lines | Done |
 | Extract shared RouteParams type | 1 route file | Type consolidated | Done |
 | Standardize HTTP status codes | Already correct | Verified | N/A |
 | Add ARIA labels | Already present | Verified | N/A |
 | Additional useFormModal adoption | Already adopted | Verified | N/A |
 
 **Commits:**
-- `48a4ff5` - refactor: Phase 5 additional consolidation
+- `48a4ff5` - refactor: Phase 5 additional consolidation (utilities created)
+- `ac13236` - refactor: fully adopt api-client and shared schemas
 
-**Notes:**
-- HTTP status codes, ARIA labels, and useFormModal were already correctly implemented
-- Created utility files (api-client.ts, schemas.ts) for gradual adoption
+**API Client fully adopted in:**
+- useOrderManagement, useAiProductPipeline, useTeamManagement
+- useProductSettings, useAccountSettings, useProviderManagement
+- useProductCrud, useCashMovements, useImageCompression
+- useJoinBusiness, useCashSession
+
+**Shared schemas fully adopted in:**
+- Auth routes (login, register)
+- Invite routes (join, validate, delete, regenerate)
+- Transfer routes (accept, initiate, confirm, cancel)
+- Business routes (create, providers, categories)
+- User routes (toggle-status, change-role)
+- Product/Order routes (CRUD operations)
+- Cash routes (movements)
 
 ---
 
