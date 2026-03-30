@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { ChevronRight, X } from 'lucide-react'
-import { BusinessIcon, SearchIcon, FoodBeverageIcon, ServicesIcon } from '@/components/icons'
+import { BusinessIcon, SearchIcon, FoodBeverageIcon, ServicesIcon, RetailIcon } from '@/components/icons'
 import { useAuth } from '@/contexts/auth-context'
 import { useNavbar } from '@/contexts/navbar-context'
 import { Spinner } from '@/components/ui'
@@ -33,6 +33,7 @@ const DEFAULT_TYPE_EMOJIS: Record<BusinessType, string> = {
 // Custom icon components for business types (takes precedence over emojis)
 const BUSINESS_TYPE_ICONS: Partial<Record<BusinessType, React.ComponentType<{ className?: string }>>> = {
   food: FoodBeverageIcon,
+  retail: RetailIcon,
   services: ServicesIcon,
 }
 

@@ -59,6 +59,7 @@ export { VanIcon } from './VanIcon'
 // Business type icons
 export { FoodBeverageIcon } from './FoodBeverageIcon'
 export { ServicesIcon } from './ServicesIcon'
+export { RetailIcon } from './RetailIcon'
 
 // Other
 export { HistoryIcon } from './HistoryIcon'

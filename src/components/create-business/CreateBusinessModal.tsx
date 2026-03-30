@@ -12,7 +12,7 @@ import {
   COMMON_TIMEZONES,
   getCurrencyConfig,
 } from '@/lib/locale-config'
-import { FoodBeverageIcon, ServicesIcon } from '@/components/icons'
+import { FoodBeverageIcon, ServicesIcon, RetailIcon } from '@/components/icons'
 import type { UseCreateBusinessReturn, BusinessType } from '@/hooks'
 
 interface CreateBusinessModalProps {
@@ -134,6 +134,7 @@ interface NameAndTypeContentProps {
 // Custom icon components for business types (takes precedence over emojis)
 const BUSINESS_TYPE_ICONS: Partial<Record<string, React.ComponentType<{ className?: string }>>> = {
   food: FoodBeverageIcon,
+  retail: RetailIcon,
   services: ServicesIcon,
 }
 

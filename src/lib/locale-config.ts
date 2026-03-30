@@ -23,17 +23,16 @@ export interface CurrencyConfig {
 export interface BusinessTypeConfig {
   value: string
   label: string
-  icon: string // Default emoji for this type
 }
 
 // Business types
 export const BUSINESS_TYPES: BusinessTypeConfig[] = [
-  { value: 'food', label: 'Culinary', icon: '🍽️' },
-  { value: 'retail', label: 'Retail', icon: '🛍️' },
-  { value: 'services', label: 'Services', icon: '✂️' },
-  { value: 'wholesale', label: 'Wholesale', icon: '📦' },
-  { value: 'manufacturing', label: 'Manufacturing', icon: '🏭' },
-  { value: 'other', label: 'Other', icon: '💼' },
+  { value: 'food', label: 'Culinary' },
+  { value: 'retail', label: 'Retail' },
+  { value: 'services', label: 'Services' },
+  { value: 'wholesale', label: 'Wholesale' },
+  { value: 'manufacturing', label: 'Manufacturing' },
+  { value: 'other', label: 'Other' },
 ]
 
 // Supported locales with their defaults
