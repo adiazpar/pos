@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './auth-context'
+import { useNavbar } from './navbar-context'
 import type { BusinessRole } from '@/lib/business-role'
 
 // Re-export for backwards compatibility
@@ -53,6 +54,7 @@ interface BusinessProviderProps {
 export function BusinessProvider({ children, businessId }: BusinessProviderProps) {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
+  const { getCachedBusiness, setCachedBusiness } = useNavbar()
   const [business, setBusiness] = useState<Business | null>(null)
   const [role, setRole] = useState<BusinessRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -68,6 +70,16 @@ export function BusinessProvider({ children, businessId }: BusinessProviderProps
       return
     }
 
+    // Check cache for instant display
+    const cached = getCachedBusiness(businessId)
+    if (cached) {
+      setBusiness({ id: businessId, name: cached.name })
+      setRole(cached.role as BusinessRole)
+      setIsLoading(false)
+      // Cache hit - skip API call, server validates on actual data operations
+      return
+    }
+
     // Wait for auth to be ready
     if (authLoading) return
 
@@ -77,7 +89,7 @@ export function BusinessProvider({ children, businessId }: BusinessProviderProps
       return
     }
 
-    // Validate business access
+    // No cache - validate business access via API
     async function validateAccess() {
       try {
         setIsLoading(true)
@@ -105,6 +117,12 @@ export function BusinessProvider({ children, businessId }: BusinessProviderProps
           name: data.businessName,
         })
         setRole(data.role as BusinessRole)
+        // Cache for future navigation
+        setCachedBusiness(data.businessId, {
+          name: data.businessName,
+          role: data.role,
+          isOwner: data.role === 'owner',
+        })
       } catch (err) {
         console.error('Business access validation error:', err)
         setError('Failed to validate business access')
@@ -114,7 +132,7 @@ export function BusinessProvider({ children, businessId }: BusinessProviderProps
     }
 
     validateAccess()
-  }, [businessId, user, authLoading, router])
+  }, [businessId, user, authLoading, router, getCachedBusiness, setCachedBusiness])
 
   // ============================================
   // CONTEXT VALUE

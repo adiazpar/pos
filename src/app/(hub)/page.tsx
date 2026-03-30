@@ -23,7 +23,7 @@ interface Business {
 export default function HubPage() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
-  const { setPendingHref } = useNavbar()
+  const { setPendingHref, setCachedBusinesses } = useNavbar()
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -39,7 +39,10 @@ export default function HubPage() {
         const res = await fetch('/api/businesses/list')
         if (res.ok) {
           const data = await res.json()
-          setBusinesses(data.businesses || [])
+          const fetchedBusinesses = data.businesses || []
+          setBusinesses(fetchedBusinesses)
+          // Cache business data for instant display when entering a business
+          setCachedBusinesses(fetchedBusinesses)
         }
       } catch (error) {
         console.error('Failed to fetch businesses:', error)
@@ -49,7 +52,7 @@ export default function HubPage() {
     }
 
     fetchBusinesses()
-  }, [user, authLoading, router])
+  }, [user, authLoading, router, setCachedBusinesses])
 
   const handleEnterBusiness = (businessId: string) => {
     const href = `/${businessId}/home`
