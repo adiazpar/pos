@@ -24,7 +24,7 @@ The pipeline extracts product information from a photo and generates an emoji-st
 
 ### Step 1: Photo Capture & Compression (Client-side)
 
-**Location:** `src/app/(dashboard)/productos/page.tsx`
+**Location:** `src/app/[businessId]/products/page.tsx`
 
 When the user takes a photo or uploads an image:
 1. Image is captured via `<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment">`
@@ -384,8 +384,8 @@ Consider `rembg-webgpu` library for 3-5x faster bg removal on supported devices.
 | `src/app/api/ai/remove-background/route.ts` | Background removal API (BiRefNet) |
 | `src/app/api/convert-heic/route.ts` | HEIC to JPEG conversion API |
 | `src/hooks/useAiProductPipeline.ts` | Pipeline orchestration with cancellation |
-| `src/app/(dashboard)/productos/page.tsx` | Product creation UI with AI flow |
-| `docs/ai-product-pipeline.md` | This documentation |
+| `src/app/[businessId]/products/page.tsx` | Product creation UI with AI flow |
+| `.claude/docs/ai-product-pipeline.md` | This documentation |
 
 ## References
 

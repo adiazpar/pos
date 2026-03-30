@@ -31,7 +31,7 @@ export const BUSINESS_TYPES: BusinessTypeConfig[] = [
   { value: 'retail', label: 'Retail' },
   { value: 'services', label: 'Services' },
   { value: 'wholesale', label: 'Wholesale' },
-  { value: 'manufacturing', label: 'Manufacturing' },
+  { value: 'manufacturing', label: 'Maker' },
   { value: 'other', label: 'Other' },
 ]
 

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { ChevronRight, X } from 'lucide-react'
-import { BusinessIcon, SearchIcon, FoodBeverageIcon, ServicesIcon, RetailIcon } from '@/components/icons'
+import { BusinessIcon, SearchIcon, FoodBeverageIcon, ServicesIcon, RetailIcon, WholesaleIcon, ManufacturingIcon, OtherBusinessIcon } from '@/components/icons'
 import { useAuth } from '@/contexts/auth-context'
 import { useNavbar } from '@/contexts/navbar-context'
 import { Spinner } from '@/components/ui'
@@ -35,6 +35,9 @@ const BUSINESS_TYPE_ICONS: Partial<Record<BusinessType, React.ComponentType<{ cl
   food: FoodBeverageIcon,
   retail: RetailIcon,
   services: ServicesIcon,
+  wholesale: WholesaleIcon,
+  manufacturing: ManufacturingIcon,
+  other: OtherBusinessIcon,
 }
 
 /**

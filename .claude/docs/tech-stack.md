@@ -320,7 +320,7 @@ FAL_KEY=...
 - 10GB free tier
 - URLs stored in `orders.receipt` column
 
-Turso free tier (500M row reads, 10M writes, 5GB storage) supports ~1,000-2,000 businesses.
+Turso free tier (500M row reads, 25M writes, 9GB storage) supports ~1,000-2,000 businesses.
 
 ### Offline Sync (Turso Embedded Replicas)
 For true offline capability:

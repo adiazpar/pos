@@ -257,13 +257,22 @@ color: #1E293B;
 | `.card-interactive` | `border-color: var(--brand-300)` |
 
 ### Icons
-Use Lucide React for all icons:
+Use Lucide React or custom SVG icons from `src/components/icons/`:
 ```tsx
+// Lucide React (general purpose icons)
 import { Home, ShoppingCart, Package } from 'lucide-react'
 
 <Home className="w-5 h-5" />
 <ShoppingCart size={20} />
+
+// Custom SVG icons (55+ optimized icons)
+import { SearchIcon, BusinessIcon, CashIcon } from '@/components/icons'
+
+<SearchIcon className="w-5 h-5" />
+<BusinessIcon className="w-6 h-6" />
 ```
+
+**Custom icons include:** Business type icons (FoodBeverageIcon, RetailIcon, ServicesIcon, WholesaleIcon), navigation icons (HomeIcon, SalesIcon, CashIcon, ProductsIcon, ReportsIcon), and many utility icons. Check `src/components/icons/` for the full list.
 
 ### Modal Component (IMPORTANT)
 When creating multi-step modals, `Modal.Footer` **MUST be a direct child** of `Modal.Step`:

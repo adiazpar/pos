@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiPost, ApiError, ApiResponse } from '@/lib/api-client'
-import { getDefaultsForLocale, BUSINESS_TYPES } from '@/lib/locale-config'
+import { getDefaultsForLocale } from '@/lib/locale-config'
 
 interface CreateBusinessResponse extends ApiResponse {
   business?: {
@@ -126,12 +126,9 @@ export function useCreateBusiness(): UseCreateBusinessReturn {
   }, [])
 
   const setType = useCallback((type: BusinessType) => {
-    // Auto-set icon to default for business type if not already set
-    const typeConfig = BUSINESS_TYPES.find(t => t.value === type)
     setFormData(prev => ({
       ...prev,
       type,
-      icon: prev.icon || typeConfig?.icon || null,
     }))
   }, [])
 
@@ -182,15 +179,13 @@ export function useCreateBusiness(): UseCreateBusinessReturn {
   }, [])
 
   const clearLogo = useCallback(() => {
-    // Reset to default emoji for business type
-    const typeConfig = BUSINESS_TYPES.find(t => t.value === formData.type)
     setFormData(prev => ({
       ...prev,
       logoFile: null,
       logoPreview: null,
-      icon: typeConfig?.icon || null,
+      icon: null,
     }))
-  }, [formData.type])
+  }, [])
 
   const handleCreateBusiness = useCallback(async (): Promise<boolean> => {
     if (!isStep1Valid || !isStep2Valid) {

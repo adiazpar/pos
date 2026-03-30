@@ -43,8 +43,11 @@ npm run dev
 |---------|-------------|
 | `npm run dev` | Start Next.js development server |
 | `npm run build` | Build for production |
-| `npm run db:push` | Push schema to database |
+| `npm run db:push` | Push schema to dev database |
+| `npm run db:push:prod` | Push schema to production database |
 | `npm run db:studio` | Open Drizzle Studio |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run tests with Vitest |
 
 ## Environment Variables
 

@@ -12,7 +12,7 @@ import {
   COMMON_TIMEZONES,
   getCurrencyConfig,
 } from '@/lib/locale-config'
-import { FoodBeverageIcon, ServicesIcon, RetailIcon } from '@/components/icons'
+import { FoodBeverageIcon, ServicesIcon, RetailIcon, WholesaleIcon, ManufacturingIcon, OtherBusinessIcon } from '@/components/icons'
 import type { UseCreateBusinessReturn, BusinessType } from '@/hooks'
 
 interface CreateBusinessModalProps {
@@ -136,9 +136,22 @@ const BUSINESS_TYPE_ICONS: Partial<Record<string, React.ComponentType<{ classNam
   food: FoodBeverageIcon,
   retail: RetailIcon,
   services: ServicesIcon,
+  wholesale: WholesaleIcon,
+  manufacturing: ManufacturingIcon,
+  other: OtherBusinessIcon,
 }
 
-function getBusinessTypeIcon(typeValue: string, emoji: string, isSelected: boolean) {
+// Fallback emojis for types without custom icons
+const FALLBACK_EMOJIS: Record<string, string> = {
+  food: '🍽️',
+  retail: '🛍️',
+  services: '✂️',
+  wholesale: '📦',
+  manufacturing: '🏭',
+  other: '💼',
+}
+
+function getBusinessTypeIcon(typeValue: string, isSelected: boolean) {
   const IconComponent = BUSINESS_TYPE_ICONS[typeValue]
   if (IconComponent) {
     return (
@@ -147,7 +160,7 @@ function getBusinessTypeIcon(typeValue: string, emoji: string, isSelected: boole
       />
     )
   }
-  return <span className="text-2xl">{emoji}</span>
+  return <span className="text-2xl">{FALLBACK_EMOJIS[typeValue] || '💼'}</span>
 }
 
 function NameAndTypeContent({ name, setName, type, setType }: NameAndTypeContentProps) {
@@ -189,7 +202,7 @@ function NameAndTypeContent({ name, setName, type, setType }: NameAndTypeContent
                   : 'border-border hover:border-brand-300'
               }`}
             >
-              {getBusinessTypeIcon(bt.value, bt.icon, type === bt.value)}
+              {getBusinessTypeIcon(bt.value, type === bt.value)}
               <span className="text-sm font-medium text-text-primary">{bt.label}</span>
             </button>
           ))}
@@ -348,8 +361,7 @@ function getDefaultIconForType(businessType: BusinessType | null) {
     return <IconComponent className="w-14 h-14 text-brand" />
   }
 
-  const typeConfig = BUSINESS_TYPES.find(t => t.value === businessType)
-  return <span className="text-5xl">{typeConfig?.icon || '💼'}</span>
+  return <span className="text-5xl">{FALLBACK_EMOJIS[businessType] || '💼'}</span>
 }
 
 function LogoUploadContent({
@@ -383,7 +395,7 @@ function LogoUploadContent({
         </p>
       </Modal.Item>
       <Modal.Item>
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center">
           <div className="relative">
             <div className="w-24 h-24 rounded-2xl bg-brand-subtle flex items-center justify-center overflow-hidden">
               {logoPreview ? (

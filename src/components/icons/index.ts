@@ -60,6 +60,9 @@ export { VanIcon } from './VanIcon'
 export { FoodBeverageIcon } from './FoodBeverageIcon'
 export { ServicesIcon } from './ServicesIcon'
 export { RetailIcon } from './RetailIcon'
+export { WholesaleIcon } from './WholesaleIcon'
+export { ManufacturingIcon } from './ManufacturingIcon'
+export { OtherBusinessIcon } from './OtherBusinessIcon'
 
 // Other
 export { HistoryIcon } from './HistoryIcon'
