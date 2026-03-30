@@ -61,15 +61,7 @@ export default function HubPage() {
     router.push(href)
   }
 
-  if (authLoading || isLoading) {
-    return (
-      <main className="page-loading">
-        <Spinner className="spinner-lg" />
-      </main>
-    )
-  }
-
-  // Filter businesses based on search query
+  // Filter businesses based on search query (must be before early returns)
   const filteredBusinesses = useMemo(() => {
     if (!searchQuery.trim()) return businesses
     const query = searchQuery.toLowerCase().trim()
@@ -80,6 +72,14 @@ export default function HubPage() {
   const joinedBusinesses = filteredBusinesses.filter((b) => !b.isOwner)
   const hasBusinesses = businesses.length > 0
   const hasFilteredResults = filteredBusinesses.length > 0
+
+  if (authLoading || isLoading) {
+    return (
+      <main className="page-loading">
+        <Spinner className="spinner-lg" />
+      </main>
+    )
+  }
 
   if (!hasBusinesses) {
     return (
