@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useState, useRef } from 'react'
+import { useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { ChevronDown, Check, Upload, X } from 'lucide-react'
+import { Upload, X } from 'lucide-react'
 import { Modal, Spinner, useMorphingModal } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
 import {
@@ -10,7 +10,6 @@ import {
   LOCALES,
   CURRENCIES,
   COMMON_TIMEZONES,
-  getCurrencyConfig,
 } from '@/lib/locale-config'
 import { FoodBeverageIcon, ServicesIcon, RetailIcon, WholesaleIcon, ManufacturingIcon, OtherBusinessIcon } from '@/components/icons'
 import type { UseCreateBusinessReturn, BusinessType } from '@/hooks'
@@ -233,12 +232,6 @@ function LocaleContent({
   timezone,
   setTimezone,
 }: LocaleContentProps) {
-  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false)
-  const [showTimezoneDropdown, setShowTimezoneDropdown] = useState(false)
-
-  const selectedCurrency = getCurrencyConfig(currency)
-
-  // Get unique currencies
   const uniqueCurrencies = Object.values(CURRENCIES)
 
   return (
@@ -268,75 +261,33 @@ function LocaleContent({
         <label className="block text-sm font-medium text-text-primary mb-2">
           Currency
         </label>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
-            className="input w-full flex items-center justify-between"
-          >
-            <span>
-              {selectedCurrency?.symbol} {selectedCurrency?.name} ({currency})
-            </span>
-            <ChevronDown className="w-4 h-4 text-text-secondary" />
-          </button>
-          {showCurrencyDropdown && (
-            <div className="absolute z-10 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-              {uniqueCurrencies.map((cur) => (
-                <button
-                  key={cur.code}
-                  type="button"
-                  onClick={() => {
-                    setCurrency(cur.code)
-                    setShowCurrencyDropdown(false)
-                  }}
-                  className={`w-full px-4 py-2 text-left hover:bg-surface-secondary flex items-center justify-between ${
-                    currency === cur.code ? 'bg-brand-subtle' : ''
-                  }`}
-                >
-                  <span>{cur.symbol} {cur.name}</span>
-                  {currency === cur.code && <Check className="w-4 h-4 text-brand" />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <select
+          value={currency}
+          onChange={(e) => setCurrency(e.target.value)}
+          className="input"
+        >
+          {uniqueCurrencies.map((cur) => (
+            <option key={cur.code} value={cur.code}>
+              {cur.symbol} {cur.name} ({cur.code})
+            </option>
+          ))}
+        </select>
       </Modal.Item>
       <Modal.Item>
         <label className="block text-sm font-medium text-text-primary mb-2">
           Timezone
         </label>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowTimezoneDropdown(!showTimezoneDropdown)}
-            className="input w-full flex items-center justify-between"
-          >
-            <span>
-              {COMMON_TIMEZONES.find(tz => tz.value === timezone)?.label || timezone}
-            </span>
-            <ChevronDown className="w-4 h-4 text-text-secondary" />
-          </button>
-          {showTimezoneDropdown && (
-            <div className="absolute z-10 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-              {COMMON_TIMEZONES.map((tz) => (
-                <button
-                  key={tz.value}
-                  type="button"
-                  onClick={() => {
-                    setTimezone(tz.value)
-                    setShowTimezoneDropdown(false)
-                  }}
-                  className={`w-full px-4 py-2 text-left hover:bg-surface-secondary flex items-center justify-between ${
-                    timezone === tz.value ? 'bg-brand-subtle' : ''
-                  }`}
-                >
-                  <span>{tz.label}</span>
-                  {timezone === tz.value && <Check className="w-4 h-4 text-brand" />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <select
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          className="input"
+        >
+          {COMMON_TIMEZONES.map((tz) => (
+            <option key={tz.value} value={tz.value}>
+              {tz.label}
+            </option>
+          ))}
+        </select>
       </Modal.Item>
     </>
   )
