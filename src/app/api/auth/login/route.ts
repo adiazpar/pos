@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create JWT token (simplified - only user identity)
+    // Create JWT token
     const token = await createToken({
       userId: user.id,
       email: user.email,

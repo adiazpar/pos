@@ -133,11 +133,9 @@ function ConfirmReceiveButton({ onReceive, isReceiving }: { onReceive: () => Pro
 function ConfirmEditOrderButton({ onSave, isSaving, disabled }: { onSave: () => Promise<boolean>; isSaving: boolean; disabled: boolean }) {
   const { goToStep } = useMorphingModal()
 
-  const handleClick = async () => {
-    const success = await onSave()
-    if (success) {
-      goToStep(2)
-    }
+  const handleClick = () => {
+    goToStep(2)
+    onSave()
   }
 
   return (

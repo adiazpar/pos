@@ -1,7 +1,6 @@
 'use client'
 
 import { ArrowDownCircle, ArrowUpCircle, ArrowUp, ChevronRight } from 'lucide-react'
-import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
 import { formatCurrency } from '@/lib/utils'
 import { scrollToTop } from '@/lib/scroll'
 import { CATEGORY_LABELS, sortMovementsByDate, formatMovementTime } from '@/lib/cash'
@@ -9,16 +8,12 @@ import type { CashMovement } from '@/types'
 
 interface MovementsListProps {
   movements: CashMovement[]
-  newMovementId: string | null
   onMovementClick: (movement: CashMovement) => void
-  onAnimationComplete: () => void
 }
 
 export function MovementsList({
   movements,
-  newMovementId,
   onMovementClick,
-  onAnimationComplete,
 }: MovementsListProps) {
   const sortedMovements = sortMovementsByDate(movements)
 
@@ -62,31 +57,19 @@ export function MovementsList({
               }}
             >
               {/* Icon */}
-              {mov.id === newMovementId ? (
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <LottiePlayer
-                    src="/animations/success.lottie"
-                    loop={false}
-                    autoplay={true}
-                    style={{ width: 56, height: 56 }}
-                    onComplete={onAnimationComplete}
-                  />
-                </div>
-              ) : (
-                <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    mov.type === 'deposit'
-                      ? 'bg-success-subtle text-success'
-                      : 'bg-error-subtle text-error'
-                  }`}
-                >
-                  {mov.type === 'deposit' ? (
-                    <ArrowDownCircle className="w-5 h-5" />
-                  ) : (
-                    <ArrowUpCircle className="w-5 h-5" />
-                  )}
-                </div>
-              )}
+              <div
+                className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  mov.type === 'deposit'
+                    ? 'bg-success-subtle text-success'
+                    : 'bg-error-subtle text-error'
+                }`}
+              >
+                {mov.type === 'deposit' ? (
+                  <ArrowDownCircle className="w-5 h-5" />
+                ) : (
+                  <ArrowUpCircle className="w-5 h-5" />
+                )}
+              </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">

@@ -47,11 +47,9 @@ export function ConfirmDeleteCodeButton({
 }: ConfirmDeleteCodeButtonProps) {
   const { goToStep } = useMorphingModal()
 
-  const handleClick = async () => {
-    const success = await onDelete()
-    if (success) {
-      goToStep(successStep)
-    }
+  const handleClick = () => {
+    goToStep(successStep)
+    onDelete()
   }
 
   return (

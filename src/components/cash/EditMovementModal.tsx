@@ -51,37 +51,21 @@ export function EditMovementModal({
     }
   }
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!movement || !category) return
 
     const amountValue = parseFloat(amount)
     if (isNaN(amountValue) || amountValue <= 0) return
 
-    setIsSaving(true)
-    try {
-      await onSave(movement, type, category, amountValue, note)
-      onClose()
-    } catch (err) {
-      console.error('Error updating movement:', err)
-      alert('Error updating movement')
-    } finally {
-      setIsSaving(false)
-    }
+    onClose()
+    onSave(movement, type, category, amountValue, note)
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!movement) return
 
-    setIsDeleting(true)
-    try {
-      await onDelete(movement.id)
-      onClose()
-    } catch (err) {
-      console.error('Error deleting movement:', err)
-      alert('Error deleting movement')
-    } finally {
-      setIsDeleting(false)
-    }
+    onClose()
+    onDelete(movement.id)
   }
 
   const categories = getCategoriesForType(type)

@@ -66,12 +66,12 @@ export const POST = withBusinessAuth(async (request, access) => {
   let iconData: string | null = null
   if (iconFile && iconFile.size > 0) {
     try {
-      const base64ForValidation = await fileToBase64(iconFile)
-      const { valid } = validateIconSize(base64ForValidation)
+      const base64 = await fileToBase64(iconFile)
+      const { valid } = validateIconSize(base64)
       if (!valid) {
         return HttpResponse.badRequest('Icon is too large. Maximum size is 100KB.')
       }
-      iconData = await uploadProductIcon(iconFile, productId)
+      iconData = await uploadProductIcon(iconFile, productId, base64)
     } catch (err) {
       console.error('Error processing icon:', err)
     }

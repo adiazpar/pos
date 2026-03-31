@@ -59,11 +59,9 @@ export function RoleChangeSaveButton({
 }: RoleChangeSaveButtonProps) {
   const { goToStep } = useMorphingModal()
 
-  const handleSubmit = async () => {
-    const success = await onSubmit()
-    if (success) {
-      goToStep(0)
-    }
+  const handleSubmit = () => {
+    goToStep(0)
+    onSubmit()
   }
 
   return (

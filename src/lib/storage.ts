@@ -95,15 +95,13 @@ async function ensureMediaDir(): Promise<void> {
  *
  * @returns The icon URL or data URL to store in the database
  */
-export async function uploadProductIcon(file: File, productId: string): Promise<string> {
-  const buffer = Buffer.from(await file.arrayBuffer())
-  const mimeType = file.type || 'image/png'
-
+export async function uploadProductIcon(file: File, productId: string, precomputedBase64?: string): Promise<string> {
   if (IS_PRODUCTION) {
-    // Production: return base64 data URL
-    const base64 = buffer.toString('base64')
-    return `data:${mimeType};base64,${base64}`
+    // Production: return base64 data URL (reuse if already computed)
+    return precomputedBase64 || await fileToBase64(file)
   } else {
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const mimeType = file.type || 'image/png'
     // Local dev: save to file system
     await ensureMediaDir()
     const ext = getExtensionFromMimeType(mimeType)

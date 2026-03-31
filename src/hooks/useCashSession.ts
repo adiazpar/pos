@@ -25,12 +25,14 @@ interface OpenSessionResponse extends ApiResponse {
 // SESSION CACHE
 // ============================================
 
-const CACHE_KEY = 'cash_session_cache'
+function cacheKey(businessId: string) {
+  return `cash_session_cache_${businessId}`
+}
 
-function getCachedSession(): CashSession | null | 'unknown' {
-  if (typeof window === 'undefined') return 'unknown'
+function getCachedSession(businessId: string | null): CashSession | null | 'unknown' {
+  if (typeof window === 'undefined' || !businessId) return 'unknown'
   try {
-    const cached = sessionStorage.getItem(CACHE_KEY)
+    const cached = sessionStorage.getItem(cacheKey(businessId))
     if (cached === null) return 'unknown' // Never cached
     if (cached === 'null') return null // Cached as no session
     return JSON.parse(cached) as CashSession
@@ -39,18 +41,18 @@ function getCachedSession(): CashSession | null | 'unknown' {
   }
 }
 
-function setCachedSession(session: CashSession | null): void {
-  if (typeof window === 'undefined') return
+function setCachedSession(businessId: string | null, session: CashSession | null): void {
+  if (typeof window === 'undefined' || !businessId) return
   try {
-    sessionStorage.setItem(CACHE_KEY, session ? JSON.stringify(session) : 'null')
+    sessionStorage.setItem(cacheKey(businessId), session ? JSON.stringify(session) : 'null')
   } catch {
     // Storage error, ignore
   }
 }
 
-export function clearSessionCache(): void {
+export function clearSessionCache(businessId: string): void {
   if (typeof window === 'undefined') return
-  sessionStorage.removeItem(CACHE_KEY)
+  sessionStorage.removeItem(cacheKey(businessId))
 }
 
 export interface UseCashSessionReturn {
@@ -89,7 +91,7 @@ export function useCashSession({ businessId, movements }: UseCashSessionOptions)
 
   // Initialize from cache if available
   const [currentSession, setCurrentSession] = useState<CashSession | null>(() => {
-    const cached = getCachedSession()
+    const cached = getCachedSession(businessId)
     return cached !== 'unknown' ? cached : null
   })
   const [sessions, setSessions] = useState<CashSession[]>([])
@@ -109,7 +111,7 @@ export function useCashSession({ businessId, movements }: UseCashSessionOptions)
   // Load current open session with caching
   const loadCurrentSession = useCallback(async (): Promise<string | null> => {
     // Check cache first - if we have cached data, use it without API call
-    const cached = getCachedSession()
+    const cached = getCachedSession(businessId)
 
     if (cached !== 'unknown') {
       // Trust the cache - no API call needed
@@ -130,11 +132,11 @@ export function useCashSession({ businessId, movements }: UseCashSessionOptions)
 
       if (data.session) {
         setCurrentSession(data.session)
-        setCachedSession(data.session)
+        setCachedSession(businessId, data.session)
         return data.session.id
       } else {
         setCurrentSession(null)
-        setCachedSession(null)
+        setCachedSession(businessId, null)
         return null
       }
     } catch (err) {
@@ -187,7 +189,7 @@ export function useCashSession({ businessId, movements }: UseCashSessionOptions)
       const session = data.session
 
       // Update cache
-      setCachedSession(session)
+      setCachedSession(businessId, session)
 
       // Transition from open drawer modal to opening animation
       transitionModals(
@@ -214,9 +216,9 @@ export function useCashSession({ businessId, movements }: UseCashSessionOptions)
   // Handle successful drawer close
   const handleCloseDrawerSuccess = useCallback(async (): Promise<void> => {
     setCurrentSession(null)
-    setCachedSession(null)
+    setCachedSession(businessId, null)
     await loadSessions()
-  }, [loadSessions])
+  }, [businessId, loadSessions])
 
   return {
     currentSession,

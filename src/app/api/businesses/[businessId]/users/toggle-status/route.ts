@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { db, businessUsers } from '@/db'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
-import { isOwner } from '@/lib/business-auth'
+import { isOwner, invalidateAccessCache } from '@/lib/business-auth'
 import { withBusinessAuth, validationError, HttpResponse } from '@/lib/api-middleware'
 import { Schemas } from '@/lib/schemas'
 
@@ -50,6 +50,8 @@ export const POST = withBusinessAuth(async (request, access) => {
         eq(businessUsers.businessId, access.businessId)
       )
     )
+
+  invalidateAccessCache(userId, access.businessId)
 
   return NextResponse.json({
     success: true,

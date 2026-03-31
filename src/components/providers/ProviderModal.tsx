@@ -17,11 +17,9 @@ interface SaveProviderButtonProps {
 function SaveProviderButton({ onSubmit, isSaving, disabled }: SaveProviderButtonProps) {
   const { goToStep } = useMorphingModal()
 
-  const handleClick = async () => {
-    const success = await onSubmit()
-    if (success) {
-      goToStep(2) // Go to save success step
-    }
+  const handleClick = () => {
+    goToStep(2)
+    onSubmit()
   }
 
   return (

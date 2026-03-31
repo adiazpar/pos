@@ -162,9 +162,9 @@ async function _trimTransparentPixels(blob: Blob): Promise<Blob> {
 
 /**
  * Compress and resize an image blob to fit within size limits.
- * Target ~400KB to stay within typical upload limits.
+ * Target ~70KB to stay under 100KB server limit after base64 encoding (~33% overhead).
  */
-async function compressIconBlob(blob: Blob, maxSize = 400000, targetDimension = 512): Promise<Blob> {
+async function compressIconBlob(blob: Blob, maxSize = 70000, targetDimension = 512): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => {

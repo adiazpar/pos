@@ -72,11 +72,9 @@ interface ConfirmDeleteButtonProps {
 function ConfirmDeleteButton({ onConfirm, successStep, isDeleting }: ConfirmDeleteButtonProps) {
   const { goToStep } = useMorphingModal()
 
-  const handleClick = async () => {
-    const success = await onConfirm()
-    if (success) {
-      goToStep(successStep)
-    }
+  const handleClick = () => {
+    goToStep(successStep)
+    onConfirm()
   }
 
   return (

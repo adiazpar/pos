@@ -10,42 +10,47 @@ import type { ProductCategory, ProductSettings, SortPreference } from '@/types'
 // SESSION CACHE
 // ============================================
 
-const CATEGORIES_CACHE_KEY = 'product_categories_cache'
-const SETTINGS_CACHE_KEY = 'product_settings_cache'
+function categoriesCacheKey(businessId: string) {
+  return `product_categories_cache_${businessId}`
+}
 
-function getCachedCategories(): ProductCategory[] | null {
+function settingsCacheKey(businessId: string) {
+  return `product_settings_cache_${businessId}`
+}
+
+function getCachedCategories(businessId: string): ProductCategory[] | null {
   if (typeof window === 'undefined') return null
   try {
-    const cached = sessionStorage.getItem(CATEGORIES_CACHE_KEY)
+    const cached = sessionStorage.getItem(categoriesCacheKey(businessId))
     return cached ? JSON.parse(cached) : null
   } catch {
     return null
   }
 }
 
-function setCachedCategories(categories: ProductCategory[]): void {
+function setCachedCategories(businessId: string, categories: ProductCategory[]): void {
   if (typeof window === 'undefined') return
   try {
-    sessionStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify(categories))
+    sessionStorage.setItem(categoriesCacheKey(businessId), JSON.stringify(categories))
   } catch {
     // Storage error, ignore
   }
 }
 
-function getCachedSettings(): ProductSettings | null {
+function getCachedSettings(businessId: string): ProductSettings | null {
   if (typeof window === 'undefined') return null
   try {
-    const cached = sessionStorage.getItem(SETTINGS_CACHE_KEY)
+    const cached = sessionStorage.getItem(settingsCacheKey(businessId))
     return cached ? JSON.parse(cached) : null
   } catch {
     return null
   }
 }
 
-function setCachedSettings(settings: ProductSettings): void {
+function setCachedSettings(businessId: string, settings: ProductSettings): void {
   if (typeof window === 'undefined') return
   try {
-    sessionStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settings))
+    sessionStorage.setItem(settingsCacheKey(businessId), JSON.stringify(settings))
   } catch {
     // Storage error, ignore
   }
@@ -114,10 +119,10 @@ export interface UseProductSettingsReturn {
 
 export function useProductSettings({ businessId }: UseProductSettingsOptions): UseProductSettingsReturn {
   // State
-  const [categories, setCategoriesState] = useState<ProductCategory[]>(() => getCachedCategories() || [])
-  const [settings, setSettingsState] = useState<ProductSettings | null>(() => getCachedSettings())
-  const [isLoadingCategories, setIsLoadingCategories] = useState(() => !getCachedCategories())
-  const [isLoadingSettings, setIsLoadingSettings] = useState(() => !getCachedSettings())
+  const [categories, setCategoriesState] = useState<ProductCategory[]>(() => getCachedCategories(businessId) || [])
+  const [settings, setSettingsState] = useState<ProductSettings | null>(() => getCachedSettings(businessId))
+  const [isLoadingCategories, setIsLoadingCategories] = useState(() => !getCachedCategories(businessId))
+  const [isLoadingSettings, setIsLoadingSettings] = useState(() => !getCachedSettings(businessId))
   const [error, setError] = useState('')
 
   // Operation states
@@ -130,20 +135,20 @@ export function useProductSettings({ businessId }: UseProductSettingsOptions): U
   const setCategories = useCallback((updater: ProductCategory[] | ((prev: ProductCategory[]) => ProductCategory[])) => {
     setCategoriesState(prev => {
       const newCategories = typeof updater === 'function' ? updater(prev) : updater
-      setCachedCategories(newCategories)
+      setCachedCategories(businessId, newCategories)
       return newCategories
     })
-  }, [])
+  }, [businessId])
 
   const setSettings = useCallback((updater: ProductSettings | null | ((prev: ProductSettings | null) => ProductSettings | null)) => {
     setSettingsState(prev => {
       const newSettings = typeof updater === 'function' ? updater(prev) : updater
       if (newSettings) {
-        setCachedSettings(newSettings)
+        setCachedSettings(businessId, newSettings)
       }
       return newSettings
     })
-  }, [])
+  }, [businessId])
 
   // Load categories on mount if not cached
   const refreshCategories = useCallback(async () => {
@@ -183,16 +188,16 @@ export function useProductSettings({ businessId }: UseProductSettingsOptions): U
 
   // Initial load
   useEffect(() => {
-    if (!getCachedCategories()) {
+    if (!getCachedCategories(businessId)) {
       refreshCategories()
     }
-  }, [refreshCategories])
+  }, [businessId, refreshCategories])
 
   useEffect(() => {
-    if (!getCachedSettings()) {
+    if (!getCachedSettings(businessId)) {
       refreshSettings()
     }
-  }, [refreshSettings])
+  }, [businessId, refreshSettings])
 
   // Create category
   const createCategory = useCallback(async (name: string): Promise<ProductCategory | null> => {

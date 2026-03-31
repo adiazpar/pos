@@ -14,26 +14,65 @@ export interface BusinessAccess {
   userId: string
 }
 
+// ============================================
+// ACCESS CACHE (in-memory, per function instance)
+// ============================================
+
+const CACHE_TTL_MS = 60_000 // 60 seconds
+
+interface CachedAccess {
+  access: BusinessAccess
+  expiresAt: number
+}
+
+// Key format: "userId:businessId"
+const accessCache = new Map<string, CachedAccess>()
+
+function getCacheKey(userId: string, businessId: string): string {
+  return `${userId}:${businessId}`
+}
+
 /**
- * Validate that a user has access to a specific business.
- * Returns the user's role and business info, or null if no access.
+ * Invalidate cached access for a user in a specific business.
+ * Call after role changes, membership removal, etc.
  */
-export async function validateBusinessAccess(
-  userId: string,
+export function invalidateAccessCache(userId: string, businessId: string): void {
+  accessCache.delete(getCacheKey(userId, businessId))
+}
+
+/**
+ * Require business access - throws if not authenticated or no access.
+ * Uses a short-lived in-memory cache to avoid repeated DB queries.
+ */
+export async function requireBusinessAccess(
   businessId: string
-): Promise<BusinessAccess | null> {
+): Promise<BusinessAccess> {
+  const session = await getCurrentUser()
+  if (!session) {
+    throw new Error('Unauthorized: Not authenticated')
+  }
+
+  // Check cache
+  const cacheKey = getCacheKey(session.userId, businessId)
+  const cached = accessCache.get(cacheKey)
+  if (cached && cached.expiresAt > Date.now()) {
+    console.log(`[BusinessAuth] CACHE HIT for ${businessId} (${cached.access.role}) — no DB query`)
+    return cached.access
+  }
+
+  console.log(`[BusinessAuth] CACHE MISS for ${businessId} — querying DB`)
+  // Cache miss or expired — query DB
   const membership = await db
     .select({
       businessId: businessUsers.businessId,
       role: businessUsers.role,
-      status: businessUsers.status,
       businessName: businesses.name,
     })
     .from(businessUsers)
     .innerJoin(businesses, eq(businessUsers.businessId, businesses.id))
     .where(
       and(
-        eq(businessUsers.userId, userId),
+        eq(businessUsers.userId, session.userId),
         eq(businessUsers.businessId, businessId),
         eq(businessUsers.status, 'active')
       )
@@ -41,43 +80,23 @@ export async function validateBusinessAccess(
     .get()
 
   if (!membership) {
-    return null
+    // Clear any stale cache entry
+    accessCache.delete(cacheKey)
+    throw new Error('Unauthorized: No access to this business')
   }
 
-  return {
+  const access: BusinessAccess = {
     businessId: membership.businessId,
     businessName: membership.businessName,
     role: membership.role as BusinessRole,
-    userId,
-  }
-}
-
-/**
- * Get business access from current session and businessId.
- * Convenience wrapper that combines getCurrentUser + validateBusinessAccess.
- * Returns null if not authenticated or no access.
- */
-export async function getBusinessAccess(
-  businessId: string
-): Promise<BusinessAccess | null> {
-  const session = await getCurrentUser()
-  if (!session) {
-    return null
+    userId: session.userId,
   }
 
-  return validateBusinessAccess(session.userId, businessId)
-}
+  // Cache the result
+  accessCache.set(cacheKey, {
+    access,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  })
 
-/**
- * Require business access - throws if not authenticated or no access.
- * Use in API routes that need business context.
- */
-export async function requireBusinessAccess(
-  businessId: string
-): Promise<BusinessAccess> {
-  const access = await getBusinessAccess(businessId)
-  if (!access) {
-    throw new Error('Unauthorized: No access to this business')
-  }
   return access
 }

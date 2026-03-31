@@ -42,23 +42,15 @@ export function AddMovementModal({
     onReset: resetForm,
   })
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!currentSession || !category) return
 
     const amountValue = parseFloat(amount)
     if (isNaN(amountValue) || amountValue <= 0) return
 
-    setIsSaving(true)
-    try {
-      await onSubmit(type, category, amountValue, note)
-      resetForm()
-      onClose()
-    } catch (err) {
-      console.error('Error recording movement:', err)
-      alert('Error recording movement')
-    } finally {
-      setIsSaving(false)
-    }
+    resetForm()
+    onClose()
+    onSubmit(type, category, amountValue, note)
   }
 
   const categories = getCategoriesForType(type)

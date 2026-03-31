@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/simple-auth'
-import { validateBusinessAccess, isOwner } from '@/lib/business-auth'
+import { requireBusinessAccess, isOwner } from '@/lib/business-auth'
 import type { RouteParams } from '@/lib/api-middleware'
 import {
   db,
@@ -41,9 +41,10 @@ export async function DELETE(
 
     const { businessId } = await params
 
-    const access = await validateBusinessAccess(session.userId, businessId)
-
-    if (!access) {
+    let access
+    try {
+      access = await requireBusinessAccess(businessId)
+    } catch {
       return NextResponse.json(
         { error: 'You do not have access to this business' },
         { status: 403 }

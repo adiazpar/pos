@@ -63,6 +63,7 @@ export async function GET() {
       businesses: activeMemberships.map(m => ({
         id: m.businessId,
         name: m.businessName,
+        role: m.role,
         isOwner: m.businessOwnerId === session.userId,
         memberCount: memberCounts[m.businessId] || 1,
         type: m.businessType,

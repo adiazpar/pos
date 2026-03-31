@@ -209,9 +209,7 @@ export default function CajaPage() {
               <div style={{ marginTop: 'var(--space-2)' }}>
                 <MovementsList
                   movements={movementsHook.movements}
-                  newMovementId={movementsHook.newMovementId}
                   onMovementClick={handleOpenEditModal}
-                  onAnimationComplete={movementsHook.clearNewMovementId}
                 />
               </div>
             )}

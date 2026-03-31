@@ -69,11 +69,9 @@ interface ConfirmOrderButtonProps {
 function ConfirmOrderButton({ onSave, isSaving, disabled }: ConfirmOrderButtonProps) {
   const { goNext } = useMorphingModal()
 
-  const handleClick = async () => {
-    const success = await onSave()
-    if (success) {
-      goNext()
-    }
+  const handleClick = () => {
+    goNext()
+    onSave()
   }
 
   return (

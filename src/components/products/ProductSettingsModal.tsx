@@ -52,9 +52,9 @@ function SaveCategoryButton({ name, editingCategory, onSave, isSaving }: SaveCat
   const isValid = name.trim().length > 0
   const hasChanges = editingCategory ? name.trim() !== editingCategory.name : true
 
-  const handleSave = async () => {
-    await onSave()
-    goToStep(4) // Success step
+  const handleSave = () => {
+    goToStep(4)
+    onSave()
   }
 
   return (
@@ -77,9 +77,9 @@ interface DeleteCategoryButtonProps {
 function DeleteCategoryButton({ onDelete, isDeleting }: DeleteCategoryButtonProps) {
   const { goToStep } = useMorphingModal()
 
-  const handleDelete = async () => {
-    await onDelete()
-    goToStep(4) // Success step
+  const handleDelete = () => {
+    goToStep(4)
+    onDelete()
   }
 
   return (

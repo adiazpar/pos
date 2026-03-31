@@ -9,7 +9,8 @@ import { Spinner } from '@/components/ui'
 import {
   ProductsTab,
   OrdersTab,
-  ProductModal,
+  AddProductModal,
+  EditProductModal,
   ProductSettingsModal,
   NewOrderModal,
   OrderDetailModal,
@@ -33,20 +34,23 @@ import type { Product, Provider, SortPreference, ProductCategory } from '@/types
 // SESSION CACHE
 // ============================================
 
-const productsCache = createSessionCache<Product[]>(CACHE_KEYS.PRODUCTS)
-const providersCache = createSessionCache<Provider[]>(CACHE_KEYS.PROVIDERS)
-const ordersCache = createSessionCache<ExpandedOrder[]>(CACHE_KEYS.ORDERS)
+function scopedCache<T>(key: string, businessId: string) {
+  return createSessionCache<T>(`${key}_${businessId}`)
+}
 
 // ============================================
 // PRODUCT MODAL WRAPPER
 // Syncs pipeline state to context and populates form on edit
 // ============================================
 
-interface ProductModalWrapperProps {
+// ============================================
+// ADD PRODUCT MODAL WRAPPER
+// ============================================
+
+interface AddProductModalWrapperProps {
   isOpen: boolean
   onClose: () => void
   categories: ProductCategory[]
-  editingProduct: Product | null
   pipelineState: {
     step: PipelineStep
     result?: { name: string; iconPreview: string; iconBlob: Blob } | null
@@ -54,31 +58,24 @@ interface ProductModalWrapperProps {
   }
   isCompressing: boolean
   onSubmit: (data: ProductFormData, editingProductId: string | null) => Promise<boolean>
-  onDelete: (productId: string) => Promise<boolean>
-  onSaveAdjustment: (data: StockAdjustmentData) => Promise<void>
   onAbortAiProcessing: () => void
   onPipelineReset: () => void
   onAiPhotoCapture: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
-  canDelete: boolean
   defaultCategoryId?: string | null
 }
 
-function ProductModalWrapper({
+function AddProductModalWrapper({
   isOpen,
   onClose,
   categories,
-  editingProduct,
   pipelineState,
   isCompressing,
   onSubmit,
-  onDelete,
-  onSaveAdjustment,
   onAbortAiProcessing,
   onPipelineReset,
   onAiPhotoCapture,
-  canDelete,
   defaultCategoryId,
-}: ProductModalWrapperProps) {
+}: AddProductModalWrapperProps) {
   const {
     setPipelineStep,
     setIsCompressing,
@@ -86,21 +83,17 @@ function ProductModalWrapper({
     setIconPreview,
     setGeneratedIconBlob,
     setError,
-    populateFromProduct,
     resetForm,
   } = useProductForm()
 
-  // Sync pipeline step to context
   useEffect(() => {
     setPipelineStep(pipelineState.step)
   }, [pipelineState.step, setPipelineStep])
 
-  // Sync compression state to context
   useEffect(() => {
     setIsCompressing(isCompressing)
   }, [isCompressing, setIsCompressing])
 
-  // Sync pipeline results to form state
   useEffect(() => {
     if (pipelineState.step === 'complete' && pipelineState.result) {
       const result = pipelineState.result
@@ -110,33 +103,72 @@ function ProductModalWrapper({
     }
   }, [pipelineState.step, pipelineState.result, setName, setIconPreview, setGeneratedIconBlob])
 
-  // Show pipeline errors
   useEffect(() => {
     if (pipelineState.step === 'error' && pipelineState.error) {
       setError(pipelineState.error)
     }
   }, [pipelineState.step, pipelineState.error, setError])
 
-  // Populate form when editing, reset when adding new
-  const prevEditingRef = useRef<Product | null>(null)
-  useEffect(() => {
-    if (!isOpen) return
-
-    if (editingProduct && editingProduct !== prevEditingRef.current) {
-      populateFromProduct(editingProduct, getProductIconUrl)
-    } else if (!editingProduct && prevEditingRef.current !== null) {
-      resetForm(defaultCategoryId)
-    }
-    prevEditingRef.current = editingProduct
-  }, [isOpen, editingProduct, populateFromProduct, resetForm, defaultCategoryId])
-
-  // Reset form on modal exit
   const handleExitComplete = useCallback(() => {
     resetForm(defaultCategoryId)
   }, [resetForm, defaultCategoryId])
 
   return (
-    <ProductModal
+    <AddProductModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onExitComplete={handleExitComplete}
+      categories={categories}
+      onSubmit={onSubmit}
+      onAbortAiProcessing={onAbortAiProcessing}
+      onPipelineReset={onPipelineReset}
+      onAiPhotoCapture={onAiPhotoCapture}
+    />
+  )
+}
+
+// ============================================
+// EDIT PRODUCT MODAL WRAPPER
+// ============================================
+
+interface EditProductModalWrapperProps {
+  isOpen: boolean
+  onClose: () => void
+  categories: ProductCategory[]
+  editingProduct: Product | null
+  onSubmit: (data: ProductFormData, editingProductId: string | null) => Promise<boolean>
+  onDelete: (productId: string) => Promise<boolean>
+  onSaveAdjustment: (data: StockAdjustmentData) => Promise<void>
+  canDelete: boolean
+  defaultCategoryId?: string | null
+}
+
+function EditProductModalWrapper({
+  isOpen,
+  onClose,
+  categories,
+  editingProduct,
+  onSubmit,
+  onDelete,
+  onSaveAdjustment,
+  canDelete,
+  defaultCategoryId,
+}: EditProductModalWrapperProps) {
+  const { populateFromProduct, resetForm } = useProductForm()
+
+  // Populate form when modal opens with a product
+  useEffect(() => {
+    if (isOpen && editingProduct) {
+      populateFromProduct(editingProduct, getProductIconUrl)
+    }
+  }, [isOpen, editingProduct, populateFromProduct])
+
+  const handleExitComplete = useCallback(() => {
+    resetForm(defaultCategoryId)
+  }, [resetForm, defaultCategoryId])
+
+  return (
+    <EditProductModal
       isOpen={isOpen}
       onClose={onClose}
       onExitComplete={handleExitComplete}
@@ -144,9 +176,6 @@ function ProductModalWrapper({
       onSubmit={onSubmit}
       onDelete={onDelete}
       onSaveAdjustment={onSaveAdjustment}
-      onAbortAiProcessing={onAbortAiProcessing}
-      onPipelineReset={onPipelineReset}
-      onAiPhotoCapture={onAiPhotoCapture}
       canDelete={canDelete}
     />
   )
@@ -159,11 +188,17 @@ export default function ProductosPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<PageTab>('products')
 
+  // Business-scoped caches
+  const bid = businessId || ''
+  const productsCache = useMemo(() => scopedCache<Product[]>(CACHE_KEYS.PRODUCTS, bid), [bid])
+  const providersCache = useMemo(() => scopedCache<Provider[]>(CACHE_KEYS.PROVIDERS, bid), [bid])
+  const ordersCache = useMemo(() => scopedCache<ExpandedOrder[]>(CACHE_KEYS.ORDERS, bid), [bid])
+
   // Data state - initialize from cache
-  const [products, setProductsState] = useState<Product[]>(() => productsCache.get() || [])
-  const [orders, setOrdersState] = useState<ExpandedOrder[]>(() => ordersCache.get() || [])
-  const [providers, setProvidersState] = useState<Provider[]>(() => providersCache.get() || [])
-  const [isLoading, setIsLoading] = useState(() => !productsCache.get())
+  const [products, setProductsState] = useState<Product[]>(() => scopedCache<Product[]>(CACHE_KEYS.PRODUCTS, bid).get() || [])
+  const [orders, setOrdersState] = useState<ExpandedOrder[]>(() => scopedCache<ExpandedOrder[]>(CACHE_KEYS.ORDERS, bid).get() || [])
+  const [providers, setProvidersState] = useState<Provider[]>(() => scopedCache<Provider[]>(CACHE_KEYS.PROVIDERS, bid).get() || [])
+  const [isLoading, setIsLoading] = useState(() => !scopedCache<Product[]>(CACHE_KEYS.PRODUCTS, bid).get())
   const [error, setError] = useState('')
 
   // Wrapper functions that update both state and cache
@@ -173,7 +208,7 @@ export default function ProductosPage() {
       productsCache.set(newProducts)
       return newProducts
     })
-  }, [])
+  }, [productsCache])
 
   const setProviders = useCallback((updater: Provider[] | ((prev: Provider[]) => Provider[])) => {
     setProvidersState(prev => {
@@ -181,7 +216,7 @@ export default function ProductosPage() {
       providersCache.set(newProviders)
       return newProviders
     })
-  }, [])
+  }, [providersCache])
 
   const setOrders = useCallback((updater: ExpandedOrder[] | ((prev: ExpandedOrder[]) => ExpandedOrder[])) => {
     setOrdersState(prev => {
@@ -189,7 +224,7 @@ export default function ProductosPage() {
       ordersCache.set(newOrders)
       return newOrders
     })
-  }, [])
+  }, [ordersCache])
 
   // Product settings
   const productSettings = useProductSettings({ businessId: businessId || '' })
@@ -277,7 +312,7 @@ export default function ProductosPage() {
   const canDelete = canManage
 
   // Track if orders have been loaded (check cache on init)
-  const [ordersLoaded, setOrdersLoaded] = useState(() => !!ordersCache.get())
+  const [ordersLoaded, setOrdersLoaded] = useState(() => !!scopedCache<ExpandedOrder[]>(CACHE_KEYS.ORDERS, bid).get())
 
   // Load products and providers on mount if not cached
   useEffect(() => {
@@ -484,6 +519,7 @@ export default function ProductosPage() {
     if (compression.state.isProcessing) {
       compression.cancel()
     }
+    setEditingProduct(null)
     setIsModalOpen(false)
   }, [pipeline, compression])
 
@@ -861,24 +897,31 @@ export default function ProductosPage() {
         )}
       </main>
 
-      {/* Product Modal - wrapped in ProductFormProvider for context-based state */}
+      {/* Product Modals - shared form context, only one open at a time */}
       <ProductFormProvider defaultCategoryId={settings?.defaultCategoryId}>
-        <ProductModalWrapper
-          isOpen={isModalOpen}
+        <AddProductModalWrapper
+          isOpen={isModalOpen && !editingProduct}
           onClose={handleCloseModal}
           categories={categories}
-          editingProduct={editingProduct}
           pipelineState={pipeline.state}
           isCompressing={compression.state.isProcessing}
           onSubmit={handleSubmitProduct}
-          onDelete={handleDeleteProduct}
-          onSaveAdjustment={handleSaveAdjustment}
           onAbortAiProcessing={() => {
             pipeline.cancel()
             compression.cancel()
           }}
           onPipelineReset={() => pipeline.reset()}
           onAiPhotoCapture={handleAiPhotoCapture}
+          defaultCategoryId={settings?.defaultCategoryId}
+        />
+        <EditProductModalWrapper
+          isOpen={isModalOpen && !!editingProduct}
+          onClose={handleCloseModal}
+          categories={categories}
+          editingProduct={editingProduct}
+          onSubmit={handleSubmitProduct}
+          onDelete={handleDeleteProduct}
+          onSaveAdjustment={handleSaveAdjustment}
           canDelete={canDelete}
           defaultCategoryId={settings?.defaultCategoryId}
         />

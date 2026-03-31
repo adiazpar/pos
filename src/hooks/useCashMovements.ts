@@ -23,7 +23,6 @@ export interface UseCashMovementsReturn {
   // State
   movements: CashMovement[]
   isLoading: boolean
-  newMovementId: string | null
   lastMovementType: 'deposit' | 'withdrawal' | null
 
   // Actions
@@ -44,7 +43,6 @@ export interface UseCashMovementsReturn {
     note: string
   ) => Promise<CashMovement>
   deleteMovement: (movementId: string) => Promise<void>
-  clearNewMovementId: () => void
 }
 
 export function useCashMovements({ businessId }: UseCashMovementsOptions): UseCashMovementsReturn {
@@ -52,7 +50,6 @@ export function useCashMovements({ businessId }: UseCashMovementsOptions): UseCa
 
   const [movements, setMovements] = useState<CashMovement[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [newMovementId, setNewMovementId] = useState<string | null>(null)
   const [lastMovementType, setLastMovementType] = useState<'deposit' | 'withdrawal' | null>(null)
 
   // Load movements for a session
@@ -106,9 +103,6 @@ export function useCashMovements({ businessId }: UseCashMovementsOptions): UseCa
       // Trigger balance animation
       setLastMovementType(type)
       setTimeout(() => setLastMovementType(null), 500)
-
-      // Track new movement for inline animation
-      setNewMovementId(newMovement.id)
 
       return newMovement
     } catch (err) {
@@ -172,21 +166,14 @@ export function useCashMovements({ businessId }: UseCashMovementsOptions): UseCa
     }
   }, [businessId])
 
-  // Clear new movement ID (used after animation completes)
-  const clearNewMovementId = useCallback(() => {
-    setNewMovementId(null)
-  }, [])
-
   return {
     movements,
     isLoading,
-    newMovementId,
     lastMovementType,
     loadMovements,
     setMovements,
     recordMovement,
     updateMovement,
     deleteMovement,
-    clearNewMovementId,
   }
 }

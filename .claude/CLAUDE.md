@@ -4,7 +4,10 @@
 
 All project documentation and plans live in `.claude/docs/`:
 - **Plans**: `.claude/docs/plans/` - Implementation plans and architecture docs
-- **Specs**: `.claude/docs/` - Technical documentation and guides
+- **Guides** (read before building features that touch these areas):
+  - `.claude/docs/backend-patterns.md` - API routes, auth, validation, rate limiting
+  - `.claude/docs/performance-patterns.md` - Optimistic UI, access caching, session caches, icon uploads
+  - `.claude/docs/ai-product-pipeline.md` - AI snap-to-add pipeline
 
 ## Project Overview
 
@@ -110,19 +113,6 @@ src/
 | `manufacturing` | Manufacturing |
 | `other` | Other |
 
-### Hub Page Search
-
-The hub page includes a search bar to filter businesses:
-- Case-insensitive filtering by business name
-- Search icon (custom SVG) on the left
-- Clear button (X) appears when text is entered
-- Shows "No businesses found" message when no matches
-
-**Note:** The search input uses inline styles for padding to override the `.input` class:
-```tsx
-style={{ paddingLeft: '2.75rem', paddingRight: '2.5rem' }}
-```
-
 ---
 
 ## Database Schema (Drizzle + Turso)
@@ -151,14 +141,9 @@ Schema defined in `src/db/schema.ts`. All tables use `businessId` for multi-tena
 | `business_archives` | Deleted business recovery data |
 | `app_config` | Application configuration |
 
-### Schema Changes Workflow
+### Schema Changes
 
-1. Edit `src/db/schema.ts`
-2. Push to development: `npm run db:push`
-3. Test changes locally
-4. Push to production: `npm run db:push:prod`
-
-**Note:** `db:push` uses `--force` flag for development speed. For production, review changes carefully.
+Edit `src/db/schema.ts`, then `npm run db:push` (dev) or `npm run db:push:prod` (production).
 
 ---
 
@@ -208,30 +193,7 @@ function getGreeting(): string {
 | `npm run lint` | Run ESLint |
 | `npm run test` | Run tests with Vitest |
 
-### Starting Dev Server
-
-```bash
-npm run dev
-```
-
 Access via Tailscale IP for mobile testing: http://100.113.9.34:3000
-
-### Database Commands
-
-**Push schema to development:**
-```bash
-npm run db:push
-```
-
-**Push schema to production (requires TURSO_PROD_* env vars):**
-```bash
-npm run db:push:prod
-```
-
-**Open Drizzle Studio to browse data:**
-```bash
-npm run db:studio
-```
 
 ---
 
@@ -292,130 +254,67 @@ When creating multi-step modals, `Modal.Footer` **MUST be a direct child** of `M
 </Modal.Step>
 ```
 
-**Why:** The `separateFooter()` function scans `step.props.children` for `Modal.Footer`. It cannot detect footers returned from sub-components because React hasn't rendered them yet.
+**Why:** Modal scans direct children for `_isModalStep` and `_isModalFooter` markers. Wrapper components that return `Modal.Step` or `Modal.Footer` are invisible to this scan — they get filtered out, breaking step indices and footer detection.
 
-**Pattern for reusable step content:**
-1. Create content-only components that return ONLY `Modal.Item` elements
-2. If footer buttons need `useMorphingModal()`, create separate button components
-3. Place `Modal.Footer` as direct child of `Modal.Step`
+**Rules:**
+1. `Modal.Step` must be a **direct child** of `Modal` (no wrapper components like `DeleteConfirmationStep`)
+2. `Modal.Footer` must be a **direct child** of `Modal.Step`
+3. For reusable content, extract content-only components that return `Modal.Item` elements
+4. For buttons needing `useMorphingModal()`, create separate button components
 
-See `src/components/ui/modal/Modal.tsx` header comments and `src/app/[businessId]/team/page.tsx` for examples.
+### Multi-Step Modal Navigation
 
-### Multi-Step Modals with Variable Footers
-
-When building multi-step modals where some steps have footers and others don't, the modal handles this automatically with smooth height animations.
-
-**How it works:**
-- Footer updates based on `targetStep` during transitions (not `currentStep`)
-- AnimatedFooter uses CSS Grid to animate height changes
-- The footer element stays in the DOM and animates between expanded/collapsed states
-
-**Example - Steps with and without footers:**
-```tsx
-<Modal isOpen={isOpen} onClose={onClose}>
-  {/* Step 0: No footer - just content */}
-  <Modal.Step title="User Details" hideBackButton>
-    <UserDetailsContent />
-    {/* No Modal.Footer here - footer will animate to collapsed */}
-  </Modal.Step>
-
-  {/* Step 1: Has footer */}
-  <Modal.Step title="Edit Phone" backStep={0}>
-    <PhoneEditContent />
-    <Modal.Footer>
-      <CancelButton />
-      <SaveButton />
-    </Modal.Footer>
-  </Modal.Step>
-</Modal>
-```
-
-**Navigation between non-adjacent steps:**
-Use `goToStep(index)` from `useMorphingModal()` to jump between steps:
-```tsx
-function UserDetailsContent() {
-  const { goToStep } = useMorphingModal()
-  return (
-    <Modal.Item>
-      <button onClick={() => goToStep(1)}>Edit Phone</button>
-      <button onClick={() => goToStep(2)}>Change Role</button>
-    </Modal.Item>
-  )
-}
-```
-
-**The `backStep` prop:**
-Override the default back navigation to return to a specific step:
-```tsx
-<Modal.Step title="Edit Phone" backStep={0}>
-  {/* Back button goes to step 0 instead of previous step */}
-</Modal.Step>
-```
+- Use `goToStep(index)` from `useMorphingModal()` to jump between steps
+- Use `backStep` prop on `Modal.Step` to override default back navigation
+- Footer updates based on `targetStep` during transitions, animates height automatically
 
 ### Modal Lottie Animations
 
-When adding Lottie animations to modal success/error confirmation steps, use this pattern to prevent the animation from getting cut off during the modal transition:
+Use **optimistic UI** for success/error steps — navigate instantly, API runs in background:
 
 ```tsx
-// State to trigger animation AFTER action completes
-const [itemDeleted, setItemDeleted] = useState(false)
-
-// In your delete handler:
-const handleDelete = async () => {
-  await fetch(`/api/items/${id}`, { method: 'DELETE' })
-  setItemDeleted(true)  // Triggers animation
-  goToStep(3)           // Navigate to success step
+// Handler: instant feedback, API in background
+const handleDelete = () => {
+  setItemDeleted(true)
+  goToStep(3)
+  onDelete(itemId) // fire and forget
 }
 
-// Success/Error step with Lottie:
+// Success step with Lottie:
 <Modal.Step title="Item Deleted" hideBackButton>
   <Modal.Item>
     <div className="flex flex-col items-center text-center py-4">
-      {/* Fixed-size container prevents layout shift */}
       <div style={{ width: 160, height: 160 }}>
         {itemDeleted && (
           <LottiePlayer
-            src="/animations/error.json"  // or success.json
+            src="/animations/error.json"
             loop={false}
             autoplay={true}
-            delay={500}  // CRITICAL: Wait for modal transition to complete
+            delay={300}  // Match modal transition duration
             style={{ width: 160, height: 160 }}
           />
         )}
       </div>
-      {/* Text fades in with animation */}
       <p
-        className="text-lg font-semibold text-text-primary mt-4 transition-opacity duration-500"
+        className="text-lg font-semibold text-text-primary mt-4 transition-opacity duration-300"
         style={{ opacity: itemDeleted ? 1 : 0 }}
-      >
-        Item Deleted
-      </p>
-      <p
-        className="text-sm text-text-secondary mt-1 transition-opacity duration-500 delay-200"
-        style={{ opacity: itemDeleted ? 1 : 0 }}
-      >
-        The item has been deleted successfully
-      </p>
+      >Item Deleted</p>
     </div>
   </Modal.Item>
-
   <Modal.Footer>
-    <button onClick={handleClose} className="btn btn-primary flex-1">
-      Done
-    </button>
+    <button onClick={handleClose} className="btn btn-primary flex-1">Done</button>
   </Modal.Footer>
 </Modal.Step>
 ```
 
 **Key points:**
-- `delay={500}` on LottiePlayer waits for modal step transition (~300ms) to complete before starting
-- Conditional render `{itemDeleted && <LottiePlayer />}` ensures animation only plays when state is set
-- Fixed container size (`width: 160, height: 160`) prevents layout shift while animation loads
-- Text uses `transition-opacity` with inline `opacity` style to fade in sync with animation
+- `delay={300}` matches modal transition so Lottie plays when fade-in completes
+- Set state and navigate BEFORE the API call (optimistic)
+- See `.claude/docs/performance-patterns.md` for full optimistic UI guidelines
 
 **Available animations:**
-- `/animations/success.json` - Green checkmark for successful actions (save, create, receive)
-- `/animations/error.json` - Red X for deletions
+- `/animations/success.json` - Green checkmark (save, create, receive)
+- `/animations/error.json` - Red X (deletions)
 
 ---
 
@@ -548,23 +447,6 @@ Copy `.env.example` to `.env.local`:
 | `TURSO_PROD_AUTH_TOKEN` | Turso prod auth token (for db:push:prod) |
 | `OPENAI_API_KEY` | OpenAI API key (optional, for AI features) |
 | `FAL_KEY` | fal.ai API key (optional, for emoji generation) |
-
-### Setting Up Turso
-
-```bash
-# Install CLI
-brew install tursodatabase/tap/turso
-
-# Login
-turso auth login
-
-# Create dev database
-turso db create pos-dev
-
-# Get URL and token
-turso db show pos-dev --url
-turso db tokens create pos-dev
-```
 
 ---
 

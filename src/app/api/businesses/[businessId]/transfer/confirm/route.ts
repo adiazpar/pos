@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { db, ownershipTransfers, users, businesses, businessUsers } from '@/db'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
-import { isOwner } from '@/lib/business-auth'
+import { isOwner, invalidateAccessCache } from '@/lib/business-auth'
 import { verifyPassword } from '@/lib/simple-auth'
 import { nanoid } from 'nanoid'
 import { withBusinessAuth, validationError, HttpResponse } from '@/lib/api-middleware'
@@ -151,6 +151,10 @@ export const POST = withBusinessAuth(async (request, access) => {
       updatedAt: now,
     })
     .where(eq(ownershipTransfers.id, transfer.id))
+
+  // Invalidate cached access for both users
+  invalidateAccessCache(access.userId, access.businessId)
+  invalidateAccessCache(transfer.toUser, access.businessId)
 
   return NextResponse.json({ success: true })
 })
