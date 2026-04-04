@@ -237,6 +237,10 @@ export function AddProductModal({
                   min="0"
                   value={price}
                   onChange={e => setPrice(e.target.value)}
+                  onBlur={() => {
+                    const num = parseFloat(price)
+                    if (!isNaN(num)) setPrice(num.toFixed(2))
+                  }}
                   className="input"
                   placeholder="0.00"
                 />
@@ -381,6 +385,10 @@ export function AddProductModal({
                   min="0"
                   value={price}
                   onChange={e => setPrice(e.target.value)}
+                  onBlur={() => {
+                    const num = parseFloat(price)
+                    if (!isNaN(num)) setPrice(num.toFixed(2))
+                  }}
                   className="input"
                   placeholder="0.00"
                 />

@@ -29,22 +29,6 @@ export function MobileNav() {
 
   // Local state to control the hidden class
   const [isHidden, setIsHidden] = useState(false)
-  const [isAtBottom, setIsAtBottom] = useState(true)
-
-  // Track scroll position to show/hide shadow
-  useEffect(() => {
-    const scrollContainer = document.querySelector('.main-scroll-container')
-    if (!scrollContainer) return
-
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainer
-      setIsAtBottom(scrollHeight - scrollTop - clientHeight < 1)
-    }
-
-    handleScroll()
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
-    return () => scrollContainer.removeEventListener('scroll', handleScroll)
-  }, [])
 
   // Get nav items for current business
   const navItems = useMemo(() => {
@@ -105,7 +89,7 @@ export function MobileNav() {
     return (
       <nav
         ref={navRef}
-        className={`mobile-nav mobile-nav--hub ${isHidden ? 'mobile-nav--hidden' : ''} ${!isAtBottom ? 'mobile-nav--shadow' : ''}`}
+        className={`mobile-nav mobile-nav--hub ${isHidden ? 'mobile-nav--hidden' : ''}`}
       >
         <div className="flex gap-3 w-full" style={contentFadeStyle}>
           <button
@@ -135,7 +119,7 @@ export function MobileNav() {
   return (
     <nav
       ref={navRef}
-      className={`mobile-nav ${isHidden ? 'mobile-nav--hidden' : ''} ${!isAtBottom ? 'mobile-nav--shadow' : ''}`}
+      className={`mobile-nav ${isHidden ? 'mobile-nav--hidden' : ''}`}
     >
       <div className="flex w-full" style={contentFadeStyle}>
         {navItems.map((item) => {

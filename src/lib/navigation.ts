@@ -1,5 +1,4 @@
-import { BarChart3 } from 'lucide-react'
-import { HomeIcon, SalesIcon, CashIcon, TagsIcon } from '@/components/icons'
+import { HomeIcon, SalesIcon, CashIcon, TagsIcon, SettingsIcon } from '@/components/icons'
 import type { ComponentType } from 'react'
 
 export interface NavItem {
@@ -31,7 +30,7 @@ const NAV_ITEM_TEMPLATES = [
   { path: '/sales', label: 'Sales', icon: SalesIcon },
   { path: '/cash', label: 'Cash', icon: CashIcon },
   { path: '/products', label: 'Products', icon: TagsIcon },
-  { path: '/reports', label: 'Reports', icon: BarChart3 },
+  { path: '/manage', label: 'Manage', icon: SettingsIcon },
 ]
 
 /**
@@ -79,7 +78,7 @@ const ROUTE_CONFIGS: Record<string, RouteConfig> = {
   'cash': { pageTitle: 'Cash Drawer' },
   'cash/history': { pageTitle: 'History', backTo: '/cash' },
   'products': { pageTitle: 'Products' },
-  'reports': { pageTitle: 'Reports' },
+  'manage': { pageTitle: 'Manage' },
   'team': { pageTitle: 'Team' },
   'providers': { pageTitle: 'Providers' },
 }

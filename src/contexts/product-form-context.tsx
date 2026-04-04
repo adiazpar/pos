@@ -155,7 +155,7 @@ export function ProductFormProvider({ children, defaultCategoryId }: ProductForm
   const populateFromProduct = useCallback((product: Product, getIconUrl: (p: Product) => string | null) => {
     setEditingProduct(product)
     setName(product.name)
-    setPrice(product.price.toString())
+    setPrice(product.price.toFixed(2))
     setCategoryId(product.categoryId || '')
     setActive(product.status === 'active')
     setIconPreview(getIconUrl(product))

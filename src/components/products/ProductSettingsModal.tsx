@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trash2, GripVertical, Plus, ChevronRight, Pencil, Settings } from 'lucide-react'
+import { Trash2, GripVertical, Plus, ChevronRight, Pencil } from 'lucide-react'
 import { Spinner, Modal, useMorphingModal } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
 import { SORT_OPTIONS } from '@/lib/products'
@@ -183,36 +183,27 @@ export function ProductSettingsModal({
         <Modal.Item>
           <Modal.GoToStepButton
             step={1}
-            className="list-item-clickable list-item-flat"
+            className="list-item-clickable list-item-flat w-full text-left"
           >
-            <div className="w-10 h-10 rounded-xl bg-bg-muted flex items-center justify-center">
-              <Settings className="w-5 h-5 text-brand" />
-            </div>
             <div className="flex-1 min-w-0">
               <span className="font-medium block">Categories</span>
               <span className="text-xs text-text-tertiary">
                 {categories.length} {categories.length === 1 ? 'category' : 'categories'}
               </span>
             </div>
-            <ChevronRight className="w-5 h-5 text-text-tertiary" />
+            <ChevronRight className="w-5 h-5 text-text-tertiary flex-shrink-0" />
           </Modal.GoToStepButton>
-        </Modal.Item>
-
-        <Modal.Item>
           <Modal.GoToStepButton
             step={5}
-            className="list-item-clickable list-item-flat"
+            className="list-item-clickable list-item-flat w-full text-left"
           >
-            <div className="w-10 h-10 rounded-xl bg-bg-muted flex items-center justify-center">
-              <Settings className="w-5 h-5 text-text-secondary" />
-            </div>
             <div className="flex-1 min-w-0">
               <span className="font-medium block">Preferences</span>
               <span className="text-xs text-text-tertiary">
                 Default category and sort order
               </span>
             </div>
-            <ChevronRight className="w-5 h-5 text-text-tertiary" />
+            <ChevronRight className="w-5 h-5 text-text-tertiary flex-shrink-0" />
           </Modal.GoToStepButton>
         </Modal.Item>
 

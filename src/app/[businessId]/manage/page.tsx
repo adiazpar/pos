@@ -1,6 +1,6 @@
 'use client'
 
-export default function ReportesPage() {
+export default function ManagePage() {
   // Header is set optimistically by nav component
 
   return (

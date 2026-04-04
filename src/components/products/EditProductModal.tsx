@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Minus } from 'lucide-react'
 import { TrashIcon, SlidersIcon, ImageAttachIcon } from '@/components/icons'
 import { Spinner, Modal, useMorphingModal, StockStepper } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
@@ -196,6 +196,10 @@ export function EditProductModal({
                   min="0"
                   value={price}
                   onChange={e => setPrice(e.target.value)}
+                  onBlur={() => {
+                    const num = parseFloat(price)
+                    if (!isNaN(num)) setPrice(num.toFixed(2))
+                  }}
                   className="input"
                   placeholder="0.00"
                 />
@@ -210,7 +214,7 @@ export function EditProductModal({
                     tabIndex={-1}
                     aria-label="Increase price"
                   >
-                    <ArrowUp />
+                    <Plus />
                   </button>
                   <button
                     type="button"
@@ -222,7 +226,7 @@ export function EditProductModal({
                     tabIndex={-1}
                     aria-label="Decrease price"
                   >
-                    <ArrowDown />
+                    <Minus />
                   </button>
                 </div>
               </div>

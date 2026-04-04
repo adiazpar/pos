@@ -70,7 +70,7 @@ src/
 │   │   ├── team/         # Team management
 │   │   ├── cash/         # Cash drawer
 │   │   │   └── history/  # Cash session history
-│   │   └── reports/      # Reports
+│   │   └── manage/       # Manage
 │   └── api/              # API routes
 │       ├── auth/         # Authentication endpoints
 │       ├── businesses/   # Multi-business API
@@ -235,7 +235,7 @@ import { SearchIcon, BusinessIcon, CashIcon } from '@/components/icons'
 <BusinessIcon className="w-6 h-6" />
 ```
 
-**Custom icons include:** Business type icons (FoodBeverageIcon, RetailIcon, ServicesIcon, WholesaleIcon), navigation icons (HomeIcon, SalesIcon, CashIcon, ProductsIcon, ReportsIcon), and many utility icons. Check `src/components/icons/` for the full list.
+**Custom icons include:** Business type icons (FoodBeverageIcon, RetailIcon, ServicesIcon, WholesaleIcon), navigation icons (HomeIcon, SalesIcon, CashIcon, ProductsIcon, SettingsIcon), and many utility icons. Check `src/components/icons/` for the full list.
 
 ### Modal Component
 

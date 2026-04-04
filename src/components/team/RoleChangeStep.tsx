@@ -35,7 +35,7 @@ export function RoleChangeContent({
           <RoleCard
             icon={<UserCircle className="w-5 h-5" />}
             title="Partner"
-            description="Full access to reports, inventory, and settings"
+            description="Full access to management, inventory, and settings"
             selected={newRole === 'partner'}
             onClick={() => setNewRole('partner')}
           />
