@@ -196,7 +196,7 @@ export default function HubPage() {
       {/* Search Bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-          <SearchIcon size={20} className="text-text-tertiary" />
+          <SearchIcon size={16} className="text-text-tertiary" />
         </div>
         <input
           type="text"
@@ -204,7 +204,7 @@ export default function HubPage() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="input w-full"
-          style={{ paddingLeft: '2.75rem', paddingRight: '2.5rem' }}
+          style={{ paddingTop: 'var(--space-2)', paddingBottom: 'var(--space-2)', paddingLeft: '2.25rem', paddingRight: '2.25rem', fontSize: 'var(--text-sm)', minHeight: 'unset' }}
         />
         {searchQuery && (
           <button

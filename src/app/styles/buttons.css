@@ -130,7 +130,7 @@
 }
 
 .btn-icon {
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
+  aspect-ratio: 1;
+  min-height: var(--touch-target-min);
   padding: 0;
 }

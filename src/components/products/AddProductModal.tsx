@@ -4,7 +4,6 @@ import { useEffect, useLayoutEffect, useRef } from 'react'
 import Image from 'next/image'
 import { ImageIcon, ArrowUp, ArrowDown, Pencil, Focus } from 'lucide-react'
 import { Spinner, Modal, useMorphingModal } from '@/components/ui'
-import { SettingsIcon } from '@/components/icons'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
 import { useProductForm, useProductFormValidation } from '@/contexts/product-form-context'
 import type { ProductCategory } from '@/types'
@@ -168,10 +167,9 @@ export function AddProductModal({
           <button
             type="button"
             onClick={onOpenSettings}
-            className="btn btn-secondary btn-icon"
-            aria-label="Product settings"
+            className="btn btn-secondary flex-1"
           >
-            <SettingsIcon className="w-4 h-4" />
+            Settings
           </button>
           <Modal.CancelBackButton />
         </Modal.Footer>
