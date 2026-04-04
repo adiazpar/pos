@@ -56,11 +56,9 @@ export async function requireBusinessAccess(
   const cacheKey = getCacheKey(session.userId, businessId)
   const cached = accessCache.get(cacheKey)
   if (cached && cached.expiresAt > Date.now()) {
-    console.log(`[BusinessAuth] CACHE HIT for ${businessId} (${cached.access.role}) — no DB query`)
     return cached.access
   }
 
-  console.log(`[BusinessAuth] CACHE MISS for ${businessId} — querying DB`)
   // Cache miss or expired — query DB
   const membership = await db
     .select({

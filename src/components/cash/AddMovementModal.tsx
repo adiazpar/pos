@@ -37,7 +37,7 @@ export function AddMovementModal({
     setNote('')
   }, [])
 
-  const { isSaving, setIsSaving, handleClose } = useFormModal({
+  const { isSaving, setIsSaving: _setIsSaving, handleClose } = useFormModal({
     onClose,
     onReset: resetForm,
   })

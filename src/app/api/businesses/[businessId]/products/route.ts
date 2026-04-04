@@ -61,7 +61,7 @@ export const POST = withBusinessAuth(async (request, access) => {
   const { name: validName, price: validPrice, category: validCategory, categoryId: validCategoryId, active: validActive } = validation.data
   const status = validActive ? 'active' : 'inactive'
 
-  let productId = nanoid()
+  const productId = nanoid()
 
   // Upload icon if provided
   let iconData: string | null = null

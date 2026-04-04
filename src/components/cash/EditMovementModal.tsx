@@ -32,8 +32,8 @@ export function EditMovementModal({
   const [category, setCategory] = useState<CashMovementCategory | ''>('')
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [isSaving, _setIsSaving] = useState(false)
+  const [isDeleting, _setIsDeleting] = useState(false)
 
   // Reset form when movement changes
   useEffect(() => {
