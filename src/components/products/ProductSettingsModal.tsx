@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trash2, GripVertical, Plus, ChevronRight, Pencil } from 'lucide-react'
+import { Plus, ChevronRight, Pencil } from 'lucide-react'
+import { TrashIcon } from '@/components/icons'
 import { Spinner, Modal, useMorphingModal } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
 import { SORT_OPTIONS } from '@/lib/products'
@@ -238,28 +239,15 @@ export function ProductSettingsModal({
         )}
 
         <Modal.Item>
-          <div className="space-y-2">
+          <div>
             {categories.map(category => (
               <div
                 key={category.id}
-                className="list-item-flat"
+                className="list-item-clickable list-item-flat"
               >
-                <GripVertical className="w-5 h-5 text-text-tertiary cursor-grab" />
                 <div className="flex-1 min-w-0">
                   <span className="font-medium block truncate">{category.name}</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingCategory(category)
-                    setCategoryName(category.name)
-                    setActionCompleted(false)
-                  }}
-                  className="btn btn-secondary btn-sm btn-icon"
-                  aria-label="Edit category"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
                 <Modal.GoToStepButton
                   step={2}
                   onClick={() => {
@@ -267,8 +255,20 @@ export function ProductSettingsModal({
                     setCategoryName(category.name)
                     setActionCompleted(false)
                   }}
-                  className="hidden"
-                />
+                  className="p-1 text-text-tertiary hover:text-text-primary transition-colors"
+                >
+                  <Pencil style={{ width: 16, height: 16 }} />
+                </Modal.GoToStepButton>
+                <Modal.GoToStepButton
+                  step={3}
+                  onClick={() => {
+                    setDeletingCategory(category)
+                    setActionCompleted(false)
+                  }}
+                  className="p-1 text-text-tertiary hover:text-error transition-colors"
+                >
+                  <TrashIcon style={{ width: 16, height: 16 }} />
+                </Modal.GoToStepButton>
               </div>
             ))}
           </div>
@@ -287,7 +287,7 @@ export function ProductSettingsModal({
             }}
             className="btn btn-primary flex-1"
           >
-            <Plus className="w-4 h-4" />
+            <Plus style={{ width: 16, height: 16 }} />
             Add
           </Modal.GoToStepButton>
         </Modal.Footer>
@@ -329,7 +329,7 @@ export function ProductSettingsModal({
               }}
               className="btn btn-secondary"
             >
-              <Trash2 className="w-5 h-5" />
+              <TrashIcon style={{ width: 16, height: 16 }} />
             </Modal.GoToStepButton>
           )}
           <SaveCategoryButton
@@ -342,7 +342,7 @@ export function ProductSettingsModal({
       </Modal.Step>
 
       {/* Step 3: Delete category confirmation */}
-      <Modal.Step title="Delete Category" backStep={2}>
+      <Modal.Step title="Delete Category" backStep={1}>
         <Modal.Item>
           <p className="text-text-secondary">
             Are you sure you want to delete <strong>{deletingCategory?.name}</strong>?
@@ -355,7 +355,7 @@ export function ProductSettingsModal({
         </Modal.Item>
 
         <Modal.Footer>
-          <Modal.GoToStepButton step={2} className="btn btn-secondary flex-1">
+          <Modal.GoToStepButton step={1} className="btn btn-secondary flex-1">
             Cancel
           </Modal.GoToStepButton>
           <DeleteCategoryButton

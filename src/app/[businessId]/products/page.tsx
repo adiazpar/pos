@@ -942,7 +942,13 @@ export default function ProductosPage() {
         isDeletingCategory={isDeletingCategory}
         onCreateCategory={createCategory}
         onUpdateCategory={updateCategory}
-        onDeleteCategory={deleteCategory}
+        onDeleteCategory={async (id: string) => {
+          const success = await deleteCategory(id)
+          if (success) {
+            setProducts(prev => prev.map(p => p.categoryId === id ? { ...p, categoryId: null } : p))
+          }
+          return success
+        }}
         defaultCategoryId={settings?.defaultCategoryId || null}
         sortPreference={settings?.sortPreference || 'name_asc'}
         isSavingSettings={isSavingSettings}
