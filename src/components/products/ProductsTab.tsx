@@ -140,7 +140,7 @@ export function ProductsTab({
                   <button
                     type="button"
                     onClick={onOpenSettings}
-                    className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+                    className="text-sm text-brand hover:text-brand transition-colors"
                   >
                     Settings
                   </button>
