@@ -1,7 +1,8 @@
 'use client'
 
 import { memo } from 'react'
-import { Search, X, Plus, ArrowUp, Package, Warehouse, ChevronRight } from 'lucide-react'
+import { Search, X, Plus, ArrowUp, Warehouse, ChevronRight } from 'lucide-react'
+import { TagsIcon, SettingsIcon } from '@/components/icons'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { scrollToTop } from '@/lib/scroll'
 import type { Product } from '@/types'
@@ -62,14 +63,22 @@ export function OrdersTab({
           </div>
         )}
 
-        {/* No products yet - can't create orders */}
-        {products.length === 0 ? (
+        {/* No products and no orders - show empty state */}
+        {products.length === 0 && orders.length === 0 ? (
           <div className="empty-state-fill">
-            <Package className="empty-state-icon" />
-            <h3 className="empty-state-title">No products</h3>
+            <TagsIcon className="empty-state-icon" />
+            <h3 className="empty-state-title">No products yet</h3>
             <p className="empty-state-description">
-              Add products first to create orders
+              Add products to your catalog first, then you can start creating orders here
             </p>
+            <button
+              type="button"
+              className="btn btn-secondary mt-4"
+              onClick={() => {/* TODO: implement order settings */}}
+            >
+              <SettingsIcon className="w-4 h-4" />
+              Order settings
+            </button>
           </div>
         ) : orders.length === 0 ? (
           /* Products exist but no orders yet */

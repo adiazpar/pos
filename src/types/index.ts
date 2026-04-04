@@ -80,7 +80,7 @@ export interface Product {
   name: string
   price: number
   costPrice?: number | null
-  active: boolean | null
+  status: 'active' | 'inactive' | 'archived'
   /** @deprecated Use categoryId instead */
   category?: LegacyProductCategory | null
   categoryId?: string | null

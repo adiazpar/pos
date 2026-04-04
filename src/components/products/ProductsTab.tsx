@@ -2,8 +2,9 @@
 
 import { memo } from 'react'
 import Image from 'next/image'
-import { Search, X, Filter, Plus, ArrowUp, Package, ChevronRight, ImageIcon, Settings } from 'lucide-react'
-import { BottomSheet } from '@/components/ui/bottom-sheet'
+import { X, Plus, ArrowUp, ChevronRight, ImageIcon, ArrowUpDown } from 'lucide-react'
+import { TagsIcon, SettingsIcon, SearchIcon } from '@/components/icons'
+import { Modal } from '@/components/ui'
 import { getProductIconUrl } from '@/lib/utils'
 import { scrollToTop } from '@/lib/scroll'
 import {
@@ -93,59 +94,57 @@ export function ProductsTab({
         {products.length > 0 && (
           <>
             {/* Search Bar with Sort Button */}
-            <div className="flex gap-2">
-              <div className="search-bar flex-1">
-                <Search className="search-bar-icon" />
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={e => onSearchChange(e.target.value)}
-                  className="search-bar-input"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => onSearchChange('')}
-                    className="search-bar-clear"
-                    aria-label="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <SearchIcon size={20} className="text-text-tertiary" />
               </div>
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={e => onSearchChange(e.target.value)}
+                className="input w-full"
+                style={{ paddingLeft: '2.75rem', paddingRight: '2.5rem' }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange('')}
+                  className="absolute inset-y-0 right-3 flex items-center text-text-tertiary hover:text-text-secondary transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="caja-actions">
+              <button
+                type="button"
+                onClick={onAddProduct}
+                className="caja-action-btn"
+              >
+                <Plus className="caja-action-btn__icon text-success" />
+                Add
+              </button>
               <button
                 type="button"
                 onClick={() => onSortSheetOpenChange(true)}
-                className="btn btn-secondary btn-icon flex-shrink-0"
-                aria-label="Sort products"
+                className="caja-action-btn"
               >
-                <Filter className="w-4 h-4" />
+                <ArrowUpDown className="caja-action-btn__icon text-brand" />
+                Sort
+              </button>
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="caja-action-btn"
+              >
+                <SettingsIcon className="caja-action-btn__icon" />
+                Settings
               </button>
             </div>
-
-            {/* Category Filter Tabs */}
-            {availableFilters.length > 0 && (
-              <div className="filter-tabs">
-                <button
-                  type="button"
-                  onClick={() => onFilterChange('all')}
-                  className={`filter-tab ${selectedFilter === 'all' ? 'filter-tab-active' : ''}`}
-                >
-                  All
-                </button>
-                {availableFilters.map(filter => (
-                  <button
-                    key={filter}
-                    type="button"
-                    onClick={() => onFilterChange(filter)}
-                    className={`filter-tab ${selectedFilter === filter ? 'filter-tab-active' : ''}`}
-                  >
-                    {getFilterLabel(filter, categories)}
-                  </button>
-                ))}
-              </div>
-            )}
 
             {/* Product List Card */}
             <div className="card p-4 space-y-4">
@@ -154,36 +153,14 @@ export function ProductsTab({
                 <span className="text-sm text-text-secondary">
                   {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
                 </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={onOpenSettings}
-                    className="btn btn-secondary btn-sm btn-icon"
-                    aria-label="Product settings"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onAddProduct}
-                    className="btn btn-primary btn-sm"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add
-                  </button>
-                </div>
               </div>
 
               <hr className="border-border" />
 
               {/* Product List */}
               {filteredProducts.length === 0 ? (
-                <div className="empty-state">
-                  <Search className="empty-state-icon" />
-                  <h3 className="empty-state-title">No results</h3>
-                  <p className="empty-state-description">
-                    No products found matching that criteria
-                  </p>
+                <div className="text-center py-8 text-text-secondary">
+                  <p>No products found matching that criteria</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -216,29 +193,19 @@ export function ProductsTab({
         {/* Empty state - no products at all */}
         {products.length === 0 && (
           <div className="empty-state-fill">
-            <Package className="empty-state-icon" />
-            <h3 className="empty-state-title">No products</h3>
+            <TagsIcon className="empty-state-icon" />
+            <h3 className="empty-state-title">No products yet</h3>
             <p className="empty-state-description">
-              Add your first product to get started
+              Add your first product to start building your catalog
             </p>
-            <div className="flex flex-col gap-2 mt-4">
-              <button
-                type="button"
-                onClick={onAddProduct}
-                className="btn btn-primary"
-              >
-                <Plus className="w-4 h-4" />
-                Add product
-              </button>
-              <button
-                type="button"
-                onClick={onOpenSettings}
-                className="btn btn-secondary"
-              >
-                <Settings className="w-4 h-4" />
-                Product settings
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onAddProduct}
+              className="btn btn-primary mt-4"
+            >
+              <Plus className="w-4 h-4" />
+              Add product
+            </button>
           </div>
         )}
 
@@ -311,7 +278,7 @@ const ProductListItem = memo(function ProductListItem({
       role="button"
     >
       {/* Product Icon */}
-      <div className={`product-list-image ${isLowStock && product.active ? 'ring-2 ring-error' : ''}`}>
+      <div className={`product-list-image ${isLowStock && product.status === 'active' ? 'ring-2 ring-error' : ''}`}>
         {iconUrl ? (
           <Image
             src={iconUrl}
@@ -328,7 +295,7 @@ const ProductListItem = memo(function ProductListItem({
 
       {/* Product Info */}
       <div className="flex-1 min-w-0">
-        <span className={`font-medium truncate block ${!product.active ? 'text-text-tertiary' : ''}`}>
+        <span className={`font-medium truncate block ${product.status !== 'active' ? 'text-text-tertiary' : ''}`}>
           {product.name}
         </span>
         <span className="text-xs text-text-tertiary mt-0.5 block">
@@ -338,10 +305,10 @@ const ProductListItem = memo(function ProductListItem({
 
       {/* Price and Stock */}
       <div className="text-right">
-        <span className={`font-medium block ${!product.active ? 'text-text-tertiary' : 'text-text-primary'}`}>
+        <span className={`font-medium block ${product.status !== 'active' ? 'text-text-tertiary' : 'text-text-primary'}`}>
           ${product.price.toFixed(2)}
         </span>
-        <span className={`text-xs mt-0.5 block ${isLowStock && product.active ? 'text-error' : 'text-text-tertiary'}`}>
+        <span className={`text-xs mt-0.5 block ${isLowStock && product.status === 'active' ? 'text-error' : 'text-text-tertiary'}`}>
           {stockValue} units
         </span>
       </div>

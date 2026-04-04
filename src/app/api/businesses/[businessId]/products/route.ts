@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db, products } from '@/db'
-import { eq } from 'drizzle-orm'
+import { eq, ne, and, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { uploadProductIcon, validateIconSize, fileToBase64 } from '@/lib/storage'
@@ -24,7 +24,7 @@ export const GET = withBusinessAuth(async (request, access) => {
   const productsList = await db
     .select()
     .from(products)
-    .where(eq(products.businessId, access.businessId))
+    .where(and(eq(products.businessId, access.businessId), ne(products.status, 'archived')))
 
   return NextResponse.json({
     success: true,
@@ -59,8 +59,9 @@ export const POST = withBusinessAuth(async (request, access) => {
   }
 
   const { name: validName, price: validPrice, category: validCategory, categoryId: validCategoryId, active: validActive } = validation.data
+  const status = validActive ? 'active' : 'inactive'
 
-  const productId = nanoid()
+  let productId = nanoid()
 
   // Upload icon if provided
   let iconData: string | null = null
@@ -79,6 +80,47 @@ export const POST = withBusinessAuth(async (request, access) => {
 
   const now = new Date()
 
+  // Check for an archived product with the same name (case-insensitive)
+  const [archivedMatch] = await db
+    .select()
+    .from(products)
+    .where(
+      and(
+        eq(products.businessId, access.businessId),
+        eq(products.status, 'archived'),
+        sql`LOWER(TRIM(${products.name})) = LOWER(TRIM(${validName}))`
+      )
+    )
+    .orderBy(sql`${products.updatedAt} DESC`)
+    .limit(1)
+
+  if (archivedMatch) {
+    // Reuse the archived product row
+    await db
+      .update(products)
+      .set({
+        name: validName,
+        price: validPrice,
+        category: validCategory,
+        categoryId: validCategoryId || null,
+        icon: iconData ?? archivedMatch.icon,
+        status,
+        updatedAt: now,
+      })
+      .where(eq(products.id, archivedMatch.id))
+
+    const [reusedProduct] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, archivedMatch.id))
+      .limit(1)
+
+    return NextResponse.json({
+      success: true,
+      product: reusedProduct,
+    })
+  }
+
   const [newProduct] = await db.insert(products).values({
     id: productId,
     businessId: access.businessId,
@@ -87,7 +129,7 @@ export const POST = withBusinessAuth(async (request, access) => {
     category: validCategory,
     categoryId: validCategoryId || null,
     icon: iconData,
-    active: validActive,
+    status,
     stock: 0,
     createdAt: now,
     updatedAt: now,

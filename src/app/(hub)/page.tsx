@@ -109,7 +109,7 @@ export default function HubPage() {
   if (!hasBusinesses) {
     return (
       <main className="page-loading">
-        <div className="empty-state">
+        <div className="empty-state-fill">
           <BusinessIcon className="empty-state-icon" />
           <h3 className="empty-state-title">No businesses yet</h3>
           <p className="empty-state-description">

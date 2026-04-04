@@ -51,6 +51,7 @@ export { WithdrawIcon } from './WithdrawIcon'
 export { ReceiptIcon } from './ReceiptIcon'
 
 // Product icons
+export { TagsIcon } from './TagsIcon'
 export { PackageIcon } from './PackageIcon'
 export { WarehouseIcon } from './WarehouseIcon'
 export { ImageIcon } from './ImageIcon'

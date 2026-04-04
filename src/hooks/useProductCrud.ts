@@ -205,7 +205,7 @@ export function useProductCrud({
     setName(product.name)
     setPrice(product.price.toString())
     setCategoryId(product.categoryId || '')
-    setActive(product.active ?? true)
+    setActive(product.status === 'active')
     // Note: iconPreview should be set by caller using getProductIconUrl
     setGeneratedIconBlob(null)
     if (pipeline.state.step !== 'idle') {

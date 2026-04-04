@@ -101,12 +101,13 @@ export const products = sqliteTable('products', {
   stock: integer('stock').default(0),
   lowStockThreshold: integer('low_stock_threshold').default(10),
   icon: text('icon'), // Base64-encoded image data
-  active: integer('active', { mode: 'boolean' }).default(true),
+  status: text('status', { enum: ['active', 'inactive', 'archived'] }).default('active').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 }, (table) => ({
   businessIdIdx: index('idx_products_business_id').on(table.businessId),
   categoryIdIdx: index('idx_products_category_id').on(table.categoryId),
+  businessStatusIdx: index('idx_products_business_status').on(table.businessId, table.status),
 }))
 
 // ===========================================

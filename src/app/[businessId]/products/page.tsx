@@ -61,6 +61,7 @@ interface AddProductModalWrapperProps {
   onAbortAiProcessing: () => void
   onPipelineReset: () => void
   onAiPhotoCapture: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
+  onOpenSettings: () => void
   defaultCategoryId?: string | null
 }
 
@@ -74,8 +75,10 @@ function AddProductModalWrapper({
   onAbortAiProcessing,
   onPipelineReset,
   onAiPhotoCapture,
+  onOpenSettings,
   defaultCategoryId,
 }: AddProductModalWrapperProps) {
+  const pendingActionRef = useRef<(() => void) | null>(null)
   const {
     setPipelineStep,
     setIsCompressing,
@@ -111,7 +114,16 @@ function AddProductModalWrapper({
 
   const handleExitComplete = useCallback(() => {
     resetForm(defaultCategoryId)
+    if (pendingActionRef.current) {
+      pendingActionRef.current()
+      pendingActionRef.current = null
+    }
   }, [resetForm, defaultCategoryId])
+
+  const handleOpenSettings = useCallback(() => {
+    pendingActionRef.current = onOpenSettings
+    onClose()
+  }, [onOpenSettings, onClose])
 
   return (
     <AddProductModal
@@ -123,6 +135,7 @@ function AddProductModalWrapper({
       onAbortAiProcessing={onAbortAiProcessing}
       onPipelineReset={onPipelineReset}
       onAiPhotoCapture={onAiPhotoCapture}
+      onOpenSettings={handleOpenSettings}
     />
   )
 }
@@ -401,9 +414,9 @@ export default function ProductosPage() {
 
   // Filtered products for order selection
   const orderFilteredProducts = useMemo(() => {
-    if (!orderProductSearchQuery.trim()) return products.filter(p => p.active)
+    if (!orderProductSearchQuery.trim()) return products.filter(p => p.status === 'active')
     const query = orderProductSearchQuery.toLowerCase()
-    return products.filter(p => p.active && p.name.toLowerCase().includes(query))
+    return products.filter(p => p.status === 'active' && p.name.toLowerCase().includes(query))
   }, [products, orderProductSearchQuery])
 
   // Filtered orders
@@ -902,6 +915,7 @@ export default function ProductosPage() {
           }}
           onPipelineReset={() => pipeline.reset()}
           onAiPhotoCapture={handleAiPhotoCapture}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
           defaultCategoryId={settings?.defaultCategoryId}
         />
         <EditProductModalWrapper

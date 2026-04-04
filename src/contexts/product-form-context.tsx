@@ -157,7 +157,7 @@ export function ProductFormProvider({ children, defaultCategoryId }: ProductForm
     setName(product.name)
     setPrice(product.price.toString())
     setCategoryId(product.categoryId || '')
-    setActive(product.active ?? true)
+    setActive(product.status === 'active')
     setIconPreview(getIconUrl(product))
     setGeneratedIconBlob(null)
     setNewStockValue(product.stock ?? 0)
@@ -247,7 +247,7 @@ export function useProductFormValidation() {
     name.trim() !== editingProduct.name ||
     parseFloat(price) !== editingProduct.price ||
     (categoryId || null) !== (editingProduct.categoryId || null) ||
-    active !== (editingProduct.active ?? true)
+    active !== (editingProduct.status === 'active')
   )
 
   return { isFormValid, hasChanges }

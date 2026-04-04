@@ -61,7 +61,7 @@ export const GET = withBusinessAuth(async (request, access) => {
           price: products.price,
           costPrice: products.costPrice,
           stock: products.stock,
-          active: products.active,
+          status: products.status,
         })
         .from(products)
         .where(inArray(products.id, productIds))

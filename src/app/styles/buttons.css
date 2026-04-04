@@ -51,6 +51,7 @@
 .btn-primary {
   background: var(--color-brand);
   color: white;
+  border: 1.5px solid transparent;
 }
 
 @media (hover: hover) {

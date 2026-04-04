@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronDown } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { getRouteConfig, buildBusinessUrl, getBusinessIdFromPath } from '@/lib/navigation'
 import { UserMenu } from './user-menu'
 import { useNavbar } from '@/contexts/navbar-context'
@@ -88,11 +88,6 @@ export function PageHeader() {
     }
   }
 
-  // Navigate to hub to switch business
-  const handleBusinessClick = () => {
-    setPendingHref('/')
-    router.push('/')
-  }
 
   // Style for fading inner content during cross-context navigation
   const contentFadeStyle = {
@@ -149,15 +144,7 @@ export function PageHeader() {
           </div>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={handleBusinessClick}
-              className="page-header__business-btn"
-              aria-label="Switch business"
-            >
-              <h1 className="page-title">{business?.name || 'Loading...'}</h1>
-              <ChevronDown className="page-header__business-chevron" />
-            </button>
+            <h1 className="page-title">{business?.name || 'Loading...'}</h1>
             {pageTitle && <p className="page-subtitle">{pageTitle}</p>}
           </>
         )}

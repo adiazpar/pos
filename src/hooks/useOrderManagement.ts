@@ -184,9 +184,9 @@ export function useOrderManagement({
 
   // Filtered products for order selection
   const orderFilteredProducts = useMemo(() => {
-    if (!orderProductSearchQuery.trim()) return products.filter(p => p.active)
+    if (!orderProductSearchQuery.trim()) return products.filter(p => p.status === 'active')
     const query = orderProductSearchQuery.toLowerCase()
-    return products.filter(p => p.active && p.name.toLowerCase().includes(query))
+    return products.filter(p => p.status === 'active' && p.name.toLowerCase().includes(query))
   }, [products, orderProductSearchQuery])
 
   // Filtered orders

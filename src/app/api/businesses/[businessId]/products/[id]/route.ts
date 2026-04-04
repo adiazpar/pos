@@ -86,7 +86,7 @@ export const PATCH = withBusinessAuth(async (request, access, routeParams) => {
   }
 
   if (active !== null) {
-    updateData.active = active === 'true'
+    updateData.status = active === 'true' ? 'active' : 'inactive'
   }
 
   // Upload new icon if provided
@@ -161,17 +161,13 @@ export const DELETE = withBusinessAuth(async (request, access, routeParams) => {
     return HttpResponse.notFound('Product not found')
   }
 
-  // Delete icon from storage if exists
-  if (existingProduct.icon) {
-    try {
-      await deleteProductIcon(existingProduct.icon, id)
-    } catch (err) {
-      console.error('Error deleting icon:', err)
-    }
-  }
-
+  // Archive instead of hard delete — preserve icon for historical rendering
   await db
-    .delete(products)
+    .update(products)
+    .set({
+      status: 'archived',
+      updatedAt: new Date(),
+    })
     .where(eq(products.id, id))
 
   return NextResponse.json({
