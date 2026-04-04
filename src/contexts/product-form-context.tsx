@@ -239,7 +239,7 @@ export function useProductForm() {
 
 /** Hook for form validation state */
 export function useProductFormValidation() {
-  const { name, price, editingProduct, categoryId, active } = useProductForm()
+  const { name, price, editingProduct, categoryId, active, generatedIconBlob } = useProductForm()
 
   const isFormValid = name.trim() && price && parseFloat(price) >= 0
 
@@ -247,7 +247,8 @@ export function useProductFormValidation() {
     name.trim() !== editingProduct.name ||
     parseFloat(price) !== editingProduct.price ||
     (categoryId || null) !== (editingProduct.categoryId || null) ||
-    active !== (editingProduct.status === 'active')
+    active !== (editingProduct.status === 'active') ||
+    generatedIconBlob !== null
   )
 
   return { isFormValid, hasChanges }

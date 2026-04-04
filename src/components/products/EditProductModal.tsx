@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
 import { Plus, Minus } from 'lucide-react'
 import { TrashIcon, SlidersIcon, ImageAttachIcon } from '@/components/icons'
@@ -114,6 +115,7 @@ export function EditProductModal({
   onSaveAdjustment,
   canDelete,
 }: EditProductModalProps) {
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const {
     name,
     setName,
@@ -184,21 +186,12 @@ export function EditProductModal({
             </div>
             <div className="w-px self-stretch bg-border flex-shrink-0" />
             <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto scrollbar-hidden">
-              {iconPreview && (
-                <button
-                  type="button"
-                  onClick={clearIcon}
-                  className="w-12 h-12 rounded-lg bg-bg-muted flex items-center justify-center flex-shrink-0 text-error text-xs font-medium"
-                  aria-label="Remove icon"
-                >
-                  <span style={{ fontSize: 18 }}>✕</span>
-                </button>
-              )}
-              {PRESET_ICONS.map((emoji) => (
+              {PRESET_ICONS.filter(e => e !== selectedPreset).map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={async () => {
+                    setSelectedPreset(emoji)
                     const blob = await emojiToBlob(emoji)
                     const url = URL.createObjectURL(blob)
                     setIconPreview(url)
