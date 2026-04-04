@@ -186,18 +186,23 @@ export function EditProductModal({
             </div>
             <div className="w-px self-stretch bg-border flex-shrink-0" />
             <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto scrollbar-hidden">
-              {PRESET_ICONS.filter(e => e !== selectedPreset).map((emoji) => (
+              {PRESET_ICONS.map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={async () => {
+                    if (selectedPreset === emoji) {
+                      setSelectedPreset(null)
+                      clearIcon()
+                      return
+                    }
                     setSelectedPreset(emoji)
                     const blob = await emojiToBlob(emoji)
                     const url = URL.createObjectURL(blob)
                     setIconPreview(url)
                     setGeneratedIconBlob(blob)
                   }}
-                  className="w-12 h-12 rounded-lg bg-bg-muted flex items-center justify-center flex-shrink-0 hover:bg-brand-subtle transition-colors"
+                  className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${selectedPreset === emoji ? 'bg-brand-subtle ring-2 ring-brand' : 'bg-bg-muted hover:bg-brand-subtle'}`}
                 >
                   <span style={{ fontSize: 28 }}>{emoji}</span>
                 </button>
