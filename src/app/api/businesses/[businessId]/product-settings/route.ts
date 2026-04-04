@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { db, productSettings, productCategories } from '@/db'
+import { db, productSettings } from '@/db'
 import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'

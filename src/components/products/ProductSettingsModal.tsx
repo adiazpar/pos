@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, ChevronRight, Pencil } from 'lucide-react'
-import { TrashIcon } from '@/components/icons'
+import { Plus, ChevronRight } from 'lucide-react'
+import { TrashIcon, EditIcon } from '@/components/icons'
 import { Spinner, Modal, useMorphingModal } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
 import { SORT_OPTIONS } from '@/lib/products'
@@ -46,14 +46,18 @@ interface SaveCategoryButtonProps {
   editingCategory: ProductCategory | null
   onSave: () => Promise<void>
   isSaving: boolean
+  onSetCompleted: (v: boolean) => void
+  onSetMessage: (v: string) => void
 }
 
-function SaveCategoryButton({ name, editingCategory, onSave, isSaving }: SaveCategoryButtonProps) {
+function SaveCategoryButton({ name, editingCategory, onSave, isSaving, onSetCompleted, onSetMessage }: SaveCategoryButtonProps) {
   const { goToStep } = useMorphingModal()
   const isValid = name.trim().length > 0
   const hasChanges = editingCategory ? name.trim() !== editingCategory.name : true
 
   const handleSave = () => {
+    onSetCompleted(true)
+    onSetMessage(editingCategory ? 'Category updated' : 'Category created')
     goToStep(4)
     onSave()
   }
@@ -73,12 +77,16 @@ function SaveCategoryButton({ name, editingCategory, onSave, isSaving }: SaveCat
 interface DeleteCategoryButtonProps {
   onDelete: () => Promise<void>
   isDeleting: boolean
+  onSetCompleted: (v: boolean) => void
+  onSetMessage: (v: string) => void
 }
 
-function DeleteCategoryButton({ onDelete, isDeleting }: DeleteCategoryButtonProps) {
+function DeleteCategoryButton({ onDelete, isDeleting, onSetCompleted, onSetMessage }: DeleteCategoryButtonProps) {
   const { goToStep } = useMorphingModal()
 
   const handleDelete = () => {
+    onSetCompleted(true)
+    onSetMessage('Category deleted')
     goToStep(4)
     onDelete()
   }
@@ -155,30 +163,17 @@ export function ProductSettingsModal({
   const handleSaveCategory = async () => {
     if (!categoryName.trim()) return
 
-    let result: ProductCategory | null
     if (editingCategory) {
-      result = await onUpdateCategory(editingCategory.id, categoryName.trim())
-      if (result) {
-        setActionMessage('Category updated')
-        setActionCompleted(true)
-      }
+      await onUpdateCategory(editingCategory.id, categoryName.trim())
     } else {
-      result = await onCreateCategory(categoryName.trim())
-      if (result) {
-        setActionMessage('Category created')
-        setActionCompleted(true)
-      }
+      await onCreateCategory(categoryName.trim())
     }
   }
 
   // Handle category delete
   const handleDeleteCategory = async () => {
     if (!deletingCategory) return
-    const success = await onDeleteCategory(deletingCategory.id)
-    if (success) {
-      setActionMessage('Category deleted')
-      setActionCompleted(true)
-    }
+    await onDeleteCategory(deletingCategory.id)
   }
 
   // Count products per category (would need to be passed in for accurate counts)
@@ -257,7 +252,7 @@ export function ProductSettingsModal({
                   }}
                   className="p-1 text-text-tertiary hover:text-text-primary transition-colors"
                 >
-                  <Pencil style={{ width: 16, height: 16 }} />
+                  <EditIcon style={{ width: 16, height: 16 }} />
                 </Modal.GoToStepButton>
                 <Modal.GoToStepButton
                   step={3}
@@ -265,7 +260,7 @@ export function ProductSettingsModal({
                     setDeletingCategory(category)
                     setActionCompleted(false)
                   }}
-                  className="p-1 text-text-tertiary hover:text-error transition-colors"
+                  className="p-1 text-error hover:text-error transition-colors"
                 >
                   <TrashIcon style={{ width: 16, height: 16 }} />
                 </Modal.GoToStepButton>
@@ -320,23 +315,16 @@ export function ProductSettingsModal({
         </Modal.Item>
 
         <Modal.Footer>
-          {editingCategory && (
-            <Modal.GoToStepButton
-              step={3}
-              onClick={() => {
-                setDeletingCategory(editingCategory)
-                setActionCompleted(false)
-              }}
-              className="btn btn-secondary"
-            >
-              <TrashIcon style={{ width: 16, height: 16 }} />
-            </Modal.GoToStepButton>
-          )}
+          <Modal.CancelBackButton className="btn btn-secondary flex-1">
+            Back
+          </Modal.CancelBackButton>
           <SaveCategoryButton
             name={categoryName}
             editingCategory={editingCategory}
             onSave={handleSaveCategory}
             isSaving={isCreatingCategory || isUpdatingCategory}
+            onSetCompleted={setActionCompleted}
+            onSetMessage={setActionMessage}
           />
         </Modal.Footer>
       </Modal.Step>
@@ -361,6 +349,8 @@ export function ProductSettingsModal({
           <DeleteCategoryButton
             onDelete={handleDeleteCategory}
             isDeleting={isDeletingCategory}
+            onSetCompleted={setActionCompleted}
+            onSetMessage={setActionMessage}
           />
         </Modal.Footer>
       </Modal.Step>
@@ -375,13 +365,13 @@ export function ProductSettingsModal({
                   src="/animations/success.json"
                   loop={false}
                   autoplay={true}
-                  delay={500}
+                  delay={300}
                   style={{ width: 160, height: 160 }}
                 />
               )}
             </div>
             <p
-              className="text-lg font-semibold text-text-primary mt-4 transition-opacity duration-500"
+              className="text-lg font-semibold text-text-primary mt-4 transition-opacity duration-300"
               style={{ opacity: actionCompleted ? 1 : 0 }}
             >
               {actionMessage}

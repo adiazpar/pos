@@ -10,8 +10,8 @@
   font-family: var(--font-body);
   font-size: var(--text-base);
   color: var(--color-text-primary);
-  background: var(--color-bg-surface);
-  border: 1.5px solid var(--color-border);
+  background: var(--color-bg-muted);
+  border: 1.5px solid transparent;
   border-radius: var(--radius-lg);
   transition: border-color var(--duration-fast) ease-out;
   min-height: var(--touch-target-min);

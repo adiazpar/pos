@@ -189,6 +189,7 @@
 }
 
 .modal-backdrop-exit {
+  pointer-events: none;
   animation: backdrop-exit var(--duration-normal) ease-in forwards;
 }
 

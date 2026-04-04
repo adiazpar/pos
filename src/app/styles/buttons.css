@@ -15,7 +15,7 @@
   line-height: 1;
   text-decoration: none;
   border-radius: var(--radius-lg);
-  border: none;
+  border: 1.5px solid transparent;
   cursor: pointer;
   transition: transform var(--duration-instant) ease-out, filter var(--duration-fast) ease-out, background-color var(--duration-fast) ease-out;
   touch-action: manipulation;
@@ -51,7 +51,6 @@
 .btn-primary {
   background: var(--color-brand);
   color: white;
-  border: 1.5px solid transparent;
 }
 
 @media (hover: hover) {
@@ -61,14 +60,12 @@
 }
 
 .btn-secondary {
-  background: var(--color-bg-surface);
+  background: var(--color-bg-muted);
   color: var(--color-text-primary);
-  border: 1.5px solid var(--color-border);
 }
 
 @media (hover: hover) {
   .btn-secondary:hover:not(:disabled) {
-    border-color: var(--color-brand);
     background: var(--color-brand-subtle);
     color: var(--color-text-primary);
     filter: none;

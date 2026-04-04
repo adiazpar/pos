@@ -214,10 +214,9 @@ export function ProductsTab({
       <Modal
         isOpen={isSortSheetOpen}
         onClose={() => onSortSheetOpenChange(false)}
+        title="Sort & Filter"
       >
-        <Modal.Step title="Sort & Filter">
-          {/* Sort Section */}
-          <Modal.Item>
+        <Modal.Item>
             <div className="space-y-2">
               <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Sort by</span>
               <div className="space-y-1">
@@ -244,9 +243,9 @@ export function ProductsTab({
             </div>
           </Modal.Item>
 
-          {/* Filter Section */}
-          {availableFilters.length > 0 && (
-            <Modal.Item>
+        {/* Filter Section */}
+        {availableFilters.length > 0 && (
+          <Modal.Item>
               <div className="space-y-2">
                 <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Filter by category</span>
                 <div className="space-y-1">
@@ -290,16 +289,15 @@ export function ProductsTab({
             </Modal.Item>
           )}
 
-          <Modal.Footer>
-            <button
-              type="button"
-              onClick={() => onSortSheetOpenChange(false)}
-              className="btn btn-primary flex-1"
-            >
-              Done
-            </button>
-          </Modal.Footer>
-        </Modal.Step>
+        <Modal.Footer>
+          <button
+            type="button"
+            onClick={() => onSortSheetOpenChange(false)}
+            className="btn btn-primary flex-1"
+          >
+            Done
+          </button>
+        </Modal.Footer>
       </Modal>
     </div>
   )
