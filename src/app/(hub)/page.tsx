@@ -196,7 +196,7 @@ export default function HubPage() {
       {/* Search Bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-          <SearchIcon size={16} className="text-text-tertiary" />
+          <SearchIcon size={16} className="text-text-tertiary" style={{ marginTop: '-2px' }} />
         </div>
         <input
           type="text"

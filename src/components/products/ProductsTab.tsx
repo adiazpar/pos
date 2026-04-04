@@ -97,7 +97,7 @@ export function ProductsTab({
             <div className="flex gap-2 items-stretch">
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                  <SearchIcon size={16} className="text-text-tertiary" />
+                  <SearchIcon size={16} className="text-text-tertiary" style={{ marginTop: '-2px' }} />
                 </div>
                 <input
                   type="text"
