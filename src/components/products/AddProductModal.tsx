@@ -11,6 +11,26 @@ import type { ProductCategory } from '@/types'
 import type { ProductFormData } from './ProductModal'
 
 // ============================================
+// PRESET ICONS
+// ============================================
+
+const PRESET_ICONS = ['🛒', '📦', '🍽️', '☕', '🧴']
+
+function emojiToBlob(emoji: string): Promise<Blob> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 256
+    canvas.height = 256
+    const ctx = canvas.getContext('2d')!
+    ctx.font = '180px serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(emoji, 128, 140)
+    canvas.toBlob((blob) => resolve(blob!), 'image/png')
+  })
+}
+
+// ============================================
 // AI PIPELINE NAVIGATOR
 // ============================================
 
@@ -109,6 +129,8 @@ export function AddProductModal({
     active,
     setActive,
     iconPreview,
+    setIconPreview,
+    setGeneratedIconBlob,
     clearIcon,
     isSaving,
     error,
@@ -203,18 +225,34 @@ export function AddProductModal({
                 <ImageAttachIcon className="w-6 h-6 text-text-tertiary" />
               )}
             </div>
-            <div className="w-px h-10 bg-border flex-shrink-0" />
-            {iconPreview ? (
-              <button
-                type="button"
-                onClick={clearIcon}
-                className="btn btn-secondary btn-sm"
-              >
-                Delete
-              </button>
-            ) : (
-              <span className="text-sm text-text-tertiary">No icon</span>
-            )}
+            <div className="w-px self-stretch bg-border flex-shrink-0" />
+            <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto scrollbar-hidden">
+              {iconPreview && (
+                <button
+                  type="button"
+                  onClick={clearIcon}
+                  className="w-12 h-12 rounded-lg bg-bg-muted flex items-center justify-center flex-shrink-0 text-error text-xs font-medium"
+                  aria-label="Remove icon"
+                >
+                  <span style={{ fontSize: 18 }}>✕</span>
+                </button>
+              )}
+              {PRESET_ICONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={async () => {
+                    const blob = await emojiToBlob(emoji)
+                    const url = URL.createObjectURL(blob)
+                    setIconPreview(url)
+                    setGeneratedIconBlob(blob)
+                  }}
+                  className="w-12 h-12 rounded-lg bg-bg-muted flex items-center justify-center flex-shrink-0 hover:bg-brand-subtle transition-colors"
+                >
+                  <span style={{ fontSize: 28 }}>{emoji}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </Modal.Item>
 
@@ -364,18 +402,34 @@ export function AddProductModal({
                 <ImageAttachIcon className="w-6 h-6 text-text-tertiary" />
               )}
             </div>
-            <div className="w-px h-10 bg-border flex-shrink-0" />
-            {iconPreview ? (
-              <button
-                type="button"
-                onClick={clearIcon}
-                className="btn btn-secondary btn-sm"
-              >
-                Delete
-              </button>
-            ) : (
-              <span className="text-sm text-text-tertiary">No icon</span>
-            )}
+            <div className="w-px self-stretch bg-border flex-shrink-0" />
+            <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto scrollbar-hidden">
+              {iconPreview && (
+                <button
+                  type="button"
+                  onClick={clearIcon}
+                  className="w-12 h-12 rounded-lg bg-bg-muted flex items-center justify-center flex-shrink-0 text-error text-xs font-medium"
+                  aria-label="Remove icon"
+                >
+                  <span style={{ fontSize: 18 }}>✕</span>
+                </button>
+              )}
+              {PRESET_ICONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={async () => {
+                    const blob = await emojiToBlob(emoji)
+                    const url = URL.createObjectURL(blob)
+                    setIconPreview(url)
+                    setGeneratedIconBlob(blob)
+                  }}
+                  className="w-12 h-12 rounded-lg bg-bg-muted flex items-center justify-center flex-shrink-0 hover:bg-brand-subtle transition-colors"
+                >
+                  <span style={{ fontSize: 28 }}>{emoji}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </Modal.Item>
 
