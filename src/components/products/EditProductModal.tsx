@@ -146,7 +146,7 @@ export function EditProductModal({
         <Modal.Item>
           <label className="label">Icon</label>
           <div className="flex items-center gap-3">
-            <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center">
+            <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center flex-shrink-0">
               {iconPreview ? (
                 <Image
                   src={iconPreview}
@@ -160,7 +160,8 @@ export function EditProductModal({
                 <ImageAttachIcon className="w-6 h-6 text-text-tertiary" />
               )}
             </div>
-            {iconPreview && (
+            <div className="w-px h-10 bg-border flex-shrink-0" />
+            {iconPreview ? (
               <button
                 type="button"
                 onClick={clearIcon}
@@ -168,6 +169,8 @@ export function EditProductModal({
               >
                 Delete
               </button>
+            ) : (
+              <span className="text-sm text-text-tertiary">No icon</span>
             )}
           </div>
         </Modal.Item>

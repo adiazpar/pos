@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import Image from 'next/image'
-import { ImageIcon, Plus, Minus } from 'lucide-react'
+import { Plus, Minus } from 'lucide-react'
 import { CameraIcon, JoinIcon, ImageAttachIcon } from '@/components/icons'
 import { Spinner, Modal, useMorphingModal } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
@@ -189,7 +189,7 @@ export function AddProductModal({
         <Modal.Item>
           <label className="label">Icon</label>
           <div className="flex items-center gap-3">
-            <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center">
+            <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center flex-shrink-0">
               {iconPreview ? (
                 <Image
                   src={iconPreview}
@@ -203,7 +203,8 @@ export function AddProductModal({
                 <ImageAttachIcon className="w-6 h-6 text-text-tertiary" />
               )}
             </div>
-            {iconPreview && (
+            <div className="w-px h-10 bg-border flex-shrink-0" />
+            {iconPreview ? (
               <button
                 type="button"
                 onClick={clearIcon}
@@ -211,6 +212,8 @@ export function AddProductModal({
               >
                 Delete
               </button>
+            ) : (
+              <span className="text-sm text-text-tertiary">No icon</span>
             )}
           </div>
         </Modal.Item>
@@ -345,21 +348,34 @@ export function AddProductModal({
         )}
 
         <Modal.Item>
-          <div className="flex flex-col items-center py-2">
-            <div className="w-40 h-40 flex items-center justify-center">
+          <label className="label">Icon</label>
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center flex-shrink-0">
               {iconPreview ? (
                 <Image
                   src={iconPreview}
                   alt="Product icon"
-                  width={160}
-                  height={160}
-                  className="object-contain"
+                  width={64}
+                  height={64}
+                  className="object-cover"
                   unoptimized
                 />
               ) : (
-                <ImageIcon className="w-20 h-20 text-text-tertiary" />
+                <ImageAttachIcon className="w-6 h-6 text-text-tertiary" />
               )}
             </div>
+            <div className="w-px h-10 bg-border flex-shrink-0" />
+            {iconPreview ? (
+              <button
+                type="button"
+                onClick={clearIcon}
+                className="btn btn-secondary btn-sm"
+              >
+                Delete
+              </button>
+            ) : (
+              <span className="text-sm text-text-tertiary">No icon</span>
+            )}
           </div>
         </Modal.Item>
 
@@ -377,8 +393,8 @@ export function AddProductModal({
         </Modal.Item>
 
         <Modal.Item>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="flex gap-3">
+            <div className="flex-1">
               <label htmlFor="ai-price" className="label">Price ($) <span className="text-error">*</span></label>
               <div className="input-number-wrapper">
                 <input
@@ -424,8 +440,7 @@ export function AddProductModal({
                 </div>
               </div>
             </div>
-
-            <div>
+            <div className="flex-1">
               <label htmlFor="ai-category" className="label">Category</label>
               <select
                 id="ai-category"
