@@ -165,6 +165,7 @@ export function AddProductModal({
         />
 
         <Modal.Footer>
+          <Modal.CancelBackButton />
           <button
             type="button"
             onClick={onOpenSettings}
@@ -172,7 +173,6 @@ export function AddProductModal({
           >
             Settings
           </button>
-          <Modal.CancelBackButton />
         </Modal.Footer>
       </Modal.Step>
 
