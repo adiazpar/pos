@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import Image from 'next/image'
 import { ImageIcon, Plus, Minus } from 'lucide-react'
-import { CameraIcon, JoinIcon } from '@/components/icons'
+import { CameraIcon, JoinIcon, ImageAttachIcon } from '@/components/icons'
 import { Spinner, Modal, useMorphingModal } from '@/components/ui'
 import { LottiePlayerDynamic as LottiePlayer } from '@/components/animations'
 import { useProductForm, useProductFormValidation } from '@/contexts/product-form-context'
@@ -186,11 +186,11 @@ export function AddProductModal({
           </Modal.Item>
         )}
 
-        {iconPreview && (
-          <Modal.Item>
-            <label className="label">Icon</label>
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center border border-border">
+        <Modal.Item>
+          <label className="label">Icon</label>
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center">
+              {iconPreview ? (
                 <Image
                   src={iconPreview}
                   alt="Product icon"
@@ -199,7 +199,11 @@ export function AddProductModal({
                   className="object-cover"
                   unoptimized
                 />
-              </div>
+              ) : (
+                <ImageAttachIcon className="w-6 h-6 text-text-tertiary" />
+              )}
+            </div>
+            {iconPreview && (
               <button
                 type="button"
                 onClick={clearIcon}
@@ -207,9 +211,9 @@ export function AddProductModal({
               >
                 Delete
               </button>
-            </div>
-          </Modal.Item>
-        )}
+            )}
+          </div>
+        </Modal.Item>
 
         <Modal.Item>
           <label htmlFor="name" className="label">Name <span className="text-error">*</span></label>

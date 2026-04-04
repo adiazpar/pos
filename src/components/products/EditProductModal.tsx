@@ -143,11 +143,11 @@ export function EditProductModal({
         )}
 
         {/* Icon Preview */}
-        {iconPreview && (
-          <Modal.Item>
-            <label className="label">Icon</label>
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center border border-border">
+        <Modal.Item>
+          <label className="label">Icon</label>
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center">
+              {iconPreview ? (
                 <Image
                   src={iconPreview}
                   alt="Product icon"
@@ -156,7 +156,11 @@ export function EditProductModal({
                   className="object-cover"
                   unoptimized
                 />
-              </div>
+              ) : (
+                <ImageAttachIcon className="w-6 h-6 text-text-tertiary" />
+              )}
+            </div>
+            {iconPreview && (
               <button
                 type="button"
                 onClick={clearIcon}
@@ -164,9 +168,9 @@ export function EditProductModal({
               >
                 Delete
               </button>
-            </div>
-          </Modal.Item>
-        )}
+            )}
+          </div>
+        </Modal.Item>
 
         {/* Name */}
         <Modal.Item>
