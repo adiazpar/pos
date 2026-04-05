@@ -162,25 +162,25 @@ export function EditProductModal({
         <Modal.Item>
           <label className="label">Icon</label>
           <div className="flex items-center gap-3">
-            <div className="w-16 h-16 rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center flex-shrink-0">
+            <div className="input-height aspect-square rounded-lg overflow-hidden bg-bg-muted flex items-center justify-center flex-shrink-0">
               {iconPreview && isPresetIcon(iconPreview) ? (
-                (() => { const p = getPresetIcon(iconPreview); return p ? <p.icon size={36} className="text-text-primary" /> : null })()
+                (() => { const p = getPresetIcon(iconPreview); return p ? <p.icon size={28} className="text-text-primary" /> : null })()
               ) : iconPreview ? (
                 <Image
                   src={iconPreview}
                   alt="Product icon"
-                  width={64}
-                  height={64}
+                  width={53}
+                  height={53}
                   className="object-cover"
                   unoptimized
                 />
               ) : (
-                <ImageAttachIcon size={36} className="text-text-tertiary" />
+                <ImageAttachIcon size={28} className="text-text-tertiary" />
               )}
             </div>
             <div className="w-px self-stretch bg-border flex-shrink-0" />
-            <div className="flex-1 min-w-0 h-16 rounded-lg bg-bg-muted overflow-hidden">
-            <div className="h-full flex items-center gap-2 px-2 overflow-x-auto scrollbar-hidden">
+            <div className="input-height flex-1 min-w-0 rounded-lg bg-bg-muted overflow-hidden flex items-center">
+            <div className="h-full flex items-center gap-3 px-3 overflow-x-auto scrollbar-hidden">
               {PRESET_ICONS.map((preset) => (
                 <button
                   key={preset.id}
@@ -195,9 +195,9 @@ export function EditProductModal({
                     setIconType('preset')
                     setPresetEmoji(preset.id)
                   }}
-                  className={`w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${presetEmoji === preset.id ? 'bg-brand-subtle ring-2 ring-brand' : 'hover:bg-brand-subtle'}`}
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${presetEmoji === preset.id ? 'bg-brand-subtle ring-2 ring-brand' : 'hover:bg-brand-subtle'}`}
                 >
-                  <preset.icon size={22} className="text-text-primary" />
+                  <preset.icon size={28} className={presetEmoji === preset.id ? 'text-text-primary' : 'text-text-tertiary'} />
                 </button>
               ))}
             </div>
@@ -304,44 +304,29 @@ export function EditProductModal({
           </div>
         </Modal.Item>
 
-        {/* Barcode */}
+        {/* Active + Barcode */}
         <Modal.Item>
-          <label htmlFor="edit-barcode" className="label">Barcode</label>
-          <div className="flex gap-2">
-            <input
-              id="edit-barcode"
-              type="text"
-              value={barcode}
-              onChange={e => setBarcode(e.target.value)}
-              className="input flex-1"
-              placeholder="Scan or enter barcode"
-              autoComplete="off"
-            />
-            <button
-              type="button"
-              onClick={() => setIsScannerOpen(true)}
-              className="btn btn-secondary btn-icon"
-            >
-              <ScanLine style={{ width: 18, height: 18 }} />
-            </button>
-          </div>
-        </Modal.Item>
-
-        {/* Active toggle */}
-        <Modal.Item>
-          <div className="flex items-center justify-between py-2">
+          <div className="flex gap-4">
             <div>
-              <span className="label mb-0">Active</span>
-              <p className="text-xs text-text-tertiary mt-0.5">
-                Show in sales list
-              </p>
+              <span className="label">Active</span>
+              <input
+                type="checkbox"
+                checked={active}
+                onChange={e => setActive(e.target.checked)}
+                className="toggle"
+              />
             </div>
-            <input
-              type="checkbox"
-              checked={active}
-              onChange={e => setActive(e.target.checked)}
-              className="toggle"
-            />
+            <div className="flex-1">
+              <span className="label">Barcode</span>
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(true)}
+                className="btn btn-secondary w-full"
+              >
+                <ScanLine style={{ width: 16, height: 16 }} />
+                {barcode || 'Scan'}
+              </button>
+            </div>
           </div>
         </Modal.Item>
 

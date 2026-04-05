@@ -3,6 +3,12 @@
    ========================================================================== */
 
 /* ===== Form Elements ===== */
+
+/* Container that matches .input height (for icon pickers, etc.) */
+.input-height {
+  /* Match .input: padding + font + line-height + border */
+  height: calc(var(--space-3) * 2 + var(--text-base) * 1.6 + 3px);
+}
 .input {
   display: block;
   width: 100%;
