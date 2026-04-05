@@ -10,6 +10,7 @@ export interface ProductFormData {
   generatedIconBlob: Blob | null
   iconType: IconType
   presetEmoji: string | null
+  barcode: string
 }
 
 export interface StockAdjustmentData {

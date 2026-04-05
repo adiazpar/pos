@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import Image from 'next/image'
-import { Plus, Minus } from 'lucide-react'
+import { Plus, Minus, ScanLine } from 'lucide-react'
+import { BarcodeScanner } from './BarcodeScanner'
 import { CameraIcon, JoinIcon, ImageAttachIcon } from '@/components/icons'
 import { PRESET_ICONS, isPresetIcon, getPresetIcon } from '@/lib/preset-icons'
 import { Spinner, Modal, useMorphingModal } from '@/components/ui'
@@ -64,7 +65,7 @@ export interface AddProductModalProps {
 // ============================================
 
 function SaveButton({ onSubmit }: { onSubmit: AddProductModalProps['onSubmit'] }) {
-  const { name, price, categoryId, active, generatedIconBlob, iconType, presetEmoji: formPresetEmoji, isSaving, setProductSaved } = useProductForm()
+  const { name, price, categoryId, active, generatedIconBlob, iconType, presetEmoji: formPresetEmoji, barcode, isSaving, setProductSaved } = useProductForm()
   const { isFormValid, hasChanges } = useProductFormValidation()
   const { goToStep } = useMorphingModal()
 
@@ -72,7 +73,7 @@ function SaveButton({ onSubmit }: { onSubmit: AddProductModalProps['onSubmit'] }
     setProductSaved(true)
     goToStep(4)
     onSubmit(
-      { name, price, categoryId, active, generatedIconBlob, iconType, presetEmoji: formPresetEmoji },
+      { name, price, categoryId, active, generatedIconBlob, iconType, presetEmoji: formPresetEmoji, barcode },
       null
     )
   }
@@ -104,6 +105,7 @@ export function AddProductModal({
   onAiPhotoCapture,
   onOpenSettings,
 }: AddProductModalProps) {
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
   const {
     name,
     setName,
@@ -120,6 +122,8 @@ export function AddProductModal({
     setPresetEmoji,
     presetEmoji,
     clearIcon,
+    barcode,
+    setBarcode,
     isSaving,
     error,
     productSaved,
@@ -128,6 +132,7 @@ export function AddProductModal({
   } = useProductForm()
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -336,6 +341,29 @@ export function AddProductModal({
                   ))}
               </select>
             </div>
+          </div>
+        </Modal.Item>
+
+        {/* Barcode */}
+        <Modal.Item>
+          <label htmlFor="barcode" className="label">Barcode</label>
+          <div className="flex gap-2">
+            <input
+              id="barcode"
+              type="text"
+              value={barcode}
+              onChange={e => setBarcode(e.target.value)}
+              className="input flex-1"
+              placeholder="Scan or enter barcode"
+              autoComplete="off"
+            />
+            <button
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              className="btn btn-secondary btn-icon"
+            >
+              <ScanLine style={{ width: 18, height: 18 }} />
+            </button>
           </div>
         </Modal.Item>
 
@@ -581,5 +609,16 @@ export function AddProductModal({
         </Modal.Footer>
       </Modal.Step>
     </Modal>
+
+    {isScannerOpen && (
+      <BarcodeScanner
+        onScan={(value) => {
+          setBarcode(value)
+          setIsScannerOpen(false)
+        }}
+        onClose={() => setIsScannerOpen(false)}
+      />
+    )}
+    </>
   )
 }

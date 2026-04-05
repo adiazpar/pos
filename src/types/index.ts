@@ -42,8 +42,6 @@ export interface InviteCode {
 // ============================================
 
 /** Legacy enum category - kept for backwards compatibility */
-export type LegacyProductCategory = 'food' | 'beverage' | 'snack' | 'dessert' | 'other'
-
 /** Custom product category */
 export interface ProductCategory {
   id: string
@@ -81,11 +79,10 @@ export interface Product {
   price: number
   costPrice?: number | null
   status: 'active' | 'inactive' | 'archived'
-  /** @deprecated Use categoryId instead */
-  category?: LegacyProductCategory | null
   categoryId?: string | null
   productCategory?: ProductCategory | null
   icon?: string | null
+  barcode?: string | null
   stock?: number | null
   lowStockThreshold?: number | null
   createdAt: Date | string

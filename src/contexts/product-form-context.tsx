@@ -20,6 +20,7 @@ interface ProductFormState {
   generatedIconBlob: Blob | null
   iconType: IconType
   presetEmoji: string | null
+  barcode: string
 
   // Editing state
   editingProduct: Product | null
@@ -53,6 +54,7 @@ interface ProductFormActions {
   setGeneratedIconBlob: (blob: Blob | null) => void
   setIconType: (type: IconType) => void
   setPresetEmoji: (emoji: string | null) => void
+  setBarcode: (barcode: string) => void
   clearIcon: () => void
 
   // Editing state
@@ -110,6 +112,7 @@ export function ProductFormProvider({ children, defaultCategoryId }: ProductForm
   const [generatedIconBlob, setGeneratedIconBlob] = useState<Blob | null>(null)
   const [iconType, setIconType] = useState<IconType>(null)
   const [presetEmoji, setPresetEmoji] = useState<string | null>(null)
+  const [barcode, setBarcode] = useState('')
 
   // Editing state
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -155,6 +158,7 @@ export function ProductFormProvider({ children, defaultCategoryId }: ProductForm
     setGeneratedIconBlob(null)
     setIconType(null)
     setPresetEmoji(null)
+    setBarcode('')
     setEditingProduct(null)
     setError('')
     setProductDeleted(false)
@@ -184,6 +188,7 @@ export function ProductFormProvider({ children, defaultCategoryId }: ProductForm
       setIconType(null)
       setPresetEmoji(null)
     }
+    setBarcode(product.barcode || '')
     setNewStockValue(product.stock ?? 0)
     setError('')
     setPipelineStep('idle')
@@ -200,6 +205,7 @@ export function ProductFormProvider({ children, defaultCategoryId }: ProductForm
     generatedIconBlob,
     iconType,
     presetEmoji,
+    barcode,
     editingProduct,
     newStockValue,
     isAdjusting,
@@ -221,6 +227,7 @@ export function ProductFormProvider({ children, defaultCategoryId }: ProductForm
     setGeneratedIconBlob,
     setIconType,
     setPresetEmoji,
+    setBarcode,
     clearIcon,
     setEditingProduct,
     setNewStockValue,
@@ -267,7 +274,7 @@ export function useProductForm() {
 
 /** Hook for form validation state */
 export function useProductFormValidation() {
-  const { name, price, editingProduct, categoryId, active, generatedIconBlob, iconPreview, iconType, presetEmoji } = useProductForm()
+  const { name, price, editingProduct, categoryId, active, generatedIconBlob, iconPreview, iconType, presetEmoji, barcode } = useProductForm()
 
   const isFormValid = name.trim() && price && parseFloat(price) >= 0
 
@@ -282,7 +289,8 @@ export function useProductFormValidation() {
     parseFloat(price) !== editingProduct.price ||
     (categoryId || null) !== (editingProduct.categoryId || null) ||
     active !== (editingProduct.status === 'active') ||
-    iconChanged
+    iconChanged ||
+    (barcode || '') !== (editingProduct.barcode || '')
   )
 
   return { isFormValid, hasChanges }

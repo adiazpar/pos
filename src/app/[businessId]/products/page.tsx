@@ -460,6 +460,7 @@ export default function ProductosPage() {
       data.append('price', priceNum.toString())
       data.append('categoryId', formData.categoryId || '')
       data.append('active', formData.active.toString())
+      data.append('barcode', formData.barcode || '')
       if (formData.generatedIconBlob) {
         data.append('icon', formData.generatedIconBlob, 'icon.png')
       } else if (formData.iconType === 'preset' && formData.presetEmoji) {

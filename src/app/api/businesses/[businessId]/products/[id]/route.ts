@@ -26,12 +26,12 @@ export const PATCH = withBusinessAuth(async (request, access, routeParams) => {
   const formData = await request.formData()
   const name = formData.get('name') as string | null
   const price = formData.get('price') as string | null
-  const category = formData.get('category') as string | null
   const categoryId = formData.get('categoryId') as string | null
   const active = formData.get('active') as string | null
   const iconFile = formData.get('icon') as File | null
   const presetIcon = formData.get('presetIcon') as string | null
   const clearIconFlag = formData.get('clearIcon') as string | null
+  const barcodeValue = formData.get('barcode') as string | null
 
   const updateData: Record<string, unknown> = {}
 
@@ -51,18 +51,6 @@ export const PATCH = withBusinessAuth(async (request, access, routeParams) => {
     updateData.price = priceValidation.data
   }
 
-  if (category !== null) {
-    if (category === '') {
-      updateData.category = null
-    } else {
-      const categoryValidation = z.enum(['food', 'beverage', 'snack', 'dessert', 'other']).safeParse(category)
-      if (!categoryValidation.success) {
-        return HttpResponse.badRequest('Invalid category')
-      }
-      updateData.category = categoryValidation.data
-    }
-  }
-
   if (categoryId !== null) {
     if (categoryId === '') {
       updateData.categoryId = null
@@ -73,6 +61,10 @@ export const PATCH = withBusinessAuth(async (request, access, routeParams) => {
 
   if (active !== null) {
     updateData.status = active === 'true' ? 'active' : 'inactive'
+  }
+
+  if (barcodeValue !== null) {
+    updateData.barcode = barcodeValue || null
   }
 
   // Handle icon changes

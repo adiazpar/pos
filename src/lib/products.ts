@@ -2,28 +2,7 @@
  * Product-related constants and types for the productos page
  */
 
-import type { LegacyProductCategory, ProductCategory, Product, Order, OrderItem, Provider } from '@/types'
-
-// ============================================
-// LEGACY CATEGORY CONFIGURATION (for migration)
-// ============================================
-
-export const LEGACY_CATEGORY_CONFIG: Record<LegacyProductCategory, { label: string; order: number }> = {
-  food: { label: 'Food', order: 1 },
-  beverage: { label: 'Beverage', order: 2 },
-  snack: { label: 'Snack', order: 3 },
-  dessert: { label: 'Dessert', order: 4 },
-  other: { label: 'Other', order: 5 },
-}
-
-/** Default categories to seed for new businesses */
-export const DEFAULT_CATEGORIES = [
-  { name: 'Food', sortOrder: 1 },
-  { name: 'Beverage', sortOrder: 2 },
-  { name: 'Snack', sortOrder: 3 },
-  { name: 'Dessert', sortOrder: 4 },
-  { name: 'Other', sortOrder: 5 },
-]
+import type { ProductCategory, Product, Order, OrderItem, Provider } from '@/types'
 
 // ============================================
 // FILTER CONFIGURATION

@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
-import { Plus, Minus } from 'lucide-react'
+import { Plus, Minus, ScanLine } from 'lucide-react'
+import { BarcodeScanner } from './BarcodeScanner'
 import { TrashIcon, SlidersIcon, ImageAttachIcon } from '@/components/icons'
 import { PRESET_ICONS, isPresetIcon, getPresetIcon } from '@/lib/preset-icons'
 import { Spinner, Modal, useMorphingModal, StockStepper } from '@/components/ui'
@@ -60,7 +62,7 @@ function DeleteButton({ onConfirm, isDeleting }: { onConfirm: () => Promise<bool
 // ============================================
 
 function SaveButton({ onSubmit }: { onSubmit: EditProductModalProps['onSubmit'] }) {
-  const { name, price, categoryId, active, generatedIconBlob, iconType, presetEmoji: formPresetEmoji, editingProduct, isSaving, setProductSaved } = useProductForm()
+  const { name, price, categoryId, active, generatedIconBlob, iconType, presetEmoji: formPresetEmoji, barcode, editingProduct, isSaving, setProductSaved } = useProductForm()
   const { isFormValid, hasChanges } = useProductFormValidation()
   const { goToStep } = useMorphingModal()
 
@@ -68,7 +70,7 @@ function SaveButton({ onSubmit }: { onSubmit: EditProductModalProps['onSubmit'] 
     setProductSaved(true)
     goToStep(4)
     onSubmit(
-      { name, price, categoryId, active, generatedIconBlob, iconType, presetEmoji: formPresetEmoji },
+      { name, price, categoryId, active, generatedIconBlob, iconType, presetEmoji: formPresetEmoji, barcode },
       editingProduct?.id || null
     )
   }
@@ -99,6 +101,7 @@ export function EditProductModal({
   onSaveAdjustment,
   canDelete,
 }: EditProductModalProps) {
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
   const {
     name,
     setName,
@@ -115,6 +118,8 @@ export function EditProductModal({
     setPresetEmoji,
     presetEmoji,
     clearIcon,
+    barcode,
+    setBarcode,
     editingProduct,
     newStockValue,
     setNewStockValue,
@@ -136,6 +141,7 @@ export function EditProductModal({
   }
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -295,6 +301,29 @@ export function EditProductModal({
                   ))}
               </select>
             </div>
+          </div>
+        </Modal.Item>
+
+        {/* Barcode */}
+        <Modal.Item>
+          <label htmlFor="edit-barcode" className="label">Barcode</label>
+          <div className="flex gap-2">
+            <input
+              id="edit-barcode"
+              type="text"
+              value={barcode}
+              onChange={e => setBarcode(e.target.value)}
+              className="input flex-1"
+              placeholder="Scan or enter barcode"
+              autoComplete="off"
+            />
+            <button
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              className="btn btn-secondary btn-icon"
+            >
+              <ScanLine style={{ width: 18, height: 18 }} />
+            </button>
           </div>
         </Modal.Item>
 
@@ -475,5 +504,16 @@ export function EditProductModal({
         </Modal.Footer>
       </Modal.Step>
     </Modal>
+
+    {isScannerOpen && (
+      <BarcodeScanner
+        onScan={(value) => {
+          setBarcode(value)
+          setIsScannerOpen(false)
+        }}
+        onClose={() => setIsScannerOpen(false)}
+      />
+    )}
+  </>
   )
 }

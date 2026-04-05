@@ -10,7 +10,6 @@ import { Schemas } from '@/lib/schemas'
 const createProductSchema = z.object({
   name: Schemas.name(),
   price: Schemas.amount(),
-  category: z.enum(['food', 'beverage', 'snack', 'dessert', 'other']).optional(),
   categoryId: Schemas.id().optional(),
   active: Schemas.activeFlag(),
 })
@@ -41,16 +40,15 @@ export const POST = withBusinessAuth(async (request, access) => {
   const formData = await request.formData()
   const name = formData.get('name') as string
   const price = formData.get('price') as string
-  const category = formData.get('category') as string | null
   const categoryId = formData.get('categoryId') as string | null
   const active = formData.get('active') as string
   const iconFile = formData.get('icon') as File | null
   const presetIcon = formData.get('presetIcon') as string | null
+  const barcodeValue = formData.get('barcode') as string | null
 
   const validation = createProductSchema.safeParse({
     name,
     price,
-    category: category || undefined,
     categoryId: categoryId || undefined,
     active,
   })
@@ -59,7 +57,7 @@ export const POST = withBusinessAuth(async (request, access) => {
     return validationError(validation)
   }
 
-  const { name: validName, price: validPrice, category: validCategory, categoryId: validCategoryId, active: validActive } = validation.data
+  const { name: validName, price: validPrice, categoryId: validCategoryId, active: validActive } = validation.data
   const status = validActive ? 'active' : 'inactive'
 
   const productId = nanoid()
@@ -104,9 +102,9 @@ export const POST = withBusinessAuth(async (request, access) => {
       .set({
         name: validName,
         price: validPrice,
-        category: validCategory,
         categoryId: validCategoryId || null,
         icon: iconData ?? archivedMatch.icon,
+        barcode: barcodeValue || null,
         status,
         updatedAt: now,
       })
@@ -129,9 +127,9 @@ export const POST = withBusinessAuth(async (request, access) => {
     businessId: access.businessId,
     name: validName,
     price: validPrice,
-    category: validCategory,
     categoryId: validCategoryId || null,
     icon: iconData,
+    barcode: barcodeValue || null,
     status,
     stock: 0,
     createdAt: now,
